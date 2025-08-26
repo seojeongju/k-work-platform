@@ -139,7 +139,7 @@ app.get('/', (c) => {
                   primary: '#1E40AF',
                   secondary: '#3B82F6',
                   accent: '#059669',
-                  kcampus: {
+                  wowcampus: {
                     blue: '#1E40AF',
                     light: '#E0F2FE',
                     dark: '#0F172A'
@@ -154,14 +154,37 @@ app.get('/', (c) => {
             opacity: 0;
             visibility: hidden;
             transform: translateY(-10px);
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            pointer-events: none;
           }
-          .group:hover .nav-dropdown-menu {
+          .nav-dropdown:hover .nav-dropdown-menu {
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
+            pointer-events: auto;
           }
           .nav-dropdown-btn:hover {
+            color: #1E40AF;
+          }
+          .nav-dropdown-menu:hover {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            pointer-events: auto;
+          }
+          .nav-dropdown.active .nav-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            pointer-events: auto;
+          }
+          .nav-dropdown-menu a {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+          }
+          .nav-dropdown-menu a:hover {
+            background-color: #E0F2FE;
             color: #1E40AF;
           }
           .hero-gradient {
@@ -209,49 +232,124 @@ app.get('/', (c) => {
                             <span class="text-xs text-gray-500">외국인 구인구직 및 유학 플랫폼</span>
                         </div>
                     </a>
+                    <!-- Desktop Navigation -->
                     <nav class="hidden md:flex items-center space-x-8">
-                        <div class="relative group">
-                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium">
-                                구인정보 <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        <div class="relative nav-dropdown">
+                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium py-2">
+                                구인정보 <i class="fas fa-chevron-down ml-1 text-xs transition-transform"></i>
                             </button>
-                            <div class="nav-dropdown-menu absolute left-0 top-full mt-2 w-48 bg-white shadow-xl rounded-lg border border-gray-100 py-2 hidden group-hover:block z-50">
-                                <a href="#" onclick="showJobListView()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">구인정보 보기</a>
-                                <a href="#" onclick="showJobRegisterForm()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">구인정보 등록</a>
+                            <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 bg-white shadow-xl rounded-lg border border-gray-100 py-2 z-50">
+                                <a href="#jobs-view" onclick="event.preventDefault(); showJobListView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
+                                    <i class="fas fa-list mr-2"></i>구인정보 보기
+                                </a>
+                                <a href="#jobs-register" onclick="event.preventDefault(); showJobRegisterForm(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
+                                    <i class="fas fa-plus mr-2"></i>구인정보 등록
+                                </a>
                             </div>
                         </div>
-                        <div class="relative group">
-                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium">
-                                구직정보 <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        <div class="relative nav-dropdown">
+                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium py-2">
+                                구직정보 <i class="fas fa-chevron-down ml-1 text-xs transition-transform"></i>
                             </button>
-                            <div class="nav-dropdown-menu absolute left-0 top-full mt-2 w-48 bg-white shadow-xl rounded-lg border border-gray-100 py-2 hidden group-hover:block z-50">
-                                <a href="#" onclick="showJobSeekerListView()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">구직자 보기</a>
-                                <a href="#" onclick="showJobSeekerRegisterForm()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">구직정보 등록</a>
+                            <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 bg-white shadow-xl rounded-lg border border-gray-100 py-2 z-50">
+                                <a href="#jobseekers-view" onclick="event.preventDefault(); showJobSeekerListView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
+                                    <i class="fas fa-users mr-2"></i>구직자 보기
+                                </a>
+                                <a href="#jobseekers-register" onclick="event.preventDefault(); showJobSeekerRegisterForm(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
+                                    <i class="fas fa-user-plus mr-2"></i>구직정보 등록
+                                </a>
                             </div>
                         </div>
-                        <div class="relative group">
-                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium">
-                                유학지원 <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        <div class="relative nav-dropdown">
+                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium py-2">
+                                유학지원 <i class="fas fa-chevron-down ml-1 text-xs transition-transform"></i>
                             </button>
-                            <div class="nav-dropdown-menu absolute left-0 top-full mt-2 w-52 bg-white shadow-xl rounded-lg border border-gray-100 py-2 hidden group-hover:block z-50">
-                                <a href="#" onclick="showLanguageStudyView()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">어학연수 과정</a>
-                                <a href="#" onclick="showUndergraduateView()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">학부(학위) 과정</a>
-                                <a href="#" onclick="showGraduateView()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">석·박사 과정</a>
+                            <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-52 bg-white shadow-xl rounded-lg border border-gray-100 py-2 z-50">
+                                <a href="#study-language" onclick="event.preventDefault(); showLanguageStudyView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
+                                    <i class="fas fa-language mr-2"></i>어학연수 과정
+                                </a>
+                                <a href="#study-undergraduate" onclick="event.preventDefault(); showUndergraduateView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
+                                    <i class="fas fa-graduation-cap mr-2"></i>학부(학위) 과정
+                                </a>
+                                <a href="#study-graduate" onclick="event.preventDefault(); showGraduateView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
+                                    <i class="fas fa-university mr-2"></i>석·박사 과정
+                                </a>
                             </div>
                         </div>
                         <a href="/static/agent-dashboard?agentId=1" id="agent-menu" class="text-gray-700 hover:text-wowcampus-blue font-medium hidden">에이전트</a>
-                        <div class="flex items-center space-x-4">
-                            <a href="/static/login.html" id="login-menu" class="bg-wowcampus-blue text-white px-6 py-2 rounded-full font-medium hover:bg-wowcampus-dark transition-colors">로그인</a>
-                            <div id="user-menu" class="hidden flex items-center space-x-4">
-                                <span class="text-sm text-gray-600">환영합니다, <span id="user-name" class="font-medium">사용자님</span></span>
-                                <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-full font-medium hover:bg-red-600 transition-colors text-sm">
-                                    로그아웃
-                                </button>
-                            </div>
-                        </div>
                     </nav>
+                    
+                    <!-- Mobile Menu Button & Auth Buttons -->
+                    <div class="flex items-center space-x-4">
+                        <!-- Mobile Menu Toggle -->
+                        <button id="mobile-menu-btn" class="md:hidden text-gray-700 hover:text-wowcampus-blue">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        
+                        <!-- Auth Buttons (Always Visible) -->
+                        <div id="auth-buttons" class="flex items-center space-x-3" style="display: flex !important;">
+                            <a href="/static/login.html" id="login-btn" class="bg-wowcampus-blue text-white px-4 md:px-6 py-2 rounded-full font-medium hover:bg-wowcampus-dark transition-colors text-sm md:text-base" style="display: inline-block !important; background-color: #1E40AF !important; color: white !important;">
+                                <i class="fas fa-sign-in-alt mr-1 md:mr-2"></i>로그인
+                            </a>
+                            <a href="/static/register.html" id="register-btn" class="border-2 border-wowcampus-blue text-wowcampus-blue px-4 md:px-6 py-2 rounded-full font-medium hover:bg-wowcampus-blue hover:text-white transition-colors text-sm md:text-base" style="display: inline-block !important; border: 2px solid #1E40AF !important; color: #1E40AF !important;">
+                                <i class="fas fa-user-plus mr-1 md:mr-2"></i>회원가입
+                            </a>
+                        </div>
+                        
+                        <!-- User Menu (Hidden by default) -->
+                        <div id="user-menu" class="hidden flex items-center space-x-4">
+                            <span class="text-sm text-gray-600 hidden sm:inline">환영합니다, <span id="user-name" class="font-medium">사용자님</span></span>
+                            <button id="logout-btn" class="bg-red-500 text-white px-3 md:px-4 py-2 rounded-full font-medium hover:bg-red-600 transition-colors text-sm">
+                                <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobile-menu" class="md:hidden bg-white border-b-2 border-wowcampus-blue shadow-lg hidden">
+            <div class="container mx-auto px-6 py-4">
+                <nav class="space-y-4">
+                    <div class="border-b border-gray-200 pb-4">
+                        <button onclick="showJobListView(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
+                            <i class="fas fa-briefcase mr-3"></i>구인정보 보기
+                        </button>
+                        <button onclick="showJobRegisterForm(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-3"></i>구인정보 등록
+                        </button>
+                    </div>
+                    
+                    <div class="border-b border-gray-200 pb-4">
+                        <button onclick="showJobSeekerListView(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
+                            <i class="fas fa-users mr-3"></i>구직자 보기
+                        </button>
+                        <button onclick="showJobSeekerRegisterForm(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
+                            <i class="fas fa-user-plus mr-3"></i>구직정보 등록
+                        </button>
+                    </div>
+                    
+                    <div class="border-b border-gray-200 pb-4">
+                        <button onclick="showLanguageStudyView(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
+                            <i class="fas fa-language mr-3"></i>어학연수 과정
+                        </button>
+                        <button onclick="showUndergraduateView(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
+                            <i class="fas fa-graduation-cap mr-3"></i>학부(학위) 과정
+                        </button>
+                        <button onclick="showGraduateView(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
+                            <i class="fas fa-university mr-3"></i>석·박사 과정
+                        </button>
+                    </div>
+                    
+                    <div id="mobile-agent-menu" class="hidden">
+                        <a href="/static/agent-dashboard?agentId=1" class="block w-full text-left py-2 text-gray-700 hover:text-wowcampus-blue font-medium">
+                            <i class="fas fa-handshake mr-3"></i>에이전트
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </div>
 
         <!-- Main Content -->
         <main>

@@ -15,9 +15,13 @@ class JobPlatformApp {
         this.setupStudySubTabs();
         this.setupJobRegistration();
         this.setupJobSeekerRegistration();
-        this.setupUserNavigation(); // 사용자 네비게이션 설정
         this.loadInitialData();
         this.bindEvents();
+        
+        // DOM이 완전히 로드된 후 사용자 네비게이션 설정
+        setTimeout(() => {
+            this.setupUserNavigation();
+        }, 200);
     }
 
     setupTabs() {
@@ -64,8 +68,10 @@ class JobPlatformApp {
         await this.loadJobListings();
         await this.loadStatistics();
         
-        // 로그인 상태에 따른 UI 업데이트
-        this.updateAuthUI();
+        // 로그인 상태에 따른 UI 업데이트 (약간 지연)
+        setTimeout(() => {
+            this.updateAuthUI();
+        }, 100);
     }
 
     async loadTabData(tabId) {
@@ -886,39 +892,49 @@ class JobPlatformApp {
         const user = JSON.parse(localStorage.getItem('user') || 'null');
         const token = localStorage.getItem('token');
 
-        const loginMenu = document.getElementById('login-menu');
+        const authButtons = document.getElementById('auth-buttons');
         const agentMenu = document.getElementById('agent-menu');
+        const mobileAgentMenu = document.getElementById('mobile-agent-menu');
         const userMenu = document.getElementById('user-menu');
         const userName = document.getElementById('user-name');
         const logoutBtn = document.getElementById('logout-btn');
 
+        console.log('setupUserNavigation called:', { user, token, authButtons });
+
         if (user && token) {
             // 로그인 상태
-            if (loginMenu) loginMenu.classList.add('hidden');
+            if (authButtons) authButtons.classList.add('hidden');
             if (userMenu) userMenu.classList.remove('hidden');
-            if (userName) userName.textContent = user.name || user.email || '사용자님';
+            if (userName) userName.textContent = user.name || user.company_name || user.email || '사용자님';
 
-            // 사용자 유형별 메뉴 표시
-            if (user.type === 'agent' && agentMenu) {
-                agentMenu.classList.remove('hidden');
-                agentMenu.href = `/static/agent-dashboard?agentId=${user.id}`;
-            } else if (user.type === 'admin' && agentMenu) {
-                // 관리자는 모든 메뉴 접근 가능
-                agentMenu.classList.remove('hidden');
-                agentMenu.href = `/static/agent-dashboard?agentId=${user.id}`;
+            // 사용자 유형별 메뉴 표시 (데스크톱 & 모바일)
+            if (user.type === 'agent' || user.type === 'admin') {
+                if (agentMenu) {
+                    agentMenu.classList.remove('hidden');
+                    agentMenu.href = `/static/agent-dashboard?agentId=${user.id}`;
+                }
+                if (mobileAgentMenu) {
+                    mobileAgentMenu.classList.remove('hidden');
+                    const mobileAgentLink = mobileAgentMenu.querySelector('a');
+                    if (mobileAgentLink) {
+                        mobileAgentLink.href = `/static/agent-dashboard?agentId=${user.id}`;
+                    }
+                }
             }
 
-            // 로그아웃 버튼 이벤트
-            if (logoutBtn) {
+            // 로그아웃 버튼 이벤트 (중복 이벤트 방지)
+            if (logoutBtn && !logoutBtn.hasAttribute('data-event-bound')) {
                 logoutBtn.addEventListener('click', () => {
                     this.logout();
                 });
+                logoutBtn.setAttribute('data-event-bound', 'true');
             }
         } else {
             // 로그아웃 상태
-            if (loginMenu) loginMenu.classList.remove('hidden');
+            if (authButtons) authButtons.classList.remove('hidden');
             if (userMenu) userMenu.classList.add('hidden');
             if (agentMenu) agentMenu.classList.add('hidden');
+            if (mobileAgentMenu) mobileAgentMenu.classList.add('hidden');
         }
     }
 
@@ -931,12 +947,88 @@ class JobPlatformApp {
     }
 
     bindEvents() {
+        // 모바일 메뉴 토글
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+                const icon = mobileMenuBtn.querySelector('i');
+                if (mobileMenu.classList.contains('hidden')) {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                } else {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                }
+            });
+        }
+
+        // 데스크톱 드롭다운 메뉴 개선
+        this.setupDropdownMenus();
+        
         // 추가 이벤트 바인딩
         window.addEventListener('resize', () => {
-            // 반응형 처리
+            // 반응형 처리 - 데스크톱에서는 모바일 메뉴 숨김
+            if (window.innerWidth >= 768) {
+                if (mobileMenu) {
+                    mobileMenu.classList.add('hidden');
+                }
+                if (mobileMenuBtn) {
+                    const icon = mobileMenuBtn.querySelector('i');
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+            }
         });
 
-        // 검색 기능 등 추가 이벤트들
+        // 문서 클릭시 드롭다운 메뉴 닫기
+        document.addEventListener('click', (e) => {
+            const dropdowns = document.querySelectorAll('.nav-dropdown');
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+        });
+    }
+
+    setupDropdownMenus() {
+        const dropdowns = document.querySelectorAll('.nav-dropdown');
+        
+        dropdowns.forEach(dropdown => {
+            const button = dropdown.querySelector('.nav-dropdown-btn');
+            const menu = dropdown.querySelector('.nav-dropdown-menu');
+            const icon = button?.querySelector('i.fa-chevron-down');
+            
+            if (button && menu) {
+                // 호버 이벤트
+                dropdown.addEventListener('mouseenter', () => {
+                    dropdown.classList.add('active');
+                    if (icon) {
+                        icon.style.transform = 'rotate(180deg)';
+                    }
+                });
+                
+                dropdown.addEventListener('mouseleave', () => {
+                    dropdown.classList.remove('active');
+                    if (icon) {
+                        icon.style.transform = 'rotate(0deg)';
+                    }
+                });
+
+                // 클릭 이벤트 (터치 기기용)
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    dropdown.classList.toggle('active');
+                    if (icon) {
+                        const isActive = dropdown.classList.contains('active');
+                        icon.style.transform = isActive ? 'rotate(180deg)' : 'rotate(0deg)';
+                    }
+                });
+            }
+        });
     }
 
     // 로그인 상태 확인
@@ -991,6 +1083,13 @@ function showJobListView() {
     if (app) {
         app.switchTab('jobs');
         app.showJobView();
+        // 페이지 부드럽게 스크롤
+        setTimeout(() => {
+            document.getElementById('content-jobs')?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }, 100);
     }
 }
 
@@ -998,6 +1097,13 @@ function showJobRegisterForm() {
     if (app) {
         app.switchTab('jobs');
         app.showJobRegister();
+        // 페이지 부드럽게 스크롤
+        setTimeout(() => {
+            document.getElementById('content-jobs')?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }, 100);
     }
 }
 
@@ -1011,6 +1117,13 @@ function showJobSeekerListView() {
     if (app) {
         app.switchTab('jobseekers');
         app.showJobSeekerView();
+        // 페이지 부드럽게 스크롤
+        setTimeout(() => {
+            document.getElementById('content-jobseekers')?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }, 100);
     }
 }
 
@@ -1018,6 +1131,13 @@ function showJobSeekerRegisterForm() {
     if (app) {
         app.switchTab('jobseekers');
         app.showJobSeekerRegister();
+        // 페이지 부드럽게 스크롤
+        setTimeout(() => {
+            document.getElementById('content-jobseekers')?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }, 100);
     }
 }
 
@@ -1031,6 +1151,13 @@ function showLanguageStudyView() {
     if (app) {
         app.switchTab('study');
         app.showStudyLanguage();
+        // 페이지 부드럽게 스크롤
+        setTimeout(() => {
+            document.getElementById('content-study')?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }, 100);
     }
 }
 
@@ -1038,6 +1165,13 @@ function showUndergraduateView() {
     if (app) {
         app.switchTab('study');
         app.showStudyUndergraduate();
+        // 페이지 부드럽게 스크롤
+        setTimeout(() => {
+            document.getElementById('content-study')?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }, 100);
     }
 }
 
@@ -1045,6 +1179,28 @@ function showGraduateView() {
     if (app) {
         app.switchTab('study');
         app.showStudyGraduate();
+        // 페이지 부드럽게 스크롤
+        setTimeout(() => {
+            document.getElementById('content-study')?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }, 100);
+    }
+}
+
+// 모바일 메뉴 닫기 함수
+function closeMobileMenu() {
+    const mobileMenu = document.getElementById('mobile-menu');
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    
+    if (mobileMenu && mobileMenuBtn) {
+        mobileMenu.classList.add('hidden');
+        const icon = mobileMenuBtn.querySelector('i');
+        if (icon) {
+            icon.classList.remove('fa-times');
+            icon.classList.add('fa-bars');
+        }
     }
 }
 
