@@ -128,7 +128,7 @@ app.get('/', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>wow3D 외국인 구인구직 및 유학생 지원플랫폼</title>
+        <title>WOW-CAMPUS 외국인 구인구직 및 유학생 지원플랫폼</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <script>
@@ -136,8 +136,14 @@ app.get('/', (c) => {
             theme: {
               extend: {
                 colors: {
-                  primary: '#3B82F6',
-                  secondary: '#1E40AF'
+                  primary: '#1E40AF',
+                  secondary: '#3B82F6',
+                  accent: '#059669',
+                  kcampus: {
+                    blue: '#1E40AF',
+                    light: '#E0F2FE',
+                    dark: '#0F172A'
+                  }
                 }
               }
             }
@@ -156,55 +162,91 @@ app.get('/', (c) => {
             transform: translateY(0);
           }
           .nav-dropdown-btn:hover {
-            color: #3B82F6;
+            color: #1E40AF;
+          }
+          .hero-gradient {
+            background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #059669 100%);
+          }
+          .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+          }
+          .card-shadow:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+          }
+          .step-connector {
+            position: relative;
+          }
+          .step-connector::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -2rem;
+            width: 3rem;
+            height: 2px;
+            background: #CBD5E1;
+            z-index: 1;
+          }
+          @media (max-width: 768px) {
+            .step-connector::before {
+              display: none;
+            }
           }
         </style>
     </head>
-    <body class="bg-gray-50 min-h-screen">
+    <body class="bg-gray-50 min-h-screen font-sans">
         <!-- Header -->
-        <header class="bg-white shadow-sm border-b">
-            <div class="container mx-auto px-4 py-4">
+        <header class="bg-white shadow-md border-b-2 border-wowcampus-blue">
+            <div class="container mx-auto px-6 py-4">
                 <div class="flex justify-between items-center">
-                    <a href="/" class="flex items-center space-x-4 hover:opacity-80 transition-opacity cursor-pointer">
-                        <i class="fas fa-globe text-primary text-3xl"></i>
-                        <h1 class="text-2xl font-bold text-gray-800">wow3D 외국인 구인구직 및 유학생 지원플랫폼</h1>
+                    <a href="/" class="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer">
+                        <div class="w-10 h-10 bg-gradient-to-br from-wowcampus-blue to-accent rounded-lg flex items-center justify-center">
+                            <i class="fas fa-graduation-cap text-white text-xl"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <h1 class="text-2xl font-bold text-wowcampus-blue tracking-tight">WOW-CAMPUS</h1>
+                            <span class="text-xs text-gray-500">외국인 구인구직 및 유학 플랫폼</span>
+                        </div>
                     </a>
-                    <nav class="hidden md:flex space-x-6">
+                    <nav class="hidden md:flex items-center space-x-8">
                         <div class="relative group">
-                            <button class="nav-dropdown-btn text-gray-600 hover:text-primary flex items-center">
-                                구인 <i class="fas fa-chevron-down ml-1"></i>
+                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium">
+                                구인정보 <i class="fas fa-chevron-down ml-1 text-xs"></i>
                             </button>
-                            <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 bg-white shadow-lg rounded-lg border py-2 hidden group-hover:block z-50">
-                                <a href="#" onclick="showJobListView()" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-primary">구인정보 보기</a>
-                                <a href="#" onclick="showJobRegisterForm()" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-primary">구인정보 등록</a>
+                            <div class="nav-dropdown-menu absolute left-0 top-full mt-2 w-48 bg-white shadow-xl rounded-lg border border-gray-100 py-2 hidden group-hover:block z-50">
+                                <a href="#" onclick="showJobListView()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">구인정보 보기</a>
+                                <a href="#" onclick="showJobRegisterForm()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">구인정보 등록</a>
                             </div>
                         </div>
                         <div class="relative group">
-                            <button class="nav-dropdown-btn text-gray-600 hover:text-primary flex items-center">
-                                구직 <i class="fas fa-chevron-down ml-1"></i>
+                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium">
+                                구직정보 <i class="fas fa-chevron-down ml-1 text-xs"></i>
                             </button>
-                            <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 bg-white shadow-lg rounded-lg border py-2 hidden group-hover:block z-50">
-                                <a href="#" onclick="showJobSeekerListView()" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-primary">구직자 보기</a>
-                                <a href="#" onclick="showJobSeekerRegisterForm()" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-primary">구직정보 등록</a>
+                            <div class="nav-dropdown-menu absolute left-0 top-full mt-2 w-48 bg-white shadow-xl rounded-lg border border-gray-100 py-2 hidden group-hover:block z-50">
+                                <a href="#" onclick="showJobSeekerListView()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">구직자 보기</a>
+                                <a href="#" onclick="showJobSeekerRegisterForm()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">구직정보 등록</a>
                             </div>
                         </div>
                         <div class="relative group">
-                            <button class="nav-dropdown-btn text-gray-600 hover:text-primary flex items-center">
-                                유학 <i class="fas fa-chevron-down ml-1"></i>
+                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium">
+                                유학지원 <i class="fas fa-chevron-down ml-1 text-xs"></i>
                             </button>
-                            <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 bg-white shadow-lg rounded-lg border py-2 hidden group-hover:block z-50">
-                                <a href="#" onclick="showLanguageStudyView()" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-primary">어학연수</a>
-                                <a href="#" onclick="showUndergraduateView()" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-primary">학부(학위)과정</a>
-                                <a href="#" onclick="showGraduateView()" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-primary">석·박사과정</a>
+                            <div class="nav-dropdown-menu absolute left-0 top-full mt-2 w-52 bg-white shadow-xl rounded-lg border border-gray-100 py-2 hidden group-hover:block z-50">
+                                <a href="#" onclick="showLanguageStudyView()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">어학연수 과정</a>
+                                <a href="#" onclick="showUndergraduateView()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">학부(학위) 과정</a>
+                                <a href="#" onclick="showGraduateView()" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">석·박사 과정</a>
                             </div>
                         </div>
-                        <a href="/static/agent-dashboard?agentId=1" id="agent-menu" class="text-gray-600 hover:text-primary hidden">에이전트</a>
-                        <a href="/static/login.html" id="login-menu" class="text-gray-600 hover:text-primary">로그인</a>
-                        <div id="user-menu" class="hidden flex items-center space-x-4">
-                            <span class="text-sm text-gray-600">환영합니다, <span id="user-name">사용자님</span></span>
-                            <button id="logout-btn" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm">
-                                로그아웃
-                            </button>
+                        <a href="/static/agent-dashboard?agentId=1" id="agent-menu" class="text-gray-700 hover:text-wowcampus-blue font-medium hidden">에이전트</a>
+                        <div class="flex items-center space-x-4">
+                            <a href="/static/login.html" id="login-menu" class="bg-wowcampus-blue text-white px-6 py-2 rounded-full font-medium hover:bg-wowcampus-dark transition-colors">로그인</a>
+                            <div id="user-menu" class="hidden flex items-center space-x-4">
+                                <span class="text-sm text-gray-600">환영합니다, <span id="user-name" class="font-medium">사용자님</span></span>
+                                <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-full font-medium hover:bg-red-600 transition-colors text-sm">
+                                    로그아웃
+                                </button>
+                            </div>
                         </div>
                     </nav>
                 </div>
@@ -212,53 +254,135 @@ app.get('/', (c) => {
         </header>
 
         <!-- Main Content -->
-        <main class="container mx-auto px-4 py-8">
+        <main>
             <!-- Hero Section -->
-            <section class="text-center mb-12">
-                <h2 class="text-4xl font-bold text-gray-800 mb-4">
-                    외국인을 위한 한국 취업 & 유학 플랫폼
-                </h2>
-                <p class="text-xl text-gray-600 mb-8">
-                    해외 에이전트와 국내 기업을 연결하여 외국인 인재의 한국 진출을 지원합니다
-                </p>
-                <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <i class="fas fa-briefcase text-primary text-3xl mb-4"></i>
-                        <h3 class="text-xl font-semibold mb-2">구인구직 매칭</h3>
-                        <p class="text-gray-600">비자별, 직종별, 지역별 맞춤 매칭</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <i class="fas fa-graduation-cap text-primary text-3xl mb-4"></i>
-                        <h3 class="text-xl font-semibold mb-2">유학 지원</h3>
-                        <p class="text-gray-600">한국어 연수부터 학위과정까지</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow" onclick="handleAgentManagementClick()">
-                        <i class="fas fa-users text-primary text-3xl mb-4"></i>
-                        <h3 class="text-xl font-semibold mb-2">에이전트 관리</h3>
-                        <p class="text-gray-600">해외 에이전트별 구직자 관리</p>
+            <section class="hero-gradient relative overflow-hidden">
+                <div class="absolute inset-0 bg-black opacity-10"></div>
+                <div class="relative container mx-auto px-6 py-20 text-center">
+                    <div class="max-w-4xl mx-auto">
+                        <h1 class="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+                            WOW-CAMPUS
+                        </h1>
+                        <p class="text-xl md:text-2xl text-white/90 mb-4 font-light">
+                            외국인을 위한 한국 취업 & 유학 플랫폼
+                        </p>
+                        <p class="text-lg text-white/80 mb-12 max-w-3xl mx-auto leading-relaxed">
+                            해외 에이전트와 국내 기업을 연결하여 외국인 인재의 한국 진출을 지원합니다
+                        </p>
+                        
+                        <!-- 주요 서비스 CTA 버튼 -->
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+                            <button onclick="showJobListView()" class="bg-white text-wowcampus-blue px-8 py-4 rounded-full font-semibold hover:bg-gray-50 transition-all transform hover:-translate-y-1">
+                                <i class="fas fa-briefcase mr-2"></i>구인정보 보기
+                            </button>
+                            <button onclick="showJobSeekerListView()" class="bg-transparent border-2 border-white text-white px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-wowcampus-blue transition-all transform hover:-translate-y-1">
+                                <i class="fas fa-user-graduate mr-2"></i>구직자 보기
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
+            
+            <!-- 주요 서비스 소개 -->
+            <section class="py-20 bg-white">
+                <div class="container mx-auto px-6">
+                    <div class="text-center mb-16">
+                        <h2 class="text-4xl font-bold text-gray-800 mb-4">우리의 서비스</h2>
+                        <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                            외국인 구직자와 국내 기업을 연결하는 전문 플랫폼
+                        </p>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                        <div class="text-center card-shadow bg-white p-8 rounded-xl">
+                            <div class="w-16 h-16 bg-gradient-to-br from-wowcampus-blue to-secondary rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-briefcase text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">구인구직 매칭</h3>
+                            <p class="text-gray-600 leading-relaxed mb-6">비자별, 직종별, 지역별 맞춤 매칭 서비스로 최적의 일자리를 찾아드립니다</p>
+                            <a href="#" class="text-wowcampus-blue font-semibold hover:underline">자세히 보기 →</a>
+                        </div>
+                        
+                        <div class="text-center card-shadow bg-white p-8 rounded-xl">
+                            <div class="w-16 h-16 bg-gradient-to-br from-accent to-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-graduation-cap text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">유학 지원</h3>
+                            <p class="text-gray-600 leading-relaxed mb-6">한국어 연수부터 학위과정까지 전 과정에 대한 체계적 지원을 제공합니다</p>
+                            <a href="#" class="text-accent font-semibold hover:underline">자세히 보기 →</a>
+                        </div>
+                        
+                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer" onclick="handleAgentManagementClick()">
+                            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-users text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">에이전트 관리</h3>
+                            <p class="text-gray-600 leading-relaxed mb-6">해외 에이전트별 구직자 관리 및 지원 현황을 체계적으로 관리합니다</p>
+                            <a href="#" class="text-purple-500 font-semibold hover:underline">자세히 보기 →</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 이용 절차 안내 -->
+            <section class="py-20 bg-wowcampus-light">
+                <div class="container mx-auto px-6">
+                    <div class="text-center mb-16">
+                        <h2 class="text-4xl font-bold text-gray-800 mb-4">이용 절차</h2>
+                        <p class="text-xl text-gray-600">간단한 3단계로 시작하세요</p>
+                    </div>
+                    
+                    <div class="max-w-4xl mx-auto">
+                        <div class="grid md:grid-cols-3 gap-8">
+                            <div class="text-center step-connector">
+                                <div class="w-20 h-20 bg-wowcampus-blue rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <span class="text-2xl font-bold text-white">1</span>
+                                </div>
+                                <h3 class="text-xl font-semibold text-gray-800 mb-3">회원가입</h3>
+                                <p class="text-gray-600">간단한 정보 입력으로 <br>회원가입을 완료하세요</p>
+                            </div>
+                            
+                            <div class="text-center step-connector">
+                                <div class="w-20 h-20 bg-accent rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <span class="text-2xl font-bold text-white">2</span>
+                                </div>
+                                <h3 class="text-xl font-semibold text-gray-800 mb-3">정보 등록</h3>
+                                <p class="text-gray-600">구직 또는 구인 정보를 <br>등록하고 매칭을 기다리세요</p>
+                            </div>
+                            
+                            <div class="text-center">
+                                <div class="w-20 h-20 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <span class="text-2xl font-bold text-white">3</span>
+                                </div>
+                                <h3 class="text-xl font-semibold text-gray-800 mb-3">매칭 성공</h3>
+                                <p class="text-gray-600">전문 에이전트의 도움으로 <br>성공적인 취업 또는 인재 발굴</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <div class="container mx-auto px-6 py-12">
 
             <!-- Dashboard Tabs -->
             <section class="mb-12">
-                <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div class="border-b">
-                        <div class="flex">
-                            <button id="tab-jobs" class="tab-button px-6 py-4 bg-primary text-white border-b-2 border-primary">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden card-shadow">
+                    <div class="border-b border-gray-100">
+                        <div class="flex overflow-x-auto">
+                            <button id="tab-jobs" class="tab-button px-6 py-4 bg-wowcampus-blue text-white border-b-3 border-wowcampus-blue whitespace-nowrap font-medium">
                                 <i class="fas fa-briefcase mr-2"></i>구인 정보
                             </button>
-                            <button id="tab-jobseekers" class="tab-button px-6 py-4 text-gray-600 hover:bg-gray-50">
+                            <button id="tab-jobseekers" class="tab-button px-6 py-4 text-gray-600 hover:bg-wowcampus-light hover:text-wowcampus-blue whitespace-nowrap font-medium transition-all">
                                 <i class="fas fa-users mr-2"></i>구직정보
                             </button>
-                            <button id="tab-matching" class="tab-button px-6 py-4 text-gray-600 hover:bg-gray-50">
-                                <i class="fas fa-handshake mr-2"></i>매칭
+                            <button id="tab-matching" class="tab-button px-6 py-4 text-gray-600 hover:bg-wowcampus-light hover:text-wowcampus-blue whitespace-nowrap font-medium transition-all">
+                                <i class="fas fa-handshake mr-2"></i>매칭 서비스
                             </button>
-                            <button id="tab-study" class="tab-button px-6 py-4 text-gray-600 hover:bg-gray-50">
+                            <button id="tab-study" class="tab-button px-6 py-4 text-gray-600 hover:bg-wowcampus-light hover:text-wowcampus-blue whitespace-nowrap font-medium transition-all">
                                 <i class="fas fa-graduation-cap mr-2"></i>유학 프로그램
                             </button>
-                            <button id="tab-stats" class="tab-button px-6 py-4 text-gray-600 hover:bg-gray-50">
-                                <i class="fas fa-chart-bar mr-2"></i>통계
+                            <button id="tab-stats" class="tab-button px-6 py-4 text-gray-600 hover:bg-wowcampus-light hover:text-wowcampus-blue whitespace-nowrap font-medium transition-all">
+                                <i class="fas fa-chart-bar mr-2"></i>통계 대시보드
                             </button>
                         </div>
                     </div>
@@ -1008,12 +1132,74 @@ app.get('/', (c) => {
                     </div>
                 </div>
             </section>
+            </div>
         </main>
 
         <!-- Footer -->
-        <footer class="bg-gray-800 text-white py-8">
-            <div class="container mx-auto px-4 text-center">
-                <p>&copy; 2025 wow3D 외국인 구인구직 및 유학생 지원플랫폼. All rights reserved.</p>
+        <footer class="bg-wowcampus-dark text-white py-16">
+            <div class="container mx-auto px-6">
+                <div class="grid md:grid-cols-4 gap-8 mb-8">
+                    <div class="col-span-2">
+                        <div class="flex items-center space-x-3 mb-6">
+                            <div class="w-12 h-12 bg-gradient-to-br from-wowcampus-blue to-accent rounded-lg flex items-center justify-center">
+                                <i class="fas fa-graduation-cap text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold">WOW-CAMPUS</h3>
+                                <span class="text-gray-300 text-sm">외국인 구인구직 및 유학 플랫폼</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 mb-4 leading-relaxed">
+                            외국인 인재와 국내 기업을 연결하는 전문 플랫폼입니다. <br>
+                            전문 에이전트와 함께 성공적인 취업과 유학을 지원합니다.
+                        </p>
+                        <div class="flex space-x-4">
+                            <a href="#" class="text-gray-300 hover:text-white transition-colors">
+                                <i class="fab fa-facebook-f text-xl"></i>
+                            </a>
+                            <a href="#" class="text-gray-300 hover:text-white transition-colors">
+                                <i class="fab fa-twitter text-xl"></i>
+                            </a>
+                            <a href="#" class="text-gray-300 hover:text-white transition-colors">
+                                <i class="fab fa-linkedin-in text-xl"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-lg font-semibold mb-4">서비스</h4>
+                        <ul class="space-y-2 text-gray-300">
+                            <li><a href="#" class="hover:text-white transition-colors">구인정보</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">구직정보</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">유학지원</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">에이전트</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-lg font-semibold mb-4">고객지원</h4>
+                        <ul class="space-y-2 text-gray-300">
+                            <li><a href="#" class="hover:text-white transition-colors">공지사항</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">FAQ</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">문의하기</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">이용약관</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">개인정보처리방침</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="border-t border-gray-700 pt-8">
+                    <div class="flex flex-col md:flex-row justify-between items-center">
+                        <p class="text-gray-400 text-sm">
+                            &copy; 2025 WOW-CAMPUS 외국인 구인구직 및 유학생 지원플랫폼. All rights reserved.
+                        </p>
+                        <div class="flex space-x-6 mt-4 md:mt-0">
+                            <a href="#" class="text-gray-400 hover:text-white text-sm transition-colors">이용약관</a>
+                            <a href="#" class="text-gray-400 hover:text-white text-sm transition-colors">개인정보처리방침</a>
+                            <a href="#" class="text-gray-400 hover:text-white text-sm transition-colors">쿠키정책</a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </footer>
 
