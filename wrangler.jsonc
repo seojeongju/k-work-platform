@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "webapp",
+  "name": "wow-campus",
   "compatibility_date": "2025-08-25",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
@@ -24,7 +24,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "job-platform-production",
+      "database_name": "wow-campus-production",
       "database_id": "placeholder-id-will-be-set-when-deployed"
     }
   ],
