@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단 탭 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        wowcampus: {
+                            blue: '#1E40AF',
+                            light: '#E0F2FE',
+                            dark: '#0F172A'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-6 py-8">
+        <h1 class="text-2xl font-bold mb-6">탭 클릭 테스트</h1>
+        
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex">
+                    <button onclick="switchTab('profile')" id="tab-profile" class="px-6 py-4 text-sm font-medium border-b-2 border-wowcampus-blue text-wowcampus-blue">
+                        <i class="fas fa-user mr-2"></i>내 프로필
+                    </button>
+                    <button onclick="switchTab('applications')" id="tab-applications" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-paper-plane mr-2"></i>지원 내역
+                    </button>
+                    <button onclick="switchTab('matches')" id="tab-matches" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-handshake mr-2"></i>매칭 결과
+                    </button>
+                    <button onclick="switchTab('jobs')" id="tab-jobs" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-briefcase mr-2"></i>추천 구인공고
+                    </button>
+                    <button onclick="switchTab('documents')" id="tab-documents" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-file-alt mr-2"></i>서류 관리
+                    </button>
+                </nav>
+            </div>
+
+            <div class="p-6">
+                <div id="content-profile" class="tab-content">
+                    <h2 class="text-xl font-semibold mb-4 text-green-600">✅ 프로필 탭 활성화됨</h2>
+                    <p>현재 탭: <span class="font-bold text-wowcampus-blue">프로필</span></p>
+                </div>
+                
+                <div id="content-applications" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-green-600">✅ 지원 내역 탭 활성화됨</h2>
+                    <p>현재 탭: <span class="font-bold text-wowcampus-blue">지원 내역</span></p>
+                </div>
+                
+                <div id="content-matches" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-green-600">✅ 매칭 결과 탭 활성화됨</h2>
+                    <p>현재 탭: <span class="font-bold text-wowcampus-blue">매칭 결과</span></p>
+                </div>
+                
+                <div id="content-jobs" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-green-600">✅ 추천 구인공고 탭 활성화됨</h2>
+                    <p>현재 탭: <span class="font-bold text-wowcampus-blue">추천 구인공고</span></p>
+                </div>
+                
+                <div id="content-documents" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-green-600">✅ 서류 관리 탭 활성화됨</h2>
+                    <p>현재 탭: <span class="font-bold text-wowcampus-blue">서류 관리</span></p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="debug-info" class="bg-blue-50 p-4 rounded-lg">
+            <h3 class="font-bold mb-2">디버그 정보:</h3>
+            <div id="debug-log" class="text-sm font-mono"></div>
+        </div>
+    </div>
+
+    <script>
+        let debugLog = [];
+        
+        function log(message) {
+            debugLog.push(`[${new Date().toLocaleTimeString()}] ${message}`);
+            document.getElementById('debug-log').innerHTML = debugLog.slice(-10).join('<br>');
+            console.log(message);
+        }
+
+        function switchTab(tabName) {
+            log(`switchTab 호출됨: ${tabName}`);
+            
+            try {
+                // 모든 탭 버튼 상태 변경
+                const allTabs = document.querySelectorAll('[id^="tab-"]');
+                log(`탭 버튼 개수: ${allTabs.length}`);
+                
+                allTabs.forEach(tab => {
+                    tab.classList.remove('border-wowcampus-blue', 'text-wowcampus-blue');
+                    tab.classList.add('border-transparent', 'text-gray-600');
+                });
+
+                // 활성 탭 설정
+                const activeTab = document.getElementById(`tab-${tabName}`);
+                if (activeTab) {
+                    activeTab.classList.remove('border-transparent', 'text-gray-600');
+                    activeTab.classList.add('border-wowcampus-blue', 'text-wowcampus-blue');
+                    log(`활성 탭 설정됨: tab-${tabName}`);
+                } else {
+                    log(`ERROR: 탭을 찾을 수 없음: tab-${tabName}`);
+                }
+
+                // 모든 컨텐츠 숨기기
+                const allContents = document.querySelectorAll('.tab-content');
+                log(`컨텐츠 개수: ${allContents.length}`);
+                
+                allContents.forEach(content => {
+                    content.classList.add('hidden');
+                });
+
+                // 활성 컨텐츠 표시
+                const activeContent = document.getElementById(`content-${tabName}`);
+                if (activeContent) {
+                    activeContent.classList.remove('hidden');
+                    log(`활성 컨텐츠 표시됨: content-${tabName}`);
+                } else {
+                    log(`ERROR: 컨텐츠를 찾을 수 없음: content-${tabName}`);
+                }
+                
+                log(`탭 전환 완료: ${tabName}`);
+            } catch (error) {
+                log(`ERROR: ${error.message}`);
+            }
+        }
+        
+        // 페이지 로드 시 초기 로그
+        document.addEventListener('DOMContentLoaded', function() {
+            log('페이지 로드 완료');
+            log('초기 상태: profile 탭 활성화');
+        });
+    </script>
+</body>
+</html>

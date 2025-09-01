@@ -628,6 +628,10 @@ class JobPlatformApp {
         // 컨텐츠 표시/숨김
         document.getElementById('job-view-section').classList.add('hidden');
         document.getElementById('job-register-section').classList.remove('hidden');
+        
+        // 에이전트 목록 로드
+        this.loadAgentsForSelection();
+        this.setupAgentSelection();
     }
     
     setupJobRegistration() {
@@ -653,7 +657,11 @@ class JobPlatformApp {
             positions: parseInt(document.getElementById('positions').value) || 1,
             korean_level: document.getElementById('korean-level').value,
             description: document.getElementById('job-description').value,
-            job_category: this.getJobCategoryFromTitle(document.getElementById('job-title').value)
+            job_category: this.getJobCategoryFromTitle(document.getElementById('job-title').value),
+            // 에이전트 관련 정보
+            agent_id: document.getElementById('agent-select').value || null,
+            agent_fee_percentage: document.getElementById('agent-fee').value ? parseFloat(document.getElementById('agent-fee').value) : null,
+            agent_notes: document.getElementById('agent-notes').value || null
         };
         
         try {
@@ -907,20 +915,8 @@ class JobPlatformApp {
             if (userMenu) userMenu.classList.remove('hidden');
             if (userName) userName.textContent = user.name || user.company_name || user.email || '사용자님';
 
-            // 사용자 유형별 메뉴 표시 (데스크톱 & 모바일)
-            if (user.type === 'agent' || user.type === 'admin') {
-                if (agentMenu) {
-                    agentMenu.classList.remove('hidden');
-                    agentMenu.href = `/static/agent-dashboard?agentId=${user.id}`;
-                }
-                if (mobileAgentMenu) {
-                    mobileAgentMenu.classList.remove('hidden');
-                    const mobileAgentLink = mobileAgentMenu.querySelector('a');
-                    if (mobileAgentLink) {
-                        mobileAgentLink.href = `/static/agent-dashboard?agentId=${user.id}`;
-                    }
-                }
-            }
+            // 권한별 메뉴 업데이트
+            this.updateMenusByUserType(user.type, user.id);
 
             // 로그아웃 버튼 이벤트 (중복 이벤트 방지)
             if (logoutBtn && !logoutBtn.hasAttribute('data-event-bound')) {
@@ -935,6 +931,142 @@ class JobPlatformApp {
             if (userMenu) userMenu.classList.add('hidden');
             if (agentMenu) agentMenu.classList.add('hidden');
             if (mobileAgentMenu) mobileAgentMenu.classList.add('hidden');
+            
+            // 기본 메뉴로 복원
+            this.updateMenusByUserType('guest');
+        }
+    }
+
+    updateMenusByUserType(userType, userId = null) {
+        const agentMenu = document.getElementById('agent-menu');
+        const mobileAgentMenu = document.getElementById('mobile-agent-menu');
+        
+        // 기본 메뉴 텍스트 업데이트
+        this.updateMenuLabels(userType);
+        
+        // 권한별 메뉴 표시/숨김
+        switch(userType) {
+            case 'admin':
+                // 관리자 메뉴 표시
+                if (agentMenu) {
+                    agentMenu.classList.remove('hidden');
+                    agentMenu.textContent = '관리자';
+                    agentMenu.href = `/static/admin-dashboard.html`;
+                }
+                if (mobileAgentMenu) {
+                    mobileAgentMenu.classList.remove('hidden');
+                    const mobileAgentLink = mobileAgentMenu.querySelector('a');
+                    if (mobileAgentLink) {
+                        mobileAgentLink.textContent = '관리자 대시보드';
+                        mobileAgentLink.href = `/static/admin-dashboard.html`;
+                    }
+                }
+                break;
+            case 'agent':
+                // 에이전트 메뉴 표시
+                if (agentMenu) {
+                    agentMenu.classList.remove('hidden');
+                    agentMenu.textContent = '에이전트';
+                    agentMenu.href = `/static/agent-dashboard?agentId=${userId}`;
+                }
+                if (mobileAgentMenu) {
+                    mobileAgentMenu.classList.remove('hidden');
+                    const mobileAgentLink = mobileAgentMenu.querySelector('a');
+                    if (mobileAgentLink) {
+                        mobileAgentLink.textContent = '에이전트 대시보드';
+                        mobileAgentLink.href = `/static/agent-dashboard?agentId=${userId}`;
+                    }
+                }
+                break;
+            case 'employer':
+                // 구인기업 전용 메뉴
+                if (agentMenu) agentMenu.classList.add('hidden');
+                if (mobileAgentMenu) mobileAgentMenu.classList.add('hidden');
+                break;
+            case 'jobseeker':
+                // 구직자 전용 메뉴
+                if (agentMenu) agentMenu.classList.add('hidden');
+                if (mobileAgentMenu) mobileAgentMenu.classList.add('hidden');
+                break;
+            case 'guest':
+            default:
+                // 비로그인 상태
+                if (agentMenu) agentMenu.classList.add('hidden');
+                if (mobileAgentMenu) mobileAgentMenu.classList.add('hidden');
+                break;
+        }
+    }
+
+    updateMenuLabels(userType) {
+        // 구인정보 메뉴 텍스트 업데이트
+        const jobViewLinks = document.querySelectorAll('[onclick*="showJobListView"]');
+        const jobRegisterLinks = document.querySelectorAll('[onclick*="showJobRegisterForm"]');
+        
+        // 구직정보 메뉴 텍스트 업데이트
+        const jobSeekerViewLinks = document.querySelectorAll('[onclick*="showJobSeekerListView"]');
+        const jobSeekerRegisterLinks = document.querySelectorAll('[onclick*="showJobSeekerRegisterForm"]');
+
+        switch(userType) {
+            case 'employer':
+                // 구인기업용 메뉴
+                jobViewLinks.forEach(link => {
+                    const icon = link.querySelector('i');
+                    const iconClass = icon ? icon.className : 'fas fa-edit';
+                    link.innerHTML = `<i class="${iconClass} mr-2"></i>내 구인정보 관리`;
+                });
+                jobRegisterLinks.forEach(link => {
+                    const icon = link.querySelector('i');
+                    const iconClass = icon ? icon.className : 'fas fa-plus';
+                    link.innerHTML = `<i class="${iconClass} mr-2"></i>구인정보 등록`;
+                });
+                break;
+                
+            case 'jobseeker':
+                // 구직자용 메뉴
+                jobSeekerViewLinks.forEach(link => {
+                    const icon = link.querySelector('i');
+                    const iconClass = icon ? icon.className : 'fas fa-user';
+                    link.innerHTML = `<i class="${iconClass} mr-2"></i>내 프로필 관리`;
+                });
+                jobSeekerRegisterLinks.forEach(link => {
+                    const icon = link.querySelector('i');
+                    const iconClass = icon ? icon.className : 'fas fa-file-alt';
+                    link.innerHTML = `<i class="${iconClass} mr-2"></i>지원 이력`;
+                });
+                break;
+                
+            case 'admin':
+                // 관리자용 메뉴 (기본값 유지)
+                break;
+                
+            case 'agent':
+                // 에이전트용 메뉴 (기본값 유지)
+                break;
+                
+            case 'guest':
+            default:
+                // 비로그인용 메뉴 (기본값 유지)
+                jobViewLinks.forEach(link => {
+                    const icon = link.querySelector('i');
+                    const iconClass = icon ? icon.className : 'fas fa-list';
+                    link.innerHTML = `<i class="${iconClass} mr-2"></i>구인정보 보기`;
+                });
+                jobRegisterLinks.forEach(link => {
+                    const icon = link.querySelector('i');
+                    const iconClass = icon ? icon.className : 'fas fa-plus';
+                    link.innerHTML = `<i class="${iconClass} mr-2"></i>구인정보 등록`;
+                });
+                jobSeekerViewLinks.forEach(link => {
+                    const icon = link.querySelector('i');
+                    const iconClass = icon ? icon.className : 'fas fa-users';
+                    link.innerHTML = `<i class="${iconClass} mr-2"></i>구직자 보기`;
+                });
+                jobSeekerRegisterLinks.forEach(link => {
+                    const icon = link.querySelector('i');
+                    const iconClass = icon ? icon.className : 'fas fa-user-plus';
+                    link.innerHTML = `<i class="${iconClass} mr-2"></i>구직정보 등록`;
+                });
+                break;
         }
     }
 
@@ -1039,12 +1171,21 @@ class JobPlatformApp {
 
     // 로그인 상태에 따른 UI 업데이트
     updateAuthUI() {
+        // 로그인 상태 재확인
+        this.checkAuthStatus();
+        
         setTimeout(() => {
+            // 사용자 네비게이션 업데이트
+            this.setupUserNavigation();
+            
             // 구인정보 자세히 보기 버튼 업데이트
             document.querySelectorAll('.job-detail-text').forEach(btn => {
                 if (!this.isLoggedIn) {
                     btn.innerHTML = '<i class="fas fa-lock mr-1"></i>로그인 필요';
                     btn.parentElement.classList.add('opacity-75');
+                } else {
+                    btn.innerHTML = '자세히 보기';
+                    btn.parentElement.classList.remove('opacity-75');
                 }
             });
 
@@ -1053,6 +1194,9 @@ class JobPlatformApp {
                 if (!this.isLoggedIn) {
                     btn.innerHTML = '<i class="fas fa-lock mr-1"></i>로그인 필요';
                     btn.parentElement.classList.add('opacity-75');
+                } else {
+                    btn.innerHTML = '프로필 보기';
+                    btn.parentElement.classList.remove('opacity-75');
                 }
             });
         }, 500); // DOM 렌더링 후 실행
@@ -1076,34 +1220,131 @@ ${contentType}의 상세 내용을 보시려면 먼저 로그인해주세요.
             window.location.href = '/static/login.html';
         }
     }
+
+    // 에이전트 목록 로드
+    async loadAgentsForSelection() {
+        try {
+            const response = await fetch('/api/agents/active');
+            if (response.ok) {
+                const agents = await response.json();
+                const agentSelect = document.getElementById('agent-select');
+                
+                if (agentSelect) {
+                    // 기존 옵션 제거 (첫 번째 옵션 제외)
+                    while (agentSelect.children.length > 1) {
+                        agentSelect.removeChild(agentSelect.lastChild);
+                    }
+                    
+                    // 에이전트 옵션 추가
+                    agents.forEach(agent => {
+                        const option = document.createElement('option');
+                        option.value = agent.id;
+                        option.textContent = `${agent.company_name} (${agent.contact_person}) - ${agent.country}`;
+                        agentSelect.appendChild(option);
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('에이전트 목록 로드 실패:', error);
+        }
+    }
+
+    // 에이전트 선택 시 UI 업데이트 설정
+    setupAgentSelection() {
+        const agentSelect = document.getElementById('agent-select');
+        const agentFeeInput = document.getElementById('agent-fee');
+        const agentNotesTextarea = document.getElementById('agent-notes');
+        
+        if (agentSelect && agentFeeInput && agentNotesTextarea) {
+            agentSelect.addEventListener('change', (e) => {
+                const isAgentSelected = e.target.value !== '';
+                
+                // 에이전트가 선택된 경우 수수료 및 노트 필드 활성화
+                agentFeeInput.disabled = !isAgentSelected;
+                agentNotesTextarea.disabled = !isAgentSelected;
+                
+                if (!isAgentSelected) {
+                    agentFeeInput.value = '';
+                    agentNotesTextarea.value = '';
+                } else {
+                    // 기본 수수료율 설정 (필요에 따라 조정)
+                    if (!agentFeeInput.value) {
+                        agentFeeInput.value = '5.0';
+                    }
+                }
+            });
+        }
+    }
 }
 
-// 네비게이션 드롭다운 함수들
+// 네비게이션 드롭다운 함수들 - 권한별 라우팅
 function showJobListView() {
-    if (app) {
-        app.switchTab('jobs');
-        app.showJobView();
-        // 페이지 부드럽게 스크롤
-        setTimeout(() => {
-            document.getElementById('content-jobs')?.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-        }, 100);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        // 비로그인 상태 - 일반 구인정보 보기
+        if (app) {
+            app.switchTab('jobs');
+            app.showJobView();
+            setTimeout(() => {
+                document.getElementById('content-jobs')?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }, 100);
+        }
+    } else if (user.type === 'employer') {
+        // 구인기업 - 내 구인정보 관리 페이지로 이동
+        window.location.href = `/static/employer-dashboard.html?employerId=${user.id}`;
+    } else {
+        // 기타 로그인 사용자 - 일반 구인정보 보기
+        if (app) {
+            app.switchTab('jobs');
+            app.showJobView();
+            setTimeout(() => {
+                document.getElementById('content-jobs')?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }, 100);
+        }
     }
 }
 
 function showJobRegisterForm() {
-    if (app) {
-        app.switchTab('jobs');
-        app.showJobRegister();
-        // 페이지 부드럽게 스크롤
-        setTimeout(() => {
-            document.getElementById('content-jobs')?.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-        }, 100);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        // 비로그인 상태 - 로그인 요구
+        if (confirm('구인정보 등록은 로그인이 필요합니다.\n로그인하시겠습니까?')) {
+            window.location.href = '/static/login.html';
+        }
+        return;
+    }
+    
+    if (user.type === 'employer') {
+        // 구인기업 - 구인정보 등록 페이지로 이동
+        window.location.href = `/static/job-register.html?employerId=${user.id}`;
+    } else if (user.type === 'agent' || user.type === 'admin') {
+        // 에이전트/관리자 - 기본 등록 폼
+        if (app) {
+            app.switchTab('jobs');
+            app.showJobRegister();
+            setTimeout(() => {
+                document.getElementById('content-jobs')?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }, 100);
+        }
+    } else {
+        // 구직자 등 - 권한 없음 알림
+        alert('구인정보 등록은 기업 회원만 가능합니다.\n기업 회원으로 회원가입하시겠습니까?');
+        if (confirm('기업 회원가입 페이지로 이동하시겠습니까?')) {
+            window.location.href = '/static/register.html?type=employer';
+        }
     }
 }
 
@@ -1114,30 +1355,69 @@ function resetJobForm() {
 }
 
 function showJobSeekerListView() {
-    if (app) {
-        app.switchTab('jobseekers');
-        app.showJobSeekerView();
-        // 페이지 부드럽게 스크롤
-        setTimeout(() => {
-            document.getElementById('content-jobseekers')?.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-        }, 100);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        // 비로그인 상태 - 일반 구직자 보기 (제한적)
+        if (app) {
+            app.switchTab('jobseekers');
+            app.showJobSeekerView();
+            setTimeout(() => {
+                document.getElementById('content-jobseekers')?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }, 100);
+        }
+    } else if (user.type === 'jobseeker') {
+        // 구직자 - 내 프로필 관리 페이지로 이동
+        window.location.href = `/static/jobseeker-profile.html?jobSeekerId=${user.id}`;
+    } else {
+        // 기타 로그인 사용자 - 일반 구직자 보기
+        if (app) {
+            app.switchTab('jobseekers');
+            app.showJobSeekerView();
+            setTimeout(() => {
+                document.getElementById('content-jobseekers')?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }, 100);
+        }
     }
 }
 
 function showJobSeekerRegisterForm() {
-    if (app) {
-        app.switchTab('jobseekers');
-        app.showJobSeekerRegister();
-        // 페이지 부드럽게 스크롤
-        setTimeout(() => {
-            document.getElementById('content-jobseekers')?.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-        }, 100);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        // 비로그인 상태 - 구직자 회원가입으로 이동
+        if (confirm('구직정보 등록은 회원가입이 필요합니다.\n구직자로 회원가입하시겠습니까?')) {
+            window.location.href = '/static/register.html?type=jobseeker';
+        }
+        return;
+    }
+    
+    if (user.type === 'jobseeker') {
+        // 구직자 - 지원 이력 관리 페이지로 이동
+        window.location.href = `/static/application-history.html?jobSeekerId=${user.id}`;
+    } else if (user.type === 'agent' || user.type === 'admin') {
+        // 에이전트/관리자 - 구직자 등록 폼
+        if (app) {
+            app.switchTab('jobseekers');
+            app.showJobSeekerRegister();
+            setTimeout(() => {
+                document.getElementById('content-jobseekers')?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }, 100);
+        }
+    } else {
+        // 기업 등 - 권한 없음 알림
+        alert('구직정보는 구직자 본인 또는 에이전트만 등록할 수 있습니다.');
     }
 }
 

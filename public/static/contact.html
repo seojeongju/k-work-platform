@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문의하기 - WOW-CAMPUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wowcampus-blue': '#1E40AF',
+                        'wowcampus-dark': '#0F172A',
+                        'wowcampus-light': '#E0F2FE',
+                        'accent': '#059669'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-graduation-cap text-4xl text-wowcampus-blue"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">WOW-CAMPUS</h1>
+                        <p class="text-sm text-gray-600">글로벌 취업 플랫폼</p>
+                    </div>
+                </div>
+                <nav class="flex space-x-6">
+                    <a href="/" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-home mr-2"></i>홈
+                    </a>
+                    <a href="/static/jobseeker-profile" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-briefcase mr-2"></i>채용정보
+                    </a>
+                    <a href="/static/login" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-sign-in-alt mr-2"></i>로그인
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="text-center mb-12">
+            <div class="bg-gradient-to-r from-wowcampus-blue to-accent text-white p-8 rounded-lg shadow-lg">
+                <h1 class="text-4xl font-bold mb-4">
+                    <i class="fas fa-envelope mr-3"></i>문의하기
+                </h1>
+                <p class="text-lg opacity-90">궁금한 점이나 문의사항이 있으시면 언제든지 연락주세요</p>
+            </div>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-8">
+            <!-- Contact Information -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                        <i class="fas fa-phone-alt text-wowcampus-blue mr-2"></i>연락처 정보
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        <!-- Phone -->
+                        <div class="flex items-start">
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-phone text-wowcampus-blue text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">전화 문의</h3>
+                                <p class="text-gray-600">02-3144-3137 / 054-464-3137</p>
+                                <p class="text-sm text-gray-500">평일 09:00 - 18:00</p>
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="flex items-start">
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-envelope text-accent text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">이메일 문의</h3>
+                                <p class="text-gray-600">wow3d16@naver.com</p>
+                                <p class="text-sm text-gray-500">24시간 접수 가능</p>
+                            </div>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="flex items-start">
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-map-marker-alt text-purple-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">오시는 길</h3>
+                                <div class="text-gray-600 space-y-1">
+                                    <p><strong>서울본사:</strong> 서울시 마포구 독막로 93 상수빌딩 4층</p>
+                                    <p><strong>구미지사:</strong> 경북 구미시 산호대로 253 구미첨단의료기술타워 606호</p>
+                                    <p><strong>전주지사:</strong> 전북특별자치도 전주시 덕진구 반룡로 테크노빌 109호</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat -->
+                        <div class="flex items-start">
+                            <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-comments text-orange-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">라이브 채팅</h3>
+                                <p class="text-gray-600">실시간 상담 가능</p>
+                                <button class="text-sm bg-orange-600 text-white px-3 py-1 rounded-full hover:bg-orange-700 transition-colors mt-1">
+                                    채팅 시작
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Operating Hours -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">
+                        <i class="fas fa-clock text-wowcampus-blue mr-2"></i>운영시간
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">월요일 - 금요일</span>
+                            <span class="font-semibold">09:00 - 18:00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">토요일</span>
+                            <span class="font-semibold">10:00 - 16:00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">일요일 및 공휴일</span>
+                            <span class="text-red-500 font-semibold">휴무</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3 bg-wowcampus-light rounded-lg">
+                        <p class="text-wowcampus-blue text-sm">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            점심시간: 12:00 - 13:00
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Form -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                        <i class="fas fa-edit text-wowcampus-blue mr-2"></i>문의 양식
+                    </h2>
+
+                    <form id="contact-form" class="space-y-6">
+                        <!-- Contact Type -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">문의 유형</label>
+                            <div class="grid md:grid-cols-2 gap-3">
+                                <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="contactType" value="general" class="mr-3" required>
+                                    <div>
+                                        <div class="font-medium">일반 문의</div>
+                                        <div class="text-sm text-gray-500">서비스 관련 질문</div>
+                                    </div>
+                                </label>
+                                <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="contactType" value="technical" class="mr-3">
+                                    <div>
+                                        <div class="font-medium">기술 지원</div>
+                                        <div class="text-sm text-gray-500">사이트 이용 문제</div>
+                                    </div>
+                                </label>
+                                <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="contactType" value="business" class="mr-3">
+                                    <div>
+                                        <div class="font-medium">사업 제휴</div>
+                                        <div class="text-sm text-gray-500">파트너십 문의</div>
+                                    </div>
+                                </label>
+                                <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="contactType" value="complaint" class="mr-3">
+                                    <div>
+                                        <div class="font-medium">불만사항</div>
+                                        <div class="text-sm text-gray-500">개선 요청</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Personal Information -->
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">이름 *</label>
+                                <input type="text" id="name" name="name" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                            </div>
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">이메일 *</label>
+                                <input type="email" id="email" name="email" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                            </div>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">연락처</label>
+                                <input type="tel" id="phone" name="phone"
+                                       placeholder="010-1234-5678"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                            </div>
+                            <div>
+                                <label for="company" class="block text-sm font-medium text-gray-700 mb-2">회사/기관</label>
+                                <input type="text" id="company" name="company"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                            </div>
+                        </div>
+
+                        <!-- Subject -->
+                        <div>
+                            <label for="subject" class="block text-sm font-medium text-gray-700 mb-2">제목 *</label>
+                            <input type="text" id="subject" name="subject" required
+                                   placeholder="문의 제목을 입력하세요"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                        </div>
+
+                        <!-- Message -->
+                        <div>
+                            <label for="message" class="block text-sm font-medium text-gray-700 mb-2">문의 내용 *</label>
+                            <textarea id="message" name="message" rows="6" required
+                                      placeholder="문의하실 내용을 자세히 적어주세요"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent resize-none"></textarea>
+                            <div class="text-sm text-gray-500 mt-1">
+                                최소 20자 이상 입력해주세요. (<span id="char-count">0</span>/500자)
+                            </div>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div>
+                            <label for="attachment" class="block text-sm font-medium text-gray-700 mb-2">첨부파일</label>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-wowcampus-blue transition-colors">
+                                <input type="file" id="attachment" name="attachment" multiple accept=".pdf,.doc,.docx,.jpg,.png,.zip" class="hidden">
+                                <div id="file-drop-zone" class="cursor-pointer">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                                    <p class="text-gray-600">파일을 드래그하거나 <span class="text-wowcampus-blue font-medium">클릭하여 업로드</span></p>
+                                    <p class="text-sm text-gray-500 mt-1">PDF, DOC, DOCX, JPG, PNG, ZIP (최대 10MB)</p>
+                                </div>
+                                <div id="file-list" class="mt-3 hidden"></div>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Agreement -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <label class="flex items-start">
+                                <input type="checkbox" id="privacy-agree" name="privacyAgree" required class="mt-1 mr-3">
+                                <div class="text-sm text-gray-700">
+                                    개인정보 수집 및 이용에 동의합니다. 
+                                    <a href="/static/privacy" class="text-wowcampus-blue hover:underline" target="_blank">
+                                        (개인정보 처리방침 보기)
+                                    </a>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" onclick="resetForm()" 
+                                    class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
+                                <i class="fas fa-undo mr-2"></i>초기화
+                            </button>
+                            <button type="submit" 
+                                    class="px-6 py-3 bg-wowcampus-blue text-white rounded-lg hover:bg-wowcampus-dark font-medium">
+                                <i class="fas fa-paper-plane mr-2"></i>문의 보내기
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ Link -->
+        <div class="mt-12 bg-gradient-to-r from-accent to-wowcampus-blue text-white p-8 rounded-lg shadow-lg text-center">
+            <h3 class="text-2xl font-bold mb-4">자주 묻는 질문을 먼저 확인해보세요!</h3>
+            <p class="mb-6 opacity-90">많은 질문에 대한 답변을 FAQ에서 빠르게 찾을 수 있습니다.</p>
+            <a href="/static/faq" class="bg-white text-wowcampus-blue px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                <i class="fas fa-question-circle mr-2"></i>FAQ 보기
+            </a>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h4 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-graduation-cap mr-2"></i>WOW-CAMPUS
+                    </h4>
+                    <p class="text-gray-400 text-sm">글로벌 취업의 새로운 시작</p>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">서비스</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/jobseeker-profile" class="hover:text-white">채용정보</a></li>
+                        <li><a href="/static/companies.html" class="hover:text-white">기업정보</a></li>
+                        <li><a href="/static/resume.html" class="hover:text-white">이력서</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">고객지원</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/faq" class="hover:text-white">자주묻는질문</a></li>
+                        <li><a href="/static/contact" class="hover:text-white text-blue-400">문의하기</a></li>
+                        <li><a href="/static/notice" class="hover:text-white">공지사항</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">정책</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/terms" class="hover:text-white">이용약관</a></li>
+                        <li><a href="/static/privacy" class="hover:text-white">개인정보처리방침</a></li>
+                        <li><a href="/static/cookies" class="hover:text-white">쿠키정책</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
+                <p>&copy; 2024 WOW-CAMPUS. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 글자 수 카운팅
+        document.getElementById('message').addEventListener('input', function() {
+            const charCount = this.value.length;
+            document.getElementById('char-count').textContent = charCount;
+            
+            if (charCount > 500) {
+                this.value = this.value.substring(0, 500);
+                document.getElementById('char-count').textContent = 500;
+            }
+        });
+
+        // 파일 업로드 처리
+        const fileInput = document.getElementById('attachment');
+        const fileDropZone = document.getElementById('file-drop-zone');
+        const fileList = document.getElementById('file-list');
+
+        fileDropZone.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', handleFiles);
+
+        // 드래그 앤 드롭
+        fileDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.add('border-wowcampus-blue', 'bg-wowcampus-light');
+        });
+
+        fileDropZone.addEventListener('dragleave', () => {
+            fileDropZone.classList.remove('border-wowcampus-blue', 'bg-wowcampus-light');
+        });
+
+        fileDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.remove('border-wowcampus-blue', 'bg-wowcampus-light');
+            
+            const files = e.dataTransfer.files;
+            handleFiles({ target: { files } });
+        });
+
+        function handleFiles(event) {
+            const files = Array.from(event.target.files);
+            
+            if (files.length > 0) {
+                fileList.classList.remove('hidden');
+                fileList.innerHTML = '';
+                
+                files.forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'flex items-center justify-between bg-white p-2 rounded border';
+                    fileItem.innerHTML = `
+                        <div class="flex items-center">
+                            <i class="fas fa-file text-gray-400 mr-2"></i>
+                            <span class="text-sm">${file.name}</span>
+                            <span class="text-xs text-gray-500 ml-2">(${(file.size / 1024 / 1024).toFixed(2)}MB)</span>
+                        </div>
+                        <button type="button" onclick="removeFile(this)" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    fileList.appendChild(fileItem);
+                });
+            } else {
+                fileList.classList.add('hidden');
+            }
+        }
+
+        function removeFile(button) {
+            button.parentElement.remove();
+            if (fileList.children.length === 0) {
+                fileList.classList.add('hidden');
+                fileInput.value = '';
+            }
+        }
+
+        // 폼 제출 처리
+        document.getElementById('contact-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const messageLength = document.getElementById('message').value.length;
+            if (messageLength < 20) {
+                alert('문의 내용을 최소 20자 이상 입력해주세요.');
+                return;
+            }
+
+            // 성공 메시지 표시
+            alert('문의가 성공적으로 접수되었습니다. 빠른 시일 내에 답변드리겠습니다.');
+            resetForm();
+        });
+
+        // 폼 초기화
+        function resetForm() {
+            document.getElementById('contact-form').reset();
+            document.getElementById('char-count').textContent = '0';
+            fileList.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

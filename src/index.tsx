@@ -9,6 +9,16 @@ type Bindings = {
   DB: D1Database;
 }
 
+// 간단한 해시 함수 (실제 운영환경에서는 더 강력한 해시 함수 사용 권장)
+async function hash(password: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  return hashHex
+}
+
 const app = new Hono<{ Bindings: Bindings }>()
 
 // CORS 설정
@@ -36,8 +46,25 @@ async function verifyToken(c: any, next: any) {
   
   const token = authHeader.substring(7);
   
+  // 간단한 토큰 형식 처리 (token_id_type)
+  if (token.startsWith('token_')) {
+    const tokenParts = token.split('_');
+    if (tokenParts.length >= 3) {
+      const userId = tokenParts[1];
+      const userType = tokenParts[2];
+      
+      c.set('user', {
+        id: parseInt(userId),
+        userType: userType
+      });
+      await next();
+      return;
+    }
+  }
+  
+  // JWT 토큰 검증
   try {
-    const decoded = await jwt.verify(token, JWT_SECRET);
+    const decoded = await verify(token, JWT_SECRET);
     c.set('user', decoded);
     await next();
   } catch (error) {
@@ -604,6 +631,32 @@ app.get('/', (c) => {
                                             <option value="5급">고급 (5급)</option>
                                             <option value="6급">고급 (6급)</option>
                                         </select>
+                                    </div>
+                                    
+                                    <!-- 에이전트 협력 섹션 -->
+                                    <div class="border-t pt-6">
+                                        <h4 class="text-lg font-medium text-gray-900 mb-4">
+                                            <i class="fas fa-handshake text-accent mr-2"></i>에이전트 협력
+                                        </h4>
+                                        <div class="grid md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">협력 에이전트</label>
+                                                <select id="agent-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                                    <option value="">직접 채용 (에이전트 없음)</option>
+                                                    <!-- 에이전트 목록이 동적으로 로드됩니다 -->
+                                                </select>
+                                                <p class="text-xs text-gray-500 mt-1">에이전트와 협력하여 구직자를 모집할 수 있습니다</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">수수료율 (%)</label>
+                                                <input type="number" id="agent-fee" min="0" max="50" step="0.5" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="예: 5.0" disabled>
+                                                <p class="text-xs text-gray-500 mt-1">성공 채용 시 지급할 수수료 비율</p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4">
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">에이전트 요청사항</label>
+                                            <textarea id="agent-notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="에이전트에게 전달할 특별 요청사항이나 조건을 입력해주세요" disabled></textarea>
+                                        </div>
                                     </div>
                                     
                                     <div>
@@ -1277,11 +1330,12 @@ app.get('/', (c) => {
                     <div>
                         <h4 class="text-lg font-semibold mb-4">고객지원</h4>
                         <ul class="space-y-2 text-gray-300">
-                            <li><a href="#" class="hover:text-white transition-colors">공지사항</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">FAQ</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">문의하기</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">이용약관</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">개인정보처리방침</a></li>
+                            <li><a href="/static/notice" class="hover:text-white transition-colors">공지사항</a></li>
+                            <li><a href="/static/faq" class="hover:text-white transition-colors">FAQ</a></li>
+                            <li><a href="/static/contact" class="hover:text-white transition-colors">문의하기</a></li>
+                            <li><a href="/static/terms" class="hover:text-white transition-colors">이용약관</a></li>
+                            <li><a href="/static/privacy" class="hover:text-white transition-colors">개인정보처리방침</a></li>
+                            <li><a href="/static/cookies" class="hover:text-white transition-colors">쿠키정책</a></li>
                         </ul>
                     </div>
                 </div>
@@ -1292,9 +1346,9 @@ app.get('/', (c) => {
                             &copy; 2025 WOW-CAMPUS 외국인 구인구직 및 유학생 지원플랫폼. All rights reserved.
                         </p>
                         <div class="flex space-x-6 mt-4 md:mt-0">
-                            <a href="#" class="text-gray-400 hover:text-white text-sm transition-colors">이용약관</a>
-                            <a href="#" class="text-gray-400 hover:text-white text-sm transition-colors">개인정보처리방침</a>
-                            <a href="#" class="text-gray-400 hover:text-white text-sm transition-colors">쿠키정책</a>
+                            <a href="/static/terms" class="text-gray-400 hover:text-white text-sm transition-colors">이용약관</a>
+                            <a href="/static/privacy" class="text-gray-400 hover:text-white text-sm transition-colors">개인정보처리방침</a>
+                            <a href="/static/cookies" class="text-gray-400 hover:text-white text-sm transition-colors">쿠키정책</a>
                         </div>
                     </div>
                 </div>
@@ -1479,7 +1533,7 @@ app.post('/api/auth/register/jobseeker', async (c) => {
     const { 
       email, password, name, birth_date, gender, nationality, 
       current_visa, desired_visa, phone, current_address, 
-      korean_level, education_level, work_experience 
+      korean_level, education_level, work_experience, agent_id 
     } = await c.req.json()
     
     if (!email || !password || !name || !nationality || !phone) {
@@ -1498,12 +1552,23 @@ app.post('/api/auth/register/jobseeker', async (c) => {
     // 한국어 레벨 변환
     const convertedKoreanLevel = convertKoreanLevelForJobSeeker(korean_level || '')
 
+    // 에이전트 ID 유효성 검사 (선택사항)
+    if (agent_id) {
+      const agentExists = await c.env.DB.prepare(`
+        SELECT id FROM agents WHERE id = ? AND status = 'approved'
+      `).bind(agent_id).first();
+      
+      if (!agentExists) {
+        return c.json({ error: '유효하지 않은 에이전트입니다.' }, 400);
+      }
+    }
+
     const result = await c.env.DB.prepare(`
       INSERT INTO job_seekers (
         email, password, name, birth_date, gender, nationality, 
         current_visa, desired_visa, phone, current_address, 
-        korean_level, education_level, work_experience, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+        korean_level, education_level, work_experience, agent_id, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     `).bind(
       email,
       password, // 실제 환경에서는 해시화 필요
@@ -1517,7 +1582,8 @@ app.post('/api/auth/register/jobseeker', async (c) => {
       current_address || null,
       convertedKoreanLevel,
       education_level || null,
-      work_experience || null
+      work_experience || null,
+      agent_id || null
     ).run()
 
     // 토큰 생성
@@ -1697,6 +1763,24 @@ app.post('/api/auth/google', async (c) => {
   }
 })
 
+// 관리자 대시보드 라우트
+app.get('/admin-dashboard', async (c) => {
+  try {
+    // static/admin-dashboard.html 파일을 읽어서 반환
+    const htmlContent = await fetch(`${c.req.url.replace('/admin-dashboard', '')}/static/admin-dashboard.html`);
+    if (htmlContent.ok) {
+      const html = await htmlContent.text();
+      return c.html(html);
+    } else {
+      // 파일을 찾을 수 없으면 정적 파일 경로로 리다이렉트
+      return c.redirect('/static/admin-dashboard.html');
+    }
+  } catch (error) {
+    console.error('Admin dashboard loading error:', error);
+    return c.redirect('/static/admin-dashboard.html');
+  }
+})
+
 // 2. 구인 공고 관련 API
 app.get('/api/jobs', async (c) => {
   try {
@@ -1794,85 +1878,7 @@ app.get('/api/jobs/:id', async (c) => {
   }
 })
 
-// 구인정보 등록 API
-app.post('/api/jobs', async (c) => {
-  try {
-    const jobData = await c.req.json()
-    
-    // 필수 필드 검증
-    const requiredFields = ['company_name', 'contact_person', 'contact_email', 'title', 'work_location', 'required_visa']
-    for (const field of requiredFields) {
-      if (!jobData[field]) {
-        return c.json({ error: `${field} 필드는 필수입니다.` }, 400)
-      }
-    }
-    
-    // 기업 정보 먼저 확인하거나 생성
-    let employer = await c.env.DB.prepare(`
-      SELECT * FROM employers WHERE email = ?
-    `).bind(jobData.contact_email).first()
-    
-    let employerId
-    if (!employer) {
-      // 새 기업 등록 - employers 테이블 구조에 맞게 수정
-      const employerResult = await c.env.DB.prepare(`
-        INSERT INTO employers (
-          email, password, company_name, business_number, industry, 
-          contact_person, phone, address, region, website, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
-      `).bind(
-        jobData.contact_email,
-        'temp_password', // 임시 비밀번호
-        jobData.company_name,
-        'temp_business_number_' + Date.now(), // 임시 사업자번호
-        jobData.job_category || '기타',
-        jobData.contact_person,
-        jobData.contact_phone || '000-0000-0000',
-        '주소 미입력', // 필수 필드이므로 임시값
-        jobData.work_location, // region
-        null, // website
-      ).run()
-      
-      employerId = employerResult.meta.last_row_id
-    } else {
-      employerId = employer.id
-    }
-    
-    // 구인공고 등록 - 실제 테이블 구조에 맞게 수정
-    const result = await c.env.DB.prepare(`
-      INSERT INTO job_postings (
-        employer_id, title, job_category, required_visa, salary_min, salary_max,
-        work_location, region, work_hours, benefits, requirements, description,
-        korean_level_required, experience_required, deadline, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
-    `).bind(
-      employerId,
-      jobData.title,
-      jobData.job_category || '기타',
-      jobData.required_visa,
-      jobData.salary_min || null,
-      jobData.salary_max || null,
-      jobData.work_location,
-      jobData.work_location, // region 같은 값 사용
-      null, // work_hours
-      null, // benefits
-      null, // requirements
-      jobData.description || null,
-      convertKoreanLevel(jobData.korean_level), // korean_level_required
-      null, // experience_required
-      null, // deadline
-    ).run()
-    
-    return c.json({ 
-      success: true,
-      jobId: result.meta.last_row_id,
-      message: '구인정보가 성공적으로 등록되었습니다.'
-    }, 201)
-  } catch (error) {
-    console.error('Job registration error:', error)
-    return c.json({ error: '구인정보 등록 중 오류가 발생했습니다.' }, 500)
-  }
-})
+
 
 // 구직자 등록 API
 app.post('/api/job-seekers', async (c) => {
@@ -3006,5 +3012,1870 @@ function getMatchReasons(jobSeeker: any, jobPosting: any): string[] {
 
   return reasons;
 }
+
+// ===== 권한별 API 엔드포인트 =====
+
+// 구인기업 전용 API
+app.get('/api/employers/:id/jobs', async (c) => {
+  try {
+    const employerId = c.req.param('id');
+    const { status } = c.req.query();
+    
+    let query = 'SELECT * FROM job_postings WHERE employer_id = ?';
+    const params = [employerId];
+    
+    if (status && status !== 'all') {
+      query += ' AND status = ?';
+      params.push(status);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    const jobs = await c.env.DB.prepare(query).bind(...params).all();
+    return c.json({ jobs: jobs.results });
+  } catch (error) {
+    console.error('구인기업 구인공고 조회 오류:', error);
+    return c.json({ error: '구인공고 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.get('/api/employers/:id/applications', async (c) => {
+  try {
+    const employerId = c.req.param('id');
+    const { status } = c.req.query();
+    
+    let query = `
+      SELECT 
+        ja.*,
+        js.name as job_seeker_name,
+        js.nationality,
+        js.korean_level,
+        js.current_visa,
+        jp.title as job_title,
+        jp.work_location
+      FROM job_applications ja
+      LEFT JOIN job_seekers js ON ja.job_seeker_id = js.id
+      LEFT JOIN job_postings jp ON ja.job_posting_id = jp.id
+      WHERE jp.employer_id = ?
+    `;
+    const params = [employerId];
+    
+    if (status && status !== 'all') {
+      query += ' AND ja.application_status = ?';
+      params.push(status);
+    }
+    
+    query += ' ORDER BY ja.applied_at DESC';
+    
+    const applications = await c.env.DB.prepare(query).bind(...params).all();
+    return c.json({ applications: applications.results });
+  } catch (error) {
+    console.error('구인기업 지원자 조회 오류:', error);
+    return c.json({ error: '지원자 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.get('/api/employers/:id/matches', async (c) => {
+  try {
+    const employerId = c.req.param('id');
+    
+    const matches = await c.env.DB.prepare(`
+      SELECT 
+        jm.*,
+        js.name as job_seeker_name,
+        jp.title as job_title
+      FROM job_matches jm
+      LEFT JOIN job_seekers js ON jm.job_seeker_id = js.id
+      LEFT JOIN job_postings jp ON jm.job_posting_id = jp.id
+      WHERE jp.employer_id = ?
+      ORDER BY jm.match_score DESC, jm.created_at DESC
+    `).bind(employerId).all();
+    
+    return c.json({ matches: matches.results });
+  } catch (error) {
+    console.error('구인기업 매칭 조회 오류:', error);
+    return c.json({ error: '매칭 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 구직자 전용 API
+app.get('/api/job-seekers/:id/applications', async (c) => {
+  try {
+    const jobSeekerId = c.req.param('id');
+    const { status } = c.req.query();
+    
+    let query = `
+      SELECT 
+        ja.*,
+        jp.title as job_title,
+        jp.work_location,
+        jp.salary_min,
+        jp.salary_max,
+        e.company_name,
+        CASE 
+          WHEN jp.salary_min IS NOT NULL AND jp.salary_max IS NOT NULL 
+          THEN CAST(jp.salary_min / 10000 AS TEXT) || '만원 ~ ' || CAST(jp.salary_max / 10000 AS TEXT) || '만원'
+          ELSE '급여 협의'
+        END as salary_text
+      FROM job_applications ja
+      LEFT JOIN job_postings jp ON ja.job_posting_id = jp.id
+      LEFT JOIN employers e ON jp.employer_id = e.id
+      WHERE ja.job_seeker_id = ?
+    `;
+    const params = [jobSeekerId];
+    
+    if (status && status !== 'all') {
+      query += ' AND ja.application_status = ?';
+      params.push(status);
+    }
+    
+    query += ' ORDER BY ja.applied_at DESC';
+    
+    const applications = await c.env.DB.prepare(query).bind(...params).all();
+    return c.json({ applications: applications.results });
+  } catch (error) {
+    console.error('구직자 지원내역 조회 오류:', error);
+    return c.json({ error: '지원내역 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.get('/api/jobs/recommended/:jobSeekerId', async (c) => {
+  try {
+    const jobSeekerId = c.req.param('jobSeekerId');
+    const { filter } = c.req.query();
+    
+    // 구직자 정보 조회
+    const jobSeeker = await c.env.DB.prepare(
+      'SELECT * FROM job_seekers WHERE id = ?'
+    ).bind(jobSeekerId).first();
+    
+    if (!jobSeeker) {
+      return c.json({ error: '구직자 정보를 찾을 수 없습니다.' }, 404);
+    }
+    
+    let query = `
+      SELECT 
+        jp.*,
+        e.company_name,
+        CASE 
+          WHEN jp.required_visa = ? THEN 0.4
+          WHEN jp.job_category = ? THEN 0.3
+          WHEN jp.work_location LIKE '%' || ? || '%' THEN 0.2
+          WHEN jp.korean_level_required <= ? THEN 0.1
+          ELSE 0
+        END as match_score
+      FROM job_postings jp
+      LEFT JOIN employers e ON jp.employer_id = e.id
+      WHERE jp.status = 'active'
+    `;
+    
+    const params = [
+      jobSeeker.desired_visa || jobSeeker.current_visa,
+      jobSeeker.desired_job_category,
+      jobSeeker.desired_location || '',
+      jobSeeker.korean_level || 'beginner'
+    ];
+    
+    if (filter === 'perfect') {
+      query += ' HAVING match_score >= 0.8';
+    } else if (filter === 'good') {
+      query += ' HAVING match_score >= 0.5';
+    } else if (filter === 'recent') {
+      query += ' AND jp.created_at >= datetime("now", "-7 days")';
+    }
+    
+    query += ' ORDER BY match_score DESC, jp.created_at DESC LIMIT 20';
+    
+    const jobs = await c.env.DB.prepare(query).bind(...params).all();
+    return c.json({ jobs: jobs.results });
+  } catch (error) {
+    console.error('추천 구인공고 조회 오류:', error);
+    return c.json({ error: '추천 구인공고 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 구인공고 수정 API (PUT)
+app.put('/api/jobs/:id', async (c) => {
+  try {
+    const jobId = c.req.param('id');
+    const jobData = await c.req.json();
+    
+    // 권한 확인 (구인기업이 자신의 공고만 수정할 수 있도록)
+    const existingJob = await c.env.DB.prepare(
+      'SELECT employer_id FROM job_postings WHERE id = ?'
+    ).bind(jobId).first();
+    
+    if (!existingJob) {
+      return c.json({ error: '구인공고를 찾을 수 없습니다.' }, 404);
+    }
+    
+    // 구인공고 업데이트
+    const result = await c.env.DB.prepare(`
+      UPDATE job_postings SET 
+        title = ?, job_category = ?, work_location = ?, required_visa = ?,
+        salary_min = ?, salary_max = ?, positions = ?, korean_level_required = ?,
+        deadline = ?, description = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(
+      jobData.title,
+      jobData.job_category,
+      jobData.work_location,
+      jobData.required_visa,
+      jobData.salary_min,
+      jobData.salary_max,
+      jobData.positions,
+      jobData.korean_level_required,
+      jobData.deadline,
+      jobData.description,
+      jobId
+    ).run();
+    
+    if (result.success) {
+      return c.json({ success: true, message: '구인공고가 수정되었습니다.' });
+    } else {
+      return c.json({ error: '구인공고 수정에 실패했습니다.' }, 500);
+    }
+  } catch (error) {
+    console.error('구인공고 수정 오류:', error);
+    return c.json({ error: '구인공고 수정 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 구인공고 삭제 API
+app.delete('/api/jobs/:id', async (c) => {
+  try {
+    const jobId = c.req.param('id');
+    
+    // 구인공고 삭제
+    const result = await c.env.DB.prepare(
+      'DELETE FROM job_postings WHERE id = ?'
+    ).bind(jobId).run();
+    
+    if (result.success) {
+      return c.json({ success: true, message: '구인공고가 삭제되었습니다.' });
+    } else {
+      return c.json({ error: '구인공고 삭제에 실패했습니다.' }, 500);
+    }
+  } catch (error) {
+    console.error('구인공고 삭제 오류:', error);
+    return c.json({ error: '구인공고 삭제 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 구직자 정보 수정 API
+app.put('/api/job-seekers/:id', async (c) => {
+  try {
+    const jobSeekerId = c.req.param('id');
+    const seekerData = await c.req.json();
+    
+    // 구직자 정보 업데이트
+    const result = await c.env.DB.prepare(`
+      UPDATE job_seekers SET 
+        name = ?, email = ?, birth_date = ?, gender = ?, nationality = ?,
+        phone = ?, current_visa = ?, desired_visa = ?, korean_level = ?,
+        current_address = ?, education_level = ?, desired_job_category = ?,
+        work_experience = ?, desired_location = ?, desired_salary = ?,
+        introduction = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(
+      seekerData.name,
+      seekerData.email,
+      seekerData.birth_date,
+      seekerData.gender,
+      seekerData.nationality,
+      seekerData.phone,
+      seekerData.current_visa,
+      seekerData.desired_visa,
+      seekerData.korean_level,
+      seekerData.current_address,
+      seekerData.education_level,
+      seekerData.desired_job_category,
+      seekerData.work_experience,
+      seekerData.desired_location,
+      seekerData.desired_salary,
+      seekerData.introduction,
+      jobSeekerId
+    ).run();
+    
+    if (result.success) {
+      return c.json({ success: true, message: '프로필이 수정되었습니다.' });
+    } else {
+      return c.json({ error: '프로필 수정에 실패했습니다.' }, 500);
+    }
+  } catch (error) {
+    console.error('구직자 정보 수정 오류:', error);
+    return c.json({ error: '프로필 수정 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 지원하기 API
+app.post('/api/applications', async (c) => {
+  try {
+    const { job_posting_id, job_seeker_id } = await c.req.json();
+    
+    // 중복 지원 확인
+    const existingApplication = await c.env.DB.prepare(
+      'SELECT id FROM job_applications WHERE job_posting_id = ? AND job_seeker_id = ?'
+    ).bind(job_posting_id, job_seeker_id).first();
+    
+    if (existingApplication) {
+      return c.json({ error: '이미 지원한 공고입니다.' }, 400);
+    }
+    
+    // 지원 등록
+    const result = await c.env.DB.prepare(`
+      INSERT INTO job_applications (job_posting_id, job_seeker_id, status, created_at)
+      VALUES (?, ?, 'pending', CURRENT_TIMESTAMP)
+    `).bind(job_posting_id, job_seeker_id).run();
+    
+    if (result.success) {
+      return c.json({ success: true, message: '지원이 완료되었습니다.' }, 201);
+    } else {
+      return c.json({ error: '지원 처리에 실패했습니다.' }, 500);
+    }
+  } catch (error) {
+    console.error('지원 처리 오류:', error);
+    return c.json({ error: '지원 처리 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 지원 취소 API
+app.delete('/api/applications/:id', async (c) => {
+  try {
+    const applicationId = c.req.param('id');
+    
+    const result = await c.env.DB.prepare(
+      'DELETE FROM job_applications WHERE id = ?'
+    ).bind(applicationId).run();
+    
+    if (result.success) {
+      return c.json({ success: true, message: '지원이 취소되었습니다.' });
+    } else {
+      return c.json({ error: '지원 취소에 실패했습니다.' }, 500);
+    }
+  } catch (error) {
+    console.error('지원 취소 오류:', error);
+    return c.json({ error: '지원 취소 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// ===== 관리자 API 엔드포인트 =====
+
+// 관리자 대시보드 통계 API
+app.get('/api/admin/stats', async (c) => {
+  try {
+    // 사용자 수 통계
+    const totalUsers = await c.env.DB.prepare(`
+      SELECT 
+        (SELECT COUNT(*) FROM employers) + 
+        (SELECT COUNT(*) FROM agents) + 
+        (SELECT COUNT(*) FROM job_seekers) + 
+        (SELECT COUNT(*) FROM admins) as count
+    `).first();
+
+    const totalEmployers = await c.env.DB.prepare('SELECT COUNT(*) as count FROM employers').first();
+    const totalJobseekers = await c.env.DB.prepare('SELECT COUNT(*) as count FROM job_seekers').first();
+    const totalAgents = await c.env.DB.prepare('SELECT COUNT(*) as count FROM agents').first();
+    
+    // 채용공고 및 지원 통계
+    const activeJobs = await c.env.DB.prepare("SELECT COUNT(*) as count FROM job_postings WHERE status = 'active'").first();
+    const totalApplications = await c.env.DB.prepare('SELECT COUNT(*) as count FROM job_applications').first();
+    const successfulMatches = await c.env.DB.prepare("SELECT COUNT(*) as count FROM job_applications WHERE application_status = 'accepted'").first();
+
+    return c.json({
+      totalUsers: totalUsers?.count || 0,
+      totalEmployers: totalEmployers?.count || 0,
+      totalJobseekers: totalJobseekers?.count || 0,
+      totalAgents: totalAgents?.count || 0,
+      activeJobs: activeJobs?.count || 0,
+      totalApplications: totalApplications?.count || 0,
+      successfulMatches: successfulMatches?.count || 0
+    });
+  } catch (error) {
+    console.error('통계 데이터 조회 오류:', error);
+    return c.json({ error: '통계 데이터 조회에 실패했습니다.' }, 500);
+  }
+});
+
+// 관리자 최근 활동 조회 API
+app.get('/api/admin/activities', async (c) => {
+  try {
+    // 최근 활동 데이터 생성 (실제 환경에서는 별도 activities 테이블 필요)
+    const recentEmployers = await c.env.DB.prepare(`
+      SELECT 'registration' as type, company_name as description, 'employer' as user_type, created_at 
+      FROM employers ORDER BY created_at DESC LIMIT 5
+    `).all();
+    
+    const recentJobseekers = await c.env.DB.prepare(`
+      SELECT 'registration' as type, name as description, 'jobseeker' as user_type, created_at 
+      FROM job_seekers ORDER BY created_at DESC LIMIT 5
+    `).all();
+    
+    const recentAgents = await c.env.DB.prepare(`
+      SELECT 'registration' as type, company_name as description, 'agent' as user_type, created_at 
+      FROM agents ORDER BY created_at DESC LIMIT 5
+    `).all();
+
+    const activities = [
+      ...recentEmployers.results.map(r => ({ ...r, description: `${r.description} 기업 가입` })),
+      ...recentJobseekers.results.map(r => ({ ...r, description: `${r.description} 구직자 가입` })),
+      ...recentAgents.results.map(r => ({ ...r, description: `${r.description} 에이전트 가입` }))
+    ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10);
+
+    return c.json(activities);
+  } catch (error) {
+    console.error('활동 데이터 조회 오류:', error);
+    return c.json({ error: '활동 데이터 조회에 실패했습니다.' }, 500);
+  }
+});
+
+// 관리자 사용자 조회 API
+app.get('/api/admin/users', async (c) => {
+  try {
+    const userType = c.req.query('type') || 'employers';
+    let query, tableName;
+
+    switch (userType) {
+      case 'employers':
+        tableName = 'employers';
+        query = 'SELECT id, email, company_name, business_number, industry, contact_person, phone, address, region, status, created_at FROM employers ORDER BY created_at DESC';
+        break;
+      case 'agents':
+        tableName = 'agents';
+        query = 'SELECT id, email, company_name, contact_person, phone, country, address, license_number, status, created_at FROM agents ORDER BY created_at DESC';
+        break;
+      case 'jobseekers':
+        tableName = 'job_seekers';
+        query = 'SELECT id, email, name, nationality, current_visa, desired_visa, korean_level, phone, current_address, education_level, work_experience, status, created_at FROM job_seekers ORDER BY created_at DESC';
+        break;
+      default:
+        return c.json({ error: '잘못된 사용자 타입입니다.' }, 400);
+    }
+
+    const result = await c.env.DB.prepare(query).all();
+    return c.json(result.results || []);
+  } catch (error) {
+    console.error('사용자 데이터 조회 오류:', error);
+    return c.json({ error: '사용자 데이터 조회에 실패했습니다.' }, 500);
+  }
+});
+
+// 관리자 사용자 상태 변경 API
+app.put('/api/admin/users/:id/status', async (c) => {
+  try {
+    const userId = c.req.param('id');
+    const { status, userType } = await c.req.json();
+    
+    let tableName;
+    switch (userType) {
+      case 'employer':
+        tableName = 'employers';
+        break;
+      case 'agent':
+        tableName = 'agents';
+        break;
+      case 'jobseeker':
+        tableName = 'job_seekers';
+        break;
+      default:
+        return c.json({ error: '잘못된 사용자 타입입니다.' }, 400);
+    }
+
+    const result = await c.env.DB.prepare(
+      `UPDATE ${tableName} SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+    ).bind(status, userId).run();
+
+    if (result.success) {
+      return c.json({ success: true, message: '사용자 상태가 업데이트되었습니다.' });
+    } else {
+      return c.json({ error: '상태 업데이트에 실패했습니다.' }, 500);
+    }
+  } catch (error) {
+    console.error('사용자 상태 변경 오류:', error);
+    return c.json({ error: '사용자 상태 변경에 실패했습니다.' }, 500);
+  }
+});
+
+// 관리자 데이터 백업 API
+app.post('/api/admin/backup', async (c) => {
+  try {
+    // 모든 테이블 데이터 백업
+    const tables = ['admins', 'employers', 'agents', 'job_seekers', 'job_postings', 'job_applications', 'study_programs'];
+    const backupData = {};
+
+    for (const table of tables) {
+      const result = await c.env.DB.prepare(`SELECT * FROM ${table}`).all();
+      backupData[table] = result.results || [];
+    }
+
+    // 백업 메타데이터 추가
+    backupData.metadata = {
+      created_at: new Date().toISOString(),
+      version: '1.0',
+      total_records: Object.values(backupData).reduce((sum, data) => sum + (Array.isArray(data) ? data.length : 0), 0)
+    };
+
+    const jsonData = JSON.stringify(backupData, null, 2);
+    
+    return new Response(jsonData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Disposition': `attachment; filename=wowcampus_backup_${new Date().toISOString().split('T')[0]}.json`
+      }
+    });
+  } catch (error) {
+    console.error('데이터 백업 오류:', error);
+    return c.json({ error: '데이터 백업에 실패했습니다.' }, 500);
+  }
+});
+
+// 관리자 시스템 리포트 API
+app.get('/api/admin/report', async (c) => {
+  try {
+    // 간단한 텍스트 리포트 생성 (실제 환경에서는 PDF 생성 라이브러리 사용)
+    const stats = await c.env.DB.prepare(`
+      SELECT 
+        (SELECT COUNT(*) FROM employers) as employers_count,
+        (SELECT COUNT(*) FROM agents) as agents_count,
+        (SELECT COUNT(*) FROM job_seekers) as jobseekers_count,
+        (SELECT COUNT(*) FROM job_postings WHERE status = 'active') as active_jobs_count,
+        (SELECT COUNT(*) FROM job_applications) as applications_count
+    `).first();
+
+    const reportText = `
+WOW-CAMPUS 시스템 리포트
+생성일: ${new Date().toLocaleDateString('ko-KR')}
+
+=== 사용자 현황 ===
+구인기업: ${stats?.employers_count || 0}개
+에이전트: ${stats?.agents_count || 0}개
+구직자: ${stats?.jobseekers_count || 0}명
+
+=== 채용 현황 ===
+활성 채용공고: ${stats?.active_jobs_count || 0}개
+총 지원서: ${stats?.applications_count || 0}건
+
+=== 시스템 상태 ===
+상태: 정상 운영중
+마지막 업데이트: ${new Date().toISOString()}
+
+이 리포트는 WOW-CAMPUS 관리자 시스템에서 자동 생성되었습니다.
+    `.trim();
+
+    return new Response(reportText, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `attachment; filename=system_report_${new Date().toISOString().split('T')[0]}.txt`
+      }
+    });
+  } catch (error) {
+    console.error('리포트 생성 오류:', error);
+    return c.json({ error: '리포트 생성에 실패했습니다.' }, 500);
+  }
+});
+
+// ===== 에이전트 및 파일 관리 API 엔드포인트 =====
+
+// 활성 에이전트 목록 조회 API (구인정보 등록 시 선택용)
+app.get('/api/agents/active', async (c) => {
+  try {
+    const result = await c.env.DB.prepare(`
+      SELECT id, company_name, contact_person, phone, country, email
+      FROM agents 
+      WHERE status = 'approved' 
+      ORDER BY company_name ASC
+    `).all();
+
+    return c.json(result.results || []);
+  } catch (error) {
+    console.error('에이전트 목록 조회 오류:', error);
+    return c.json({ error: '에이전트 목록 조회에 실패했습니다.' }, 500);
+  }
+});
+
+// 특정 에이전트 정보 조회 API
+app.get('/api/agents/:id', async (c) => {
+  try {
+    const agentId = c.req.param('id');
+    
+    const result = await c.env.DB.prepare(`
+      SELECT id, company_name, contact_person, phone, country, email
+      FROM agents 
+      WHERE id = ? AND status = 'approved'
+    `).bind(agentId).first();
+
+    if (!result) {
+      return c.json({ error: '에이전트를 찾을 수 없습니다.' }, 404);
+    }
+
+    return c.json(result);
+  } catch (error) {
+    console.error('에이전트 조회 오류:', error);
+    return c.json({ error: '에이전트 조회에 실패했습니다.' }, 500);
+  }
+});
+
+// 구직자 에이전트 정보 업데이트 API
+app.put('/api/job-seekers/:id/agent', async (c) => {
+  try {
+    const jobSeekerId = c.req.param('id');
+    const { agent_id } = await c.req.json();
+    
+    // 에이전트 ID가 제공된 경우 유효성 검사
+    if (agent_id) {
+      const agentExists = await c.env.DB.prepare(`
+        SELECT id FROM agents WHERE id = ? AND status = 'approved'
+      `).bind(agent_id).first();
+      
+      if (!agentExists) {
+        return c.json({ error: '유효하지 않은 에이전트입니다.' }, 400);
+      }
+    }
+    
+    // 구직자 에이전트 정보 업데이트
+    const result = await c.env.DB.prepare(`
+      UPDATE job_seekers 
+      SET agent_id = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(agent_id, jobSeekerId).run();
+
+    if (result.success) {
+      return c.json({ 
+        success: true, 
+        message: '에이전트 정보가 업데이트되었습니다.' 
+      });
+    } else {
+      return c.json({ error: '업데이트에 실패했습니다.' }, 500);
+    }
+  } catch (error) {
+    console.error('에이전트 업데이트 오류:', error);
+    return c.json({ error: '에이전트 업데이트 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 구인정보 등록 API (에이전트 정보 포함)
+app.post('/api/jobs', async (c) => {
+  try {
+    const {
+      title, job_category, work_location, region, required_visa,
+      salary_min, salary_max, korean_level_required, description,
+      employer_id, agent_id, agent_fee_percentage, agent_notes
+    } = await c.req.json();
+
+    // 구인정보 등록
+    const result = await c.env.DB.prepare(`
+      INSERT INTO job_postings (
+        employer_id, title, job_category, work_location, region, required_visa,
+        salary_min, salary_max, korean_level_required, description, 
+        agent_id, agent_fee_percentage, agent_notes, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP)
+    `).bind(
+      employer_id, title, job_category, work_location, region, required_visa,
+      salary_min, salary_max, korean_level_required, description,
+      agent_id, agent_fee_percentage, agent_notes
+    ).run();
+
+    if (result.success) {
+      return c.json({ 
+        success: true, 
+        message: '구인정보가 성공적으로 등록되었습니다.',
+        job_id: result.meta.last_row_id 
+      }, 201);
+    } else {
+      return c.json({ error: '구인정보 등록에 실패했습니다.' }, 500);
+    }
+  } catch (error) {
+    console.error('구인정보 등록 오류:', error);
+    return c.json({ error: '구인정보 등록 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 파일 업로드 API (구직자 서류)
+app.post('/api/upload/document', async (c) => {
+  try {
+    // Cloudflare Workers는 multipart/form-data를 직접 처리하지 못하므로
+    // 실제 환경에서는 R2 버킷이나 외부 스토리지 서비스를 사용해야 합니다.
+    // 여기서는 시뮬레이션을 위한 기본 구현을 제공합니다.
+    
+    const formData = await c.req.formData();
+    const file = formData.get('file') as File;
+    const jobSeekerId = formData.get('job_seeker_id') as string;
+    const documentType = formData.get('document_type') as string;
+    const description = formData.get('description') as string;
+
+    if (!file || !jobSeekerId || !documentType) {
+      return c.json({ error: '필수 파라미터가 누락되었습니다.' }, 400);
+    }
+
+    // 파일 정보 저장 (실제 파일은 별도 스토리지에 저장)
+    const storedFilename = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO job_seeker_documents (
+        job_seeker_id, document_type, original_filename, stored_filename,
+        file_size, file_type, description, upload_date
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).bind(
+      jobSeekerId, documentType, file.name, storedFilename,
+      file.size, file.type, description
+    ).run();
+
+    if (result.success) {
+      return c.json({
+        success: true,
+        message: '파일이 성공적으로 업로드되었습니다.',
+        document_id: result.meta.last_row_id,
+        filename: storedFilename
+      }, 201);
+    } else {
+      return c.json({ error: '파일 업로드에 실패했습니다.' }, 500);
+    }
+  } catch (error) {
+    console.error('파일 업로드 오류:', error);
+    return c.json({ error: '파일 업로드 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 구직자 서류 목록 조회 API
+app.get('/api/jobseeker/:id/documents', async (c) => {
+  try {
+    const jobSeekerId = c.req.param('id');
+    
+    const result = await c.env.DB.prepare(`
+      SELECT id, document_type, original_filename, file_size, file_type, 
+             description, upload_date, is_public
+      FROM job_seeker_documents 
+      WHERE job_seeker_id = ? 
+      ORDER BY upload_date DESC
+    `).bind(jobSeekerId).all();
+
+    return c.json(result.results || []);
+  } catch (error) {
+    console.error('서류 목록 조회 오류:', error);
+    return c.json({ error: '서류 목록 조회에 실패했습니다.' }, 500);
+  }
+});
+
+// 구직자 서류 다운로드 API
+app.get('/api/documents/:id/download', async (c) => {
+  try {
+    const documentId = c.req.param('id');
+    const userHeader = c.req.header('X-User-Info');
+    
+    // 사용자 정보 확인
+    if (!userHeader) {
+      return c.json({ error: '인증이 필요합니다.' }, 401);
+    }
+
+    const user = JSON.parse(userHeader);
+    
+    // 서류 정보 조회
+    const document = await c.env.DB.prepare(`
+      SELECT jsd.*, js.name as job_seeker_name, js.email as job_seeker_email
+      FROM job_seeker_documents jsd
+      JOIN job_seekers js ON jsd.job_seeker_id = js.id
+      WHERE jsd.id = ?
+    `).bind(documentId).first();
+
+    if (!document) {
+      return c.json({ error: '서류를 찾을 수 없습니다.' }, 404);
+    }
+
+    // 권한 확인 (본인, 관리자, 또는 해당 구직자에게 지원받은 기업)
+    if (user.type === 'jobseeker' && user.id !== document.job_seeker_id) {
+      return c.json({ error: '접근 권한이 없습니다.' }, 403);
+    }
+
+    // 다운로드 로그 기록 (기업인 경우)
+    if (user.type === 'employer') {
+      await c.env.DB.prepare(`
+        INSERT INTO document_download_logs (document_id, employer_id, downloaded_at, ip_address)
+        VALUES (?, ?, CURRENT_TIMESTAMP, ?)
+      `).bind(documentId, user.id, c.req.header('CF-Connecting-IP') || '').run();
+    }
+
+    // 실제 환경에서는 R2나 외부 스토리지에서 파일을 가져와야 합니다
+    // 여기서는 시뮬레이션을 위한 응답을 반환합니다
+    return c.json({
+      success: true,
+      download_url: `/files/${document.stored_filename}`,
+      original_filename: document.original_filename,
+      file_type: document.file_type,
+      file_size: document.file_size
+    });
+  } catch (error) {
+    console.error('서류 다운로드 오류:', error);
+    return c.json({ error: '서류 다운로드에 실패했습니다.' }, 500);
+  }
+});
+
+// 지원서와 서류 연결 API
+app.post('/api/applications/:id/attach-documents', async (c) => {
+  try {
+    const applicationId = c.req.param('id');
+    const { document_ids } = await c.req.json();
+
+    if (!Array.isArray(document_ids)) {
+      return c.json({ error: '서류 ID 목록이 필요합니다.' }, 400);
+    }
+
+    // 기존 연결 삭제
+    await c.env.DB.prepare('DELETE FROM application_documents WHERE application_id = ?')
+      .bind(applicationId).run();
+
+    // 새로운 연결 추가
+    for (const documentId of document_ids) {
+      await c.env.DB.prepare(`
+        INSERT OR IGNORE INTO application_documents (application_id, document_id, attached_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+      `).bind(applicationId, documentId).run();
+    }
+
+    return c.json({ success: true, message: '서류가 성공적으로 첨부되었습니다.' });
+  } catch (error) {
+    console.error('서류 첨부 오류:', error);
+    return c.json({ error: '서류 첨부에 실패했습니다.' }, 500);
+  }
+});
+
+// 기업의 지원자 서류 조회 API
+app.get('/api/employers/:id/applications/documents', async (c) => {
+  try {
+    const employerId = c.req.param('id');
+    
+    const result = await c.env.DB.prepare(`
+      SELECT 
+        ja.id as application_id,
+        ja.job_posting_id,
+        ja.application_status,
+        ja.applied_at,
+        js.id as job_seeker_id,
+        js.name as job_seeker_name,
+        js.email as job_seeker_email,
+        js.nationality,
+        js.current_visa,
+        jp.title as job_title,
+        jsd.id as document_id,
+        jsd.document_type,
+        jsd.original_filename,
+        jsd.file_size,
+        jsd.file_type,
+        jsd.description as document_description,
+        jsd.upload_date
+      FROM job_applications ja
+      JOIN job_postings jp ON ja.job_posting_id = jp.id
+      JOIN job_seekers js ON ja.job_seeker_id = js.id
+      LEFT JOIN application_documents ad ON ja.id = ad.application_id
+      LEFT JOIN job_seeker_documents jsd ON ad.document_id = jsd.id
+      WHERE jp.employer_id = ?
+      ORDER BY ja.applied_at DESC, jsd.upload_date ASC
+    `).bind(employerId).all();
+
+    return c.json(result.results || []);
+  } catch (error) {
+    console.error('지원자 서류 조회 오류:', error);
+    return c.json({ error: '지원자 서류 조회에 실패했습니다.' }, 500);
+  }
+});
+
+// 특정 지원서의 첨부 서류 조회 API
+app.get('/api/applications/:id/documents', async (c) => {
+  try {
+    const applicationId = c.req.param('id');
+    
+    const result = await c.env.DB.prepare(`
+      SELECT 
+        jsd.id as document_id,
+        jsd.document_type,
+        jsd.original_filename,
+        jsd.file_size,
+        jsd.file_type,
+        jsd.description,
+        jsd.upload_date
+      FROM application_documents ad
+      JOIN job_seeker_documents jsd ON ad.document_id = jsd.id
+      WHERE ad.application_id = ?
+      ORDER BY jsd.upload_date DESC
+    `).bind(applicationId).all();
+
+    return c.json({ documents: result.results || [] });
+  } catch (error) {
+    console.error('지원서 서류 조회 오류:', error);
+    return c.json({ error: '지원서 서류 조회에 실패했습니다.' }, 500);
+  }
+});
+
+// 서류 삭제 API
+app.delete('/api/documents/:id', async (c) => {
+  try {
+    const documentId = c.req.param('id');
+    const userHeader = c.req.header('Authorization');
+    
+    if (!userHeader) {
+      return c.json({ error: '인증이 필요합니다.' }, 401);
+    }
+
+    // 서류 소유자 확인
+    const document = await c.env.DB.prepare(`
+      SELECT job_seeker_id FROM job_seeker_documents WHERE id = ?
+    `).bind(documentId).first();
+
+    if (!document) {
+      return c.json({ error: '서류를 찾을 수 없습니다.' }, 404);
+    }
+
+    // 서류 삭제
+    const result = await c.env.DB.prepare(`
+      DELETE FROM job_seeker_documents WHERE id = ?
+    `).bind(documentId).run();
+
+    if (result.success) {
+      return c.json({ success: true, message: '서류가 삭제되었습니다.' });
+    } else {
+      return c.json({ error: '서류 삭제에 실패했습니다.' }, 500);
+    }
+  } catch (error) {
+    console.error('서류 삭제 오류:', error);
+    return c.json({ error: '서류 삭제 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// ===== 관리자 대시보드 API =====
+
+// 통계 API
+app.get('/api/admin/stats', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    // 각 테이블의 통계 조회
+    const totalUsers = await c.env.DB.prepare('SELECT COUNT(*) as count FROM (SELECT id FROM employers UNION SELECT id FROM agents UNION SELECT id FROM job_seekers)').first();
+    const totalEmployers = await c.env.DB.prepare('SELECT COUNT(*) as count FROM employers').first();
+    const totalJobseekers = await c.env.DB.prepare('SELECT COUNT(*) as count FROM job_seekers').first();
+    const totalAgents = await c.env.DB.prepare('SELECT COUNT(*) as count FROM agents').first();
+    
+    // job_postings 테이블이 있는 경우에만 조회
+    let activeJobs = { count: 0 };
+    let totalApplications = { count: 0 };
+    let successfulMatches = { count: 0 };
+    
+    try {
+      activeJobs = await c.env.DB.prepare('SELECT COUNT(*) as count FROM job_postings WHERE status = "active"').first() || { count: 0 };
+      totalApplications = await c.env.DB.prepare('SELECT COUNT(*) as count FROM applications').first() || { count: 0 };
+      successfulMatches = await c.env.DB.prepare('SELECT COUNT(*) as count FROM applications WHERE status = "accepted"').first() || { count: 0 };
+    } catch (error) {
+      console.log('Some tables not found, using default values');
+    }
+
+    return c.json({
+      totalUsers: totalUsers?.count || 0,
+      totalEmployers: totalEmployers?.count || 0,
+      totalJobseekers: totalJobseekers?.count || 0,
+      totalAgents: totalAgents?.count || 0,
+      activeJobs: activeJobs?.count || 0,
+      totalApplications: totalApplications?.count || 0,
+      successfulMatches: successfulMatches?.count || 0
+    });
+  } catch (error) {
+    console.error('Stats fetch error:', error);
+    return c.json({ error: '통계 데이터 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 최근 활동 API
+app.get('/api/admin/activities', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    // 샘플 활동 데이터 (실제로는 활동 로그 테이블에서 조회)
+    const activities = [
+      {
+        id: 1,
+        type: 'registration',
+        description: '새 구직자 회원이 가입했습니다.',
+        user_type: '구직자',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 2,
+        type: 'job_post',
+        description: '새 채용공고가 등록되었습니다.',
+        user_type: '구인기업',
+        created_at: new Date(Date.now() - 3600000).toISOString()
+      }
+    ];
+
+    return c.json(activities);
+  } catch (error) {
+    console.error('Activities fetch error:', error);
+    return c.json({ error: '활동 데이터 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 사용자 목록 API
+app.get('/api/admin/users', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const { type = 'employers' } = c.req.query();
+    let tableName;
+    
+    switch(type) {
+      case 'employers': tableName = 'employers'; break;
+      case 'agents': tableName = 'agents'; break;
+      case 'jobseekers': tableName = 'job_seekers'; break;
+      default: tableName = 'employers';
+    }
+
+    const users = await c.env.DB.prepare(`
+      SELECT * FROM ${tableName} ORDER BY created_at DESC LIMIT 50
+    `).all();
+
+    return c.json(users.results || []);
+  } catch (error) {
+    console.error('Users fetch error:', error);
+    return c.json({ error: '사용자 목록 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 사용자 상태 업데이트 API
+app.put('/api/admin/users/:id/status', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const userId = c.req.param('id');
+    const { status, userType } = await c.req.json();
+    
+    let tableName;
+    switch(userType) {
+      case 'employer': tableName = 'employers'; break;
+      case 'agent': tableName = 'agents'; break;
+      case 'jobseeker': tableName = 'job_seekers'; break;
+      default: return c.json({ error: '잘못된 사용자 유형입니다.' }, 400);
+    }
+
+    await c.env.DB.prepare(`
+      UPDATE ${tableName} SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+    `).bind(status, userId).run();
+
+    return c.json({ 
+      success: true,
+      message: '사용자 상태가 업데이트되었습니다.'
+    });
+  } catch (error) {
+    console.error('User status update error:', error);
+    return c.json({ error: '사용자 상태 업데이트 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 관리자 대시보드 - 사용자 목록 조회 API
+app.get('/api/admin/users/:userType', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const userType = c.req.param('userType');
+    let tableName = '';
+    
+    switch(userType) {
+      case 'employers':
+        tableName = 'employers';
+        break;
+      case 'agents':
+        tableName = 'agents';
+        break;
+      case 'jobseekers':
+        tableName = 'job_seekers';
+        break;
+      default:
+        return c.json({ error: '유효하지 않은 사용자 타입입니다.' }, 400);
+    }
+
+    const users = await c.env.DB.prepare(`
+      SELECT * FROM ${tableName} ORDER BY created_at DESC
+    `).all();
+
+    return c.json({ users: users.results });
+  } catch (error) {
+    console.error('사용자 목록 조회 오류:', error);
+    return c.json({ error: '사용자 목록 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 관리자 대시보드 - 통계 정보 조회 API  
+app.get('/api/admin/stats', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    // 각 테이블의 사용자 수 조회
+    const employersCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM employers').first();
+    const agentsCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM agents').first();
+    const jobSeekersCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM job_seekers').first();
+
+    return c.json({
+      totalEmployers: employersCount?.count || 0,
+      totalAgents: agentsCount?.count || 0,
+      totalJobseekers: jobSeekersCount?.count || 0,
+      totalUsers: (employersCount?.count || 0) + (agentsCount?.count || 0) + (jobSeekersCount?.count || 0)
+    });
+  } catch (error) {
+    console.error('통계 정보 조회 오류:', error);
+    return c.json({ error: '통계 정보 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 임시 패스워드 발급 API
+app.post('/api/admin/users/:id/temp-password', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const userId = c.req.param('id');
+    const { userType } = await c.req.json();
+    
+    // 6자리 임시 패스워드 생성
+    const tempPassword = Math.random().toString(36).substring(2, 8).toUpperCase();
+    
+    let tableName;
+    switch(userType) {
+      case 'employer': tableName = 'employers'; break;
+      case 'agent': tableName = 'agents'; break;
+      case 'jobseeker': tableName = 'job_seekers'; break;
+      default: return c.json({ error: '잘못된 사용자 유형입니다.' }, 400);
+    }
+
+    // 임시 패스워드를 해시화하여 저장
+    const hashedTempPassword = await hash(tempPassword);
+    
+    await c.env.DB.prepare(`
+      UPDATE ${tableName} 
+      SET password = ?, temp_password = 1, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `).bind(hashedTempPassword, userId).run();
+
+    return c.json({ 
+      success: true,
+      tempPassword: tempPassword,
+      message: '임시 패스워드가 발급되었습니다.'
+    });
+  } catch (error) {
+    console.error('Temp password generation error:', error);
+    return c.json({ error: '임시 패스워드 발급 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 사용자 일괄 상태 변경 API  
+app.put('/api/admin/users/bulk-status', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const { userIds, status, userType } = await c.req.json();
+    
+    let tableName;
+    switch(userType) {
+      case 'employer': tableName = 'employers'; break;
+      case 'agent': tableName = 'agents'; break;
+      case 'jobseeker': tableName = 'job_seekers'; break;
+      default: return c.json({ error: '잘못된 사용자 유형입니다.' }, 400);
+    }
+
+    const placeholders = userIds.map(() => '?').join(',');
+    await c.env.DB.prepare(`
+      UPDATE ${tableName} 
+      SET status = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id IN (${placeholders})
+    `).bind(status, ...userIds).run();
+
+    return c.json({ 
+      success: true,
+      message: `${userIds.length}명의 사용자 상태가 업데이트되었습니다.`
+    });
+  } catch (error) {
+    console.error('Bulk status update error:', error);
+    return c.json({ error: '일괄 상태 업데이트 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 데이터 백업 API
+app.post('/api/admin/backup', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    // 실제로는 모든 데이터를 조회해서 JSON으로 반환
+    const backupData = {
+      timestamp: new Date().toISOString(),
+      notice: '이 기능은 실제 환경에서 구현되어야 합니다.',
+      data: {
+        employers: [],
+        agents: [],
+        job_seekers: []
+      }
+    };
+
+    return new Response(JSON.stringify(backupData, null, 2), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Disposition': `attachment; filename="wowcampus_backup_${new Date().toISOString().split('T')[0]}.json"`
+      }
+    });
+  } catch (error) {
+    console.error('Backup error:', error);
+    return c.json({ error: '백업 생성 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 시스템 리포트 API
+app.get('/api/admin/report', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    // PDF 리포트 생성 (실제로는 PDF 라이브러리 사용)
+    const reportText = `WOW-CAMPUS 시스템 리포트
+생성일: ${new Date().toLocaleDateString('ko-KR')}
+
+이 기능은 실제 환경에서 PDF 생성 라이브러리와 함께 구현되어야 합니다.
+`;
+
+    return new Response(reportText, {
+      headers: {
+        'Content-Type': 'text/plain',
+        'Content-Disposition': `attachment; filename="system_report_${new Date().toISOString().split('T')[0]}.txt"`
+      }
+    });
+  } catch (error) {
+    console.error('Report error:', error);
+    return c.json({ error: '리포트 생성 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// ===== 관리자 콘텐츠 관리 API =====
+
+// 공지사항 API
+app.get('/api/admin/notices', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const notices = await c.env.DB.prepare(`
+      SELECT id, title, content, is_active, created_at, updated_at
+      FROM notices 
+      ORDER BY created_at DESC
+    `).all();
+
+    return c.json(notices.results);
+  } catch (error) {
+    console.error('Fetch notices error:', error);
+    return c.json({ error: '공지사항 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.get('/api/admin/notices/:id', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const notice = await c.env.DB.prepare(`
+      SELECT * FROM notices WHERE id = ?
+    `).bind(id).first();
+
+    if (!notice) {
+      return c.json({ error: '공지사항을 찾을 수 없습니다.' }, 404);
+    }
+
+    return c.json(notice);
+  } catch (error) {
+    console.error('Fetch notice error:', error);
+    return c.json({ error: '공지사항 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.post('/api/admin/notices', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const { title, content, is_active } = await c.req.json();
+    
+    if (!title || !content) {
+      return c.json({ error: '제목과 내용은 필수입니다.' }, 400);
+    }
+
+    const result = await c.env.DB.prepare(`
+      INSERT INTO notices (title, content, is_active, created_by)
+      VALUES (?, ?, ?, ?)
+    `).bind(title, content, is_active ? 1 : 0, user.id).run();
+
+    return c.json({ 
+      success: true, 
+      id: result.meta.last_row_id,
+      message: '공지사항이 등록되었습니다.'
+    });
+  } catch (error) {
+    console.error('Create notice error:', error);
+    return c.json({ error: '공지사항 등록 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.put('/api/admin/notices/:id', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const { title, content, is_active } = await c.req.json();
+    
+    if (!title || !content) {
+      return c.json({ error: '제목과 내용은 필수입니다.' }, 400);
+    }
+
+    await c.env.DB.prepare(`
+      UPDATE notices 
+      SET title = ?, content = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(title, content, is_active ? 1 : 0, id).run();
+
+    return c.json({ 
+      success: true,
+      message: '공지사항이 수정되었습니다.'
+    });
+  } catch (error) {
+    console.error('Update notice error:', error);
+    return c.json({ error: '공지사항 수정 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.delete('/api/admin/notices/:id', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const id = c.req.param('id');
+    
+    await c.env.DB.prepare(`
+      DELETE FROM notices WHERE id = ?
+    `).bind(id).run();
+
+    return c.json({ 
+      success: true,
+      message: '공지사항이 삭제되었습니다.'
+    });
+  } catch (error) {
+    console.error('Delete notice error:', error);
+    return c.json({ error: '공지사항 삭제 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// FAQ API
+app.get('/api/admin/faqs', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const faqs = await c.env.DB.prepare(`
+      SELECT id, category, question, answer, is_active, order_index, created_at, updated_at
+      FROM faqs 
+      ORDER BY category, order_index, created_at DESC
+    `).all();
+
+    return c.json(faqs.results);
+  } catch (error) {
+    console.error('Fetch FAQs error:', error);
+    return c.json({ error: 'FAQ 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.get('/api/admin/faqs/:id', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const faq = await c.env.DB.prepare(`
+      SELECT * FROM faqs WHERE id = ?
+    `).bind(id).first();
+
+    if (!faq) {
+      return c.json({ error: 'FAQ를 찾을 수 없습니다.' }, 404);
+    }
+
+    return c.json(faq);
+  } catch (error) {
+    console.error('Fetch FAQ error:', error);
+    return c.json({ error: 'FAQ 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.post('/api/admin/faqs', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const { category, question, answer, is_active, order_index = 0 } = await c.req.json();
+    
+    if (!category || !question || !answer) {
+      return c.json({ error: '카테고리, 질문, 답변은 필수입니다.' }, 400);
+    }
+
+    const result = await c.env.DB.prepare(`
+      INSERT INTO faqs (category, question, answer, is_active, order_index, created_by)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(category, question, answer, is_active ? 1 : 0, order_index, user.id).run();
+
+    return c.json({ 
+      success: true, 
+      id: result.meta.last_row_id,
+      message: 'FAQ가 등록되었습니다.'
+    });
+  } catch (error) {
+    console.error('Create FAQ error:', error);
+    return c.json({ error: 'FAQ 등록 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.put('/api/admin/faqs/:id', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const { category, question, answer, is_active, order_index = 0 } = await c.req.json();
+    
+    if (!category || !question || !answer) {
+      return c.json({ error: '카테고리, 질문, 답변은 필수입니다.' }, 400);
+    }
+
+    await c.env.DB.prepare(`
+      UPDATE faqs 
+      SET category = ?, question = ?, answer = ?, is_active = ?, order_index = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(category, question, answer, is_active ? 1 : 0, order_index, id).run();
+
+    return c.json({ 
+      success: true,
+      message: 'FAQ가 수정되었습니다.'
+    });
+  } catch (error) {
+    console.error('Update FAQ error:', error);
+    return c.json({ error: 'FAQ 수정 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.delete('/api/admin/faqs/:id', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const id = c.req.param('id');
+    
+    await c.env.DB.prepare(`
+      DELETE FROM faqs WHERE id = ?
+    `).bind(id).run();
+
+    return c.json({ 
+      success: true,
+      message: 'FAQ가 삭제되었습니다.'
+    });
+  } catch (error) {
+    console.error('Delete FAQ error:', error);
+    return c.json({ error: 'FAQ 삭제 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 문의 API
+app.get('/api/admin/inquiries', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const inquiries = await c.env.DB.prepare(`
+      SELECT id, name, email, phone, category, subject, message, status, created_at, updated_at
+      FROM inquiries 
+      ORDER BY created_at DESC
+    `).all();
+
+    return c.json(inquiries.results);
+  } catch (error) {
+    console.error('Fetch inquiries error:', error);
+    return c.json({ error: '문의 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.get('/api/admin/inquiries/:id', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const inquiry = await c.env.DB.prepare(`
+      SELECT * FROM inquiries WHERE id = ?
+    `).bind(id).first();
+
+    if (!inquiry) {
+      return c.json({ error: '문의를 찾을 수 없습니다.' }, 404);
+    }
+
+    return c.json(inquiry);
+  } catch (error) {
+    console.error('Fetch inquiry error:', error);
+    return c.json({ error: '문의 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.delete('/api/admin/inquiries/:id', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const id = c.req.param('id');
+    
+    await c.env.DB.prepare(`
+      DELETE FROM inquiries WHERE id = ?
+    `).bind(id).run();
+
+    return c.json({ 
+      success: true,
+      message: '문의가 삭제되었습니다.'
+    });
+  } catch (error) {
+    console.error('Delete inquiry error:', error);
+    return c.json({ error: '문의 삭제 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 문의사항 답변 API
+app.put('/api/admin/inquiries/:id/reply', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const { reply } = await c.req.json();
+    
+    if (!reply) {
+      return c.json({ error: '답변 내용은 필수입니다.' }, 400);
+    }
+
+    await c.env.DB.prepare(`
+      UPDATE inquiries 
+      SET reply = ?, status = 'completed', replied_at = CURRENT_TIMESTAMP, replied_by = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(reply, user.id, id).run();
+
+    return c.json({ 
+      success: true,
+      message: '문의 답변이 등록되었습니다.'
+    });
+  } catch (error) {
+    console.error('Reply inquiry error:', error);
+    return c.json({ error: '문의 답변 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 정책 API
+app.get('/api/admin/policies/:type', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const type = c.req.param('type');
+    const policy = await c.env.DB.prepare(`
+      SELECT * FROM policies WHERE type = ?
+    `).bind(type).first();
+
+    if (!policy) {
+      return c.json({ content: '', last_updated: new Date().toISOString().split('T')[0] });
+    }
+
+    return c.json(policy);
+  } catch (error) {
+    console.error('Fetch policy error:', error);
+    return c.json({ error: '정책 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.put('/api/admin/policies/:type', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const type = c.req.param('type');
+    const { content, last_updated } = await c.req.json();
+    
+    if (!content) {
+      return c.json({ error: '내용은 필수입니다.' }, 400);
+    }
+
+    // last_updated가 없으면 현재 날짜 사용
+    const updatedDate = last_updated || new Date().toISOString().split('T')[0];
+
+    // 기존 정책이 있는지 확인
+    const existingPolicy = await c.env.DB.prepare(`
+      SELECT id FROM policies WHERE type = ?
+    `).bind(type).first();
+
+    if (existingPolicy) {
+      // 업데이트
+      await c.env.DB.prepare(`
+        UPDATE policies 
+        SET content = ?, last_updated = ?, updated_at = CURRENT_TIMESTAMP, updated_by = ?
+        WHERE type = ?
+      `).bind(content, updatedDate, user.id, type).run();
+    } else {
+      // 새로 생성
+      await c.env.DB.prepare(`
+        INSERT INTO policies (type, content, last_updated, updated_by)
+        VALUES (?, ?, ?, ?)
+      `).bind(type, content, updatedDate, user.id).run();
+    }
+
+    return c.json({ 
+      success: true,
+      message: '정책이 저장되었습니다.'
+    });
+  } catch (error) {
+    console.error('Save policy error:', error);
+    return c.json({ error: '정책 저장 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 연락처 정보 API
+app.get('/api/admin/contact', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요합니다.' }, 403);
+    }
+
+    const contact = await c.env.DB.prepare(`
+      SELECT * FROM contact_info ORDER BY created_at DESC LIMIT 1
+    `).first();
+
+    if (!contact) {
+      return c.json({
+        phone1: '02-3144-3137',
+        phone2: '054-464-3137',
+        email: 'wow3d16@naver.com',
+        address1: '서울특별시 강남구 테헤란로 123',
+        address2: '경상북도 포항시 남구 지곡로 80',
+        hours: '평일 09:00 - 18:00'
+      });
+    }
+
+    return c.json(contact);
+  } catch (error) {
+    console.error('Fetch contact error:', error);
+    return c.json({ error: '연락처 정보 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+app.put('/api/admin/contact', verifyToken, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user.userType !== 'admin') {
+      return c.json({ error: '관리자 권한이 필요습니다.' }, 403);
+    }
+
+    const { phone1, phone2, email, address1, address2, hours } = await c.req.json();
+    
+    if (!phone1 || !email || !address1 || !hours) {
+      return c.json({ error: '필수 정보가 누락되었습니다.' }, 400);
+    }
+
+    // 기존 연락처 정보가 있는지 확인
+    const existingContact = await c.env.DB.prepare(`
+      SELECT id FROM contact_info LIMIT 1
+    `).first();
+
+    if (existingContact) {
+      // 업데이트
+      await c.env.DB.prepare(`
+        UPDATE contact_info 
+        SET phone1 = ?, phone2 = ?, email = ?, address1 = ?, address2 = ?, hours = ?, 
+            updated_at = CURRENT_TIMESTAMP, updated_by = ?
+        WHERE id = ?
+      `).bind(phone1, phone2, email, address1, address2, hours, user.id, existingContact.id).run();
+    } else {
+      // 새로 생성
+      await c.env.DB.prepare(`
+        INSERT INTO contact_info (phone1, phone2, email, address1, address2, hours, updated_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(phone1, phone2, email, address1, address2, hours, user.id).run();
+    }
+
+    return c.json({ 
+      success: true,
+      message: '연락처 정보가 저장되었습니다.'
+    });
+  } catch (error) {
+    console.error('Save contact error:', error);
+    return c.json({ error: '연락처 정보 저장 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 연락처 정보 조회 API (공개 API - 인증 불필요)
+app.get('/api/contact', async (c) => {
+  try {
+    const contact = await c.env.DB.prepare(`
+      SELECT phone1, phone2, email, address1, address2, hours
+      FROM contact_info 
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `).first();
+    
+    if (!contact) {
+      // 기본 연락처 정보 반환
+      return c.json({
+        phone1: '02-1234-5678',
+        phone2: '054-987-6543', 
+        email: 'info@wowcampus.com',
+        address1: '서울특별시 강남구 테헤란로 456',
+        address2: '경상북도 포항시 남구 지곡로 123',
+        hours: '평일 09:00 - 18:00'
+      });
+    }
+    
+    return c.json(contact);
+  } catch (error) {
+    console.error('Fetch contact error:', error);
+    return c.json({ error: '연락처 정보 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 문의 등록 API (공개 API - 인증 불필요)
+app.post('/api/inquiries', async (c) => {
+  try {
+    const { name, email, phone, category, subject, message } = await c.req.json();
+    
+    if (!name || !email || !category || !subject || !message) {
+      return c.json({ error: '필수 정보가 누락되었습니다.' }, 400);
+    }
+
+    const result = await c.env.DB.prepare(`
+      INSERT INTO inquiries (name, email, phone, category, subject, message, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending')
+    `).bind(name, email, phone, category, subject, message).run();
+
+    return c.json({ 
+      success: true, 
+      id: result.meta.last_row_id,
+      message: '문의가 접수되었습니다.'
+    });
+  } catch (error) {
+    console.error('Create inquiry error:', error);
+    return c.json({ error: '문의 접수 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 공개 공지사항 API (인증 불필요)
+app.get('/api/notices', async (c) => {
+  try {
+    const { page = 1, limit = 10 } = c.req.query();
+    
+    const notices = await c.env.DB.prepare(`
+      SELECT id, title, content, created_at
+      FROM notices 
+      WHERE is_active = 1
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
+    `).bind(parseInt(limit), (parseInt(page) - 1) * parseInt(limit)).all();
+
+    return c.json({
+      notices: notices.results,
+      page: parseInt(page),
+      limit: parseInt(limit)
+    });
+  } catch (error) {
+    console.error('Fetch public notices error:', error);
+    return c.json({ error: '공지사항 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 공개 FAQ API (인증 불필요)
+app.get('/api/faqs', async (c) => {
+  try {
+    const { category } = c.req.query();
+    
+    let query = `
+      SELECT id, category, question, answer, order_index
+      FROM faqs 
+      WHERE is_active = 1
+    `;
+    const params = [];
+
+    if (category) {
+      query += ' AND category = ?';
+      params.push(category);
+    }
+
+    query += ' ORDER BY category, order_index, created_at';
+    
+    const faqs = await c.env.DB.prepare(query).bind(...params).all();
+
+    return c.json(faqs.results);
+  } catch (error) {
+    console.error('Fetch public FAQs error:', error);
+    return c.json({ error: 'FAQ 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
 
 export default app

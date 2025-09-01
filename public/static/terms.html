@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이용약관 - WOW-CAMPUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        wowcampus: {
+                            blue: '#1E40AF',
+                            light: '#E0F2FE',
+                            dark: '#0F172A'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md border-b-2 border-wowcampus-blue">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+                    <div class="w-10 h-10 bg-gradient-to-br from-wowcampus-blue to-green-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-graduation-cap text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-wowcampus-blue tracking-tight">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">외국인 구인구직 및 유학 플랫폼</span>
+                    </div>
+                </a>
+                <nav class="flex space-x-6">
+                    <a href="/" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-home mr-2"></i>홈
+                    </a>
+                    <a href="/static/jobseeker-profile" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-briefcase mr-2"></i>채용정보
+                    </a>
+                    <a href="/static/login" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-sign-in-alt mr-2"></i>로그인
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-12">
+        <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-wowcampus-blue to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-file-contract text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">이용약관</h1>
+                <p class="text-gray-600">WOW-CAMPUS 서비스 이용에 관한 약관</p>
+                <p class="text-sm text-gray-500 mt-2">최종 업데이트: 2025년 1월 1일</p>
+            </div>
+
+            <div class="prose prose-lg max-w-none">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">제1조 (목적)</h2>
+                <p class="mb-6 text-gray-700 leading-relaxed">
+                    본 약관은 WOW-CAMPUS(이하 "회사")가 제공하는 외국인 구인구직 및 유학 플랫폼 서비스(이하 "서비스")의 
+                    이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+                </p>
+
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">제2조 (정의)</h2>
+                <div class="mb-6 text-gray-700">
+                    <p class="mb-2">본 약관에서 사용하는 용어의 정의는 다음과 같습니다:</p>
+                    <ul class="list-decimal list-inside space-y-2 ml-4">
+                        <li>"서비스"란 회사가 제공하는 외국인 구인구직 및 유학 지원 관련 온라인 플랫폼 서비스를 의미합니다.</li>
+                        <li>"이용자"란 본 약관에 따라 회사가 제공하는 서비스를 받는 회원 및 비회원을 의미합니다.</li>
+                        <li>"회원"이란 서비스에 개인정보를 제공하여 회원등록을 한 자로서, 서비스의 정보를 지속적으로 제공받으며 서비스를 이용할 수 있는 자를 의미합니다.</li>
+                        <li>"구직자"란 취업을 목적으로 서비스를 이용하는 외국인을 의미합니다.</li>
+                        <li>"기업"이란 외국인 채용을 목적으로 서비스를 이용하는 법인 또는 개인사업자를 의미합니다.</li>
+                        <li>"에이전트"란 구직자와 기업 간의 매칭을 지원하는 중개업체를 의미합니다.</li>
+                    </ul>
+                </div>
+
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">제3조 (약관의 효력 및 변경)</h2>
+                <div class="mb-6 text-gray-700">
+                    <p class="mb-2">1. 본 약관은 서비스 화면에 게시하거나 기타의 방법으로 회원에게 공지함으로써 효력을 발생합니다.</p>
+                    <p class="mb-2">2. 회사는 필요하다고 인정되는 경우 본 약관을 변경할 수 있으며, 변경된 약관은 제1항과 같은 방법으로 공지 또는 통지함으로써 효력을 발생합니다.</p>
+                    <p>3. 이용자는 변경된 약관에 동의하지 않을 경우 서비스 이용을 중단하고 이용계약을 해지할 수 있습니다.</p>
+                </div>
+
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">제4조 (서비스의 제공)</h2>
+                <div class="mb-6 text-gray-700">
+                    <p class="mb-2">회사는 다음과 같은 서비스를 제공합니다:</p>
+                    <ul class="list-decimal list-inside space-y-2 ml-4">
+                        <li>외국인 구인·구직 정보 제공 서비스</li>
+                        <li>유학 상담 및 정보 제공 서비스</li>
+                        <li>비자 관련 정보 제공 서비스</li>
+                        <li>에이전트 중개 서비스</li>
+                        <li>온라인 매칭 서비스</li>
+                        <li>기타 회사가 추가 개발하거나 다른 회사와의 제휴계약 등을 통해 회원에게 제공하는 일체의 서비스</li>
+                    </ul>
+                </div>
+
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">제5조 (회원가입)</h2>
+                <div class="mb-6 text-gray-700">
+                    <p class="mb-2">1. 서비스 이용을 희망하는 자는 회사가 정한 가입 양식에 따라 회원정보를 기입한 후 본 약관에 동의한다는 의사표시를 함으로써 회원가입을 신청합니다.</p>
+                    <p class="mb-2">2. 회사는 제1항과 같이 회원으로 가입할 것을 신청한 자 중 다음 각 호에 해당하지 않는 한 회원으로 등록합니다:</p>
+                    <ul class="list-disc list-inside space-y-1 ml-4">
+                        <li>가입신청자가 본 약관에 의하여 이전에 회원자격을 상실한 적이 있는 경우</li>
+                        <li>등록 내용에 허위, 기재누락, 오기가 있는 경우</li>
+                        <li>기타 회원으로 등록하는 것이 회사의 기술상 현저히 지장이 있다고 판단되는 경우</li>
+                    </ul>
+                </div>
+
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">제6조 (개인정보 보호)</h2>
+                <div class="mb-6 text-gray-700">
+                    <p class="mb-2">1. 회사는 이용자의 개인정보 수집 시 서비스 제공에 필요한 범위에서 최소한의 개인정보를 수집합니다.</p>
+                    <p class="mb-2">2. 회사는 회원가입 시 구체적인 서비스 제공을 위해 필요한 정보를 사전 동의 없이 이용자에게 요구하지 않습니다.</p>
+                    <p>3. 회사는 이용자의 개인정보를 당해 이용자의 동의 없이 제3자에게 누설, 배포하지 않습니다. 단, 전기통신관련법령 등 관련법령에 의해 관련 국가기관 등의 요구가 있는 경우에는 그러하지 않습니다.</p>
+                </div>
+
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">제7조 (회원의 의무)</h2>
+                <div class="mb-6 text-gray-700">
+                    <p class="mb-2">회원은 다음 행위를 하여서는 안 됩니다:</p>
+                    <ul class="list-decimal list-inside space-y-2 ml-4">
+                        <li>신청 또는 변경 시 허위내용의 등록</li>
+                        <li>타인의 정보 도용</li>
+                        <li>회사가 게시한 정보의 변경</li>
+                        <li>회사가 금지한 정보(컴퓨터 프로그램 등)의 송신 또는 게시</li>
+                        <li>회사와 기타 제3자의 저작권 등 지적재산권에 대한 침해</li>
+                        <li>회사와 기타 제3자의 명예를 손상시키거나 업무를 방해하는 행위</li>
+                        <li>외설 또는 폭력적인 메시지, 화상, 음성, 기타 공서양속에 반하는 정보를 서비스에 공개 또는 게시하는 행위</li>
+                    </ul>
+                </div>
+
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">제8조 (서비스 이용제한)</h2>
+                <div class="mb-6 text-gray-700">
+                    <p class="mb-2">1. 회사는 회원이 본 약관의 의무를 위반하거나 서비스의 정상적인 운영을 방해한 경우, 경고, 일시정지, 영구이용정지 등으로 서비스 이용을 단계적으로 제한할 수 있습니다.</p>
+                    <p>2. 회사는 전항에도 불구하고, 주민등록법을 위반한 명의도용 및 결제도용, 전화번호 도용, 저작권법 및 컴퓨터프로그램보호법을 위반한 불법프로그램의 제공 및 운영방해, 정보통신망법을 위반한 불법통신 및 해킹, 악성프로그램의 배포, 접속권한 초과행위 등과 같이 관련법을 위반한 경우에는 즉시 영구이용정지를 할 수 있습니다.</p>
+                </div>
+
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">제9조 (손해배상)</h2>
+                <div class="mb-6 text-gray-700">
+                    <p class="mb-2">1. 회사는 무료로 제공되는 서비스와 관련하여 회원에게 어떠한 손해가 발생하더라도 동 손해가 회사의 고의 또는 중대한 과실에 의한 경우를 제외하고 이에 대하여 책임을 부담하지 아니합니다.</p>
+                    <p>2. 회사가 제공하는 서비스나 서비스를 이용하여 기대하는 효과를 얻지 못하거나 손실이 발생한 경우에도 회사는 이에 대해 책임을 지지 않습니다.</p>
+                </div>
+
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">제10조 (면책조항)</h2>
+                <div class="mb-6 text-gray-700">
+                    <p class="mb-2">1. 회사는 천재지변 또는 이에 준하는 불가항력으로 인하여 서비스를 제공할 수 없는 경우에는 서비스 제공에 관한 책임이 면제됩니다.</p>
+                    <p class="mb-2">2. 회사는 회원의 귀책사유로 인한 서비스 이용의 장애에 대하여는 책임을 지지 않습니다.</p>
+                    <p>3. 회사는 회원이 서비스를 이용하여 기대하는 효과를 얻지 못한 것이나 서비스를 통하여 얻은 자료로 인한 손해에 관하여 책임을 지지 않습니다.</p>
+                </div>
+
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">제11조 (준거법 및 재판관할)</h2>
+                <div class="mb-6 text-gray-700">
+                    <p class="mb-2">1. 본 약관 및 회사와 회원간의 서비스 이용계약에 대해서는 대한민국법을 적용합니다.</p>
+                    <p>2. 서비스 이용으로 발생한 분쟁에 대해 소송이 제기되는 경우, 민사소송법상의 관할법원에 제기합니다.</p>
+                </div>
+
+                <div class="bg-gray-50 p-6 rounded-lg mt-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">부칙</h3>
+                    <p class="text-gray-700 mb-2">1. 본 약관은 2025년 1월 1일부터 적용됩니다.</p>
+                    <p class="text-gray-700">2. 본 약관에 명시되지 않은 사항에 대해서는 관련 법령 및 상관례에 따릅니다.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12 mt-16">
+        <div class="container mx-auto px-6">
+            <div class="text-center">
+                <div class="flex items-center justify-center mb-6">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-graduation-cap text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold">WOW-CAMPUS</span>
+                </div>
+                <p class="text-gray-300 mb-4">외국인을 위한 한국 취업 & 유학 플랫폼</p>
+                <div class="flex justify-center space-x-6 mb-6">
+                    <a href="/static/terms.html" class="text-gray-300 hover:text-white">이용약관</a>
+                    <a href="/static/privacy.html" class="text-gray-300 hover:text-white">개인정보처리방침</a>
+                    <a href="/static/cookie.html" class="text-gray-300 hover:text-white">쿠키정책</a>
+                </div>
+                <p class="text-sm text-gray-400">© 2025 WOW-CAMPUS. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

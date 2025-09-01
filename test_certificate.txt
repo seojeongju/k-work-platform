@@ -1,0 +1,5 @@
+자격증 증명서
+
+- AWS Certified Solutions Architect
+- Google Cloud Professional
+- 정보처리기사

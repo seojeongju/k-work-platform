@@ -39,14 +39,17 @@
                         <span class="text-xs text-gray-500">외국인 구인구직 및 유학 플랫폼</span>
                     </div>
                 </a>
-                <div class="flex space-x-4">
-                    <a href="/static/login.html" class="text-gray-600 hover:text-wowcampus-blue">
+                <nav class="flex space-x-6">
+                    <a href="/" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-home mr-2"></i>홈
+                    </a>
+                    <a href="/static/jobseeker-profile" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-briefcase mr-2"></i>채용정보
+                    </a>
+                    <a href="/static/login" class="text-gray-600 hover:text-wowcampus-blue font-medium">
                         <i class="fas fa-sign-in-alt mr-2"></i>로그인
                     </a>
-                    <a href="/" class="text-gray-600 hover:text-wowcampus-blue">
-                        <i class="fas fa-home mr-2"></i>메인으로
-                    </a>
-                </div>
+                </nav>
             </div>
         </div>
     </header>
@@ -167,17 +170,30 @@
                     </div>
                 </div>
                 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">한국어 수준</label>
-                    <select name="korean_level" class="form-input">
-                        <option value="">한국어 수준 선택</option>
-                        <option value="1급">초급 (1급)</option>
-                        <option value="2급">초급 (2급)</option>
-                        <option value="3급">중급 (3급)</option>
-                        <option value="4급">중급 (4급)</option>
-                        <option value="5급">고급 (5급)</option>
-                        <option value="6급">고급 (6급)</option>
-                    </select>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">한국어 수준</label>
+                        <select name="korean_level" class="form-input">
+                            <option value="">한국어 수준 선택</option>
+                            <option value="1급">초급 (1급)</option>
+                            <option value="2급">초급 (2급)</option>
+                            <option value="3급">중급 (3급)</option>
+                            <option value="4급">중급 (4급)</option>
+                            <option value="5급">고급 (5급)</option>
+                            <option value="6급">고급 (6급)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">연계 에이전트</label>
+                        <select name="agent_id" id="agentSelect" class="form-input">
+                            <option value="">에이전트 선택 (선택사항)</option>
+                            <!-- 에이전트 목록은 JavaScript로 동적 로드 -->
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            에이전트가 있으시면 선택해주세요. 취업 지원을 받으실 수 있습니다.
+                        </p>
+                    </div>
                 </div>
                 
                 <button type="submit" class="register-btn">
@@ -220,7 +236,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">연락처 *</label>
-                        <input type="tel" name="phone" required class="form-input" placeholder="02-1234-5678">
+                        <input type="tel" name="phone" required class="form-input" placeholder="02-3144-3137">
                     </div>
                 </div>
                 
@@ -393,6 +409,47 @@
         </div>
     </main>
 
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h4 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-graduation-cap mr-2"></i>WOW-CAMPUS
+                    </h4>
+                    <p class="text-gray-400 text-sm">글로벌 취업의 새로운 시작</p>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">서비스</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/jobs.html" class="hover:text-white">채용정보</a></li>
+                        <li><a href="/static/companies.html" class="hover:text-white">기업정보</a></li>
+                        <li><a href="/static/resume.html" class="hover:text-white">이력서</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">고객지원</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/faq" class="hover:text-white">자주묻는질문</a></li>
+                        <li><a href="/static/contact" class="hover:text-white">문의하기</a></li>
+                        <li><a href="/static/notice" class="hover:text-white">공지사항</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">정책</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/terms" class="hover:text-white">이용약관</a></li>
+                        <li><a href="/static/privacy" class="hover:text-white">개인정보처리방침</a></li>
+                        <li><a href="/static/cookies" class="hover:text-white">쿠키정책</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
+                <p>&copy; 2024 WOW-CAMPUS. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
     <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script>
@@ -447,6 +504,38 @@
             const form = document.getElementById(formId);
             if (form) {
                 form.classList.remove('hidden');
+                
+                // 구직자 폼인 경우 에이전트 목록 로드
+                if (userType === 'jobseeker') {
+                    loadAgents();
+                }
+            }
+        }
+
+        // 에이전트 목록 로드
+        async function loadAgents() {
+            try {
+                const response = await axios.get('/api/agents/active');
+                const agents = response.data;
+                
+                const agentSelect = document.getElementById('agentSelect');
+                
+                // 기존 옵션들 제거 (첫 번째 기본 옵션 제외)
+                while (agentSelect.children.length > 1) {
+                    agentSelect.removeChild(agentSelect.lastChild);
+                }
+                
+                // 에이전트 목록 추가
+                agents.forEach(agent => {
+                    const option = document.createElement('option');
+                    option.value = agent.id;
+                    option.textContent = `${agent.company_name} (${agent.country}) - ${agent.contact_person}`;
+                    agentSelect.appendChild(option);
+                });
+                
+                console.log(`${agents.length}개의 에이전트 로드 완료`);
+            } catch (error) {
+                console.error('에이전트 목록 로드 실패:', error);
             }
         }
 

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구직자 프로필 관리 - WOW-CAMPUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#1E40AF',
+              secondary: '#3B82F6',
+              accent: '#059669',
+              wowcampus: {
+                blue: '#1E40AF',
+                light: '#E0F2FE',
+                dark: '#0F172A'
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+        .card-shadow:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md border-b-2 border-wowcampus-blue">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+                    <div class="w-10 h-10 bg-gradient-to-br from-wowcampus-blue to-accent rounded-lg flex items-center justify-center">
+                        <i class="fas fa-graduation-cap text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-wowcampus-blue tracking-tight">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">구직자 프로필</span>
+                    </div>
+                </a>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-home mr-2"></i>홈
+                    </a>
+                    <span class="text-sm text-gray-600">환영합니다, <span id="user-name" class="font-medium">구직자님</span></span>
+                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-full font-medium hover:bg-red-600 transition-colors text-sm">
+                        <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- 프로필 완성도 -->
+        <div class="bg-white rounded-lg card-shadow mb-8 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">프로필 완성도</h2>
+                <span id="completion-percentage" class="text-2xl font-bold text-wowcampus-blue">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div id="completion-bar" class="progress-bar bg-gradient-to-r from-wowcampus-blue to-accent h-3 rounded-full" style="width: 0%"></div>
+            </div>
+            <p class="text-sm text-gray-600 mt-2">프로필을 완성하면 더 많은 매칭 기회를 얻을 수 있습니다!</p>
+        </div>
+
+        <!-- 대시보드 통계 -->
+        <div class="grid md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg card-shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <i class="fas fa-paper-plane text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">지원한 공고</p>
+                        <p class="text-2xl font-bold text-gray-800" id="stat-applications">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg card-shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <i class="fas fa-handshake text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">매칭 결과</p>
+                        <p class="text-2xl font-bold text-gray-800" id="stat-matches">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg card-shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <i class="fas fa-eye text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">프로필 조회</p>
+                        <p class="text-2xl font-bold text-gray-800" id="stat-views">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg card-shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                        <i class="fas fa-star text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">매칭 점수</p>
+                        <p class="text-2xl font-bold text-gray-800" id="stat-score">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 액션 버튼들 -->
+        <div class="flex flex-wrap gap-4 mb-8">
+            <button onclick="showProfileEditModal()" class="bg-wowcampus-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-wowcampus-dark transition-colors">
+                <i class="fas fa-edit mr-2"></i>프로필 수정
+            </button>
+            <button onclick="findMatches()" class="bg-accent text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                <i class="fas fa-search mr-2"></i>매칭 구인공고 찾기
+            </button>
+            <button onclick="refreshData()" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-700 transition-colors">
+                <i class="fas fa-sync-alt mr-2"></i>새로고침
+            </button>
+        </div>
+
+        <!-- 탭 메뉴 -->
+        <div class="bg-white rounded-lg card-shadow mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex">
+                    <button onclick="switchTab('profile')" id="tab-profile" class="px-6 py-4 text-sm font-medium border-b-2 border-wowcampus-blue text-wowcampus-blue">
+                        <i class="fas fa-user mr-2"></i>내 프로필
+                    </button>
+                    <button onclick="switchTab('applications')" id="tab-applications" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-paper-plane mr-2"></i>지원 내역
+                    </button>
+                    <button onclick="switchTab('matches')" id="tab-matches" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-handshake mr-2"></i>매칭 결과
+                    </button>
+                    <button onclick="switchTab('jobs')" id="tab-jobs" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-briefcase mr-2"></i>추천 구인공고
+                    </button>
+                    <button onclick="switchTab('documents')" id="tab-documents" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-file-alt mr-2"></i>서류 관리
+                    </button>
+                </nav>
+            </div>
+
+            <!-- 탭 컨텐츠 -->
+            <div class="p-6">
+                <!-- 프로필 탭 -->
+                <div id="content-profile" class="tab-content">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <!-- 기본 정보 -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-user text-wowcampus-blue mr-2"></i>기본 정보
+                            </h3>
+                            <div id="basic-info" class="space-y-3">
+                                <!-- 기본 정보가 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+
+                        <!-- 비자 & 언어 정보 -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-passport text-wowcampus-blue mr-2"></i>비자 & 언어
+                            </h3>
+                            <div id="visa-info" class="space-y-3">
+                                <!-- 비자 정보가 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+
+                        <!-- 학력 & 경력 -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-graduation-cap text-wowcampus-blue mr-2"></i>학력 & 경력
+                            </h3>
+                            <div id="education-info" class="space-y-3">
+                                <!-- 학력 정보가 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+
+                        <!-- 희망 조건 -->
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-bullseye text-wowcampus-blue mr-2"></i>희망 조건
+                            </h3>
+                            <div id="preference-info" class="space-y-3">
+                                <!-- 희망 조건이 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+
+                        <!-- 에이전트 정보 -->
+                        <div class="bg-gray-50 rounded-lg p-6 md:col-span-2">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800">
+                                    <i class="fas fa-handshake text-wowcampus-blue mr-2"></i>연계 에이전트 정보
+                                </h3>
+                                <button onclick="showAgentEditModal()" class="text-wowcampus-blue hover:text-wowcampus-dark text-sm font-medium">
+                                    <i class="fas fa-edit mr-1"></i>변경
+                                </button>
+                            </div>
+                            <div id="agent-info" class="space-y-3">
+                                <!-- 에이전트 정보가 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 지원 내역 탭 -->
+                <div id="content-applications" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">지원 내역</h3>
+                        <select id="applications-filter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                            <option value="all">전체</option>
+                            <option value="pending">검토 중</option>
+                            <option value="reviewed">검토 완료</option>
+                            <option value="accepted">합격</option>
+                            <option value="rejected">불합격</option>
+                        </select>
+                    </div>
+                    <div id="applications-list" class="space-y-4">
+                        <!-- 지원 내역이 여기에 표시됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 매칭 결과 탭 -->
+                <div id="content-matches" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">AI 매칭 결과</h3>
+                        <button onclick="generateNewMatches()" class="bg-accent text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700">
+                            <i class="fas fa-magic mr-1"></i>새 매칭 생성
+                        </button>
+                    </div>
+                    <div id="matches-list" class="space-y-4">
+                        <!-- 매칭 결과가 여기에 표시됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 추천 구인공고 탭 -->
+                <div id="content-jobs" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">맞춤 추천 구인공고</h3>
+                        <select id="jobs-filter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                            <option value="all">전체</option>
+                            <option value="perfect">완벽 매치</option>
+                            <option value="good">좋은 매치</option>
+                            <option value="recent">최근 등록</option>
+                        </select>
+                    </div>
+                    <div id="recommended-jobs" class="space-y-4">
+                        <!-- 추천 구인공고가 여기에 표시됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 서류 관리 탭 -->
+                <div id="content-documents" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            <i class="fas fa-folder-open text-wowcampus-blue mr-2"></i>내 서류함
+                        </h3>
+                        <button onclick="openUploadModal()" class="bg-wowcampus-blue text-white px-4 py-2 rounded-lg hover:bg-wowcampus-dark transition-colors">
+                            <i class="fas fa-upload mr-2"></i>서류 업로드
+                        </button>
+                    </div>
+
+                    <!-- 서류 통계 -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-file-alt text-blue-600 text-2xl mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-blue-600 font-medium">이력서</p>
+                                    <p id="resume-count" class="text-xl font-bold text-blue-800">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-certificate text-green-600 text-2xl mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-green-600 font-medium">자격증</p>
+                                    <p id="certificate-count" class="text-xl font-bold text-green-800">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-folder text-purple-600 text-2xl mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-purple-600 font-medium">전체 서류</p>
+                                    <p id="total-documents-count" class="text-xl font-bold text-purple-800">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 서류 목록 필터 -->
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button onclick="filterDocuments('all')" class="document-filter-btn active bg-wowcampus-blue text-white px-3 py-1 rounded-full text-sm">
+                            전체
+                        </button>
+                        <button onclick="filterDocuments('resume')" class="document-filter-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-300">
+                            이력서
+                        </button>
+                        <button onclick="filterDocuments('certificate')" class="document-filter-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-300">
+                            자격증
+                        </button>
+                        <button onclick="filterDocuments('diploma')" class="document-filter-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-300">
+                            학위증명서
+                        </button>
+                        <button onclick="filterDocuments('portfolio')" class="document-filter-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-300">
+                            포트폴리오
+                        </button>
+                        <button onclick="filterDocuments('other')" class="document-filter-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-300">
+                            기타
+                        </button>
+                    </div>
+
+                    <!-- 서류 목록 -->
+                    <div id="documents-list" class="space-y-3">
+                        <!-- 서류 목록이 여기에 표시됩니다 -->
+                    </div>
+
+                    <!-- 서류가 없을 때 메시지 -->
+                    <div id="no-documents" class="text-center py-12 text-gray-500 hidden">
+                        <i class="fas fa-inbox text-6xl mb-4"></i>
+                        <h4 class="text-lg font-medium mb-2">업로드된 서류가 없습니다</h4>
+                        <p class="text-sm mb-4">이력서, 자격증, 학위증명서 등을 업로드하여 채용 확률을 높여보세요!</p>
+                        <button onclick="openUploadModal()" class="bg-wowcampus-blue text-white px-6 py-2 rounded-lg hover:bg-wowcampus-dark transition-colors">
+                            <i class="fas fa-upload mr-2"></i>첫 서류 업로드하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 서류 업로드 모달 -->
+        <div id="upload-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-900">
+                        <i class="fas fa-upload text-wowcampus-blue mr-2"></i>서류 업로드
+                    </h3>
+                    <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <form id="document-upload-form" class="space-y-4" enctype="multipart/form-data">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">서류 유형 *</label>
+                        <select id="document-type" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue">
+                            <option value="">서류 유형 선택</option>
+                            <option value="resume">이력서</option>
+                            <option value="certificate">자격증</option>
+                            <option value="diploma">학위증명서</option>
+                            <option value="portfolio">포트폴리오</option>
+                            <option value="visa_copy">비자 사본</option>
+                            <option value="other">기타</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">파일 선택 *</label>
+                        <input type="file" id="document-file" required 
+                               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.hwp"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue">
+                        <p class="text-xs text-gray-500 mt-1">지원 형식: PDF, DOC, DOCX, HWP, JPG, PNG (최대 10MB)</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">설명</label>
+                        <textarea id="document-description" rows="3" 
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue"
+                                  placeholder="서류에 대한 간단한 설명을 입력해주세요 (선택사항)"></textarea>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" id="is-public" checked class="mr-2">
+                        <label for="is-public" class="text-sm text-gray-700">기업에게 공개 (채용 담당자가 열람 가능)</label>
+                    </div>
+
+                    <div class="flex space-x-3 mt-6">
+                        <button type="button" onclick="closeUploadModal()" class="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50">
+                            취소
+                        </button>
+                        <button type="submit" class="flex-1 bg-wowcampus-blue text-white py-2 px-4 rounded-lg hover:bg-wowcampus-dark">
+                            업로드
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- 프로필 수정 모달 -->
+    <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">프로필 수정</h2>
+                    <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <form id="profile-form" class="space-y-6">
+                    <!-- 기본 정보 섹션 -->
+                    <div class="border-b pb-6">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">기본 정보</h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">이름 *</label>
+                                <input type="text" id="edit-name" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">이메일 *</label>
+                                <input type="email" id="edit-email" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">생년월일</label>
+                                <input type="date" id="edit-birth-date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">성별</label>
+                                <select id="edit-gender" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                                    <option value="">선택안함</option>
+                                    <option value="male">남성</option>
+                                    <option value="female">여성</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">국적 *</label>
+                                <input type="text" id="edit-nationality" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">연락처</label>
+                                <input type="tel" id="edit-phone" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 비자 & 언어 정보 섹션 -->
+                    <div class="border-b pb-6">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">비자 & 언어</h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">현재 비자</label>
+                                <select id="edit-current-visa" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                                    <option value="">선택해주세요</option>
+                                    <option value="C-3">C-3 (관광통과)</option>
+                                    <option value="D-2">D-2 (유학)</option>
+                                    <option value="D-4">D-4 (일반연수)</option>
+                                    <option value="E-7">E-7 (특정활동)</option>
+                                    <option value="E-9">E-9 (비전문취업)</option>
+                                    <option value="H-2">H-2 (방문취업)</option>
+                                    <option value="F-4">F-4 (재외동포)</option>
+                                    <option value="F-5">F-5 (영주)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">희망 비자</label>
+                                <select id="edit-desired-visa" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                                    <option value="">선택해주세요</option>
+                                    <option value="E-7">E-7 (특정활동)</option>
+                                    <option value="E-9">E-9 (비전문취업)</option>
+                                    <option value="H-2">H-2 (방문취업)</option>
+                                    <option value="F-4">F-4 (재외동포)</option>
+                                    <option value="F-5">F-5 (영주)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">한국어 수준</label>
+                                <select id="edit-korean-level" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                                    <option value="">선택해주세요</option>
+                                    <option value="beginner">초급</option>
+                                    <option value="intermediate">중급</option>
+                                    <option value="advanced">고급</option>
+                                    <option value="native">원어민급</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">주소</label>
+                                <input type="text" id="edit-address" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 학력 & 경력 섹션 -->
+                    <div class="border-b pb-6">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">학력 & 경력</h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">최종 학력</label>
+                                <select id="edit-education" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                                    <option value="">선택해주세요</option>
+                                    <option value="고등학교">고등학교</option>
+                                    <option value="전문학사">전문학사 (2-3년제)</option>
+                                    <option value="학사">학사 (4년제)</option>
+                                    <option value="석사">석사</option>
+                                    <option value="박사">박사</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">희망 직종</label>
+                                <select id="edit-desired-category" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                                    <option value="">선택해주세요</option>
+                                    <option value="제조업">제조업</option>
+                                    <option value="IT/소프트웨어">IT/소프트웨어</option>
+                                    <option value="서비스업">서비스업</option>
+                                    <option value="건설업">건설업</option>
+                                    <option value="농업/어업">농업/어업</option>
+                                    <option value="영업/마케팅">영업/마케팅</option>
+                                    <option value="기타">기타</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">경력 사항</label>
+                            <textarea id="edit-experience" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent" placeholder="이전 직장 경험이나 전문 기술을 입력해주세요..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 희망 조건 섹션 -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">희망 조건</h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">희망 지역</label>
+                                <input type="text" id="edit-desired-location" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent" placeholder="예: 서울, 경기도, 부산 등">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">희망 급여 (만원/월)</label>
+                                <input type="number" id="edit-desired-salary" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">자기소개</label>
+                            <textarea id="edit-introduction" rows="4" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent" placeholder="본인의 강점과 목표를 간단히 소개해주세요..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-4 pt-6 border-t">
+                        <button type="button" onclick="closeProfileModal()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                            취소
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-wowcampus-blue text-white rounded-lg hover:bg-wowcampus-dark">
+                            <i class="fas fa-save mr-1"></i>저장
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 에이전트 변경 모달 -->
+    <div id="agentEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+            <div class="flex justify-between items-center p-6 border-b">
+                <h2 class="text-xl font-semibold text-gray-800">
+                    <i class="fas fa-handshake text-wowcampus-blue mr-2"></i>에이전트 변경
+                </h2>
+                <button onclick="closeAgentModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="agentEditForm" class="p-6">
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">에이전트 선택</label>
+                    <select id="editAgentSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                        <option value="">에이전트 없음</option>
+                        <!-- 에이전트 목록은 JavaScript로 동적 로드 -->
+                    </select>
+                    <p class="text-xs text-gray-500 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        에이전트를 변경하거나 연결을 해제할 수 있습니다.
+                    </p>
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeAgentModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                        취소
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-wowcampus-blue text-white rounded-lg hover:bg-wowcampus-dark">
+                        <i class="fas fa-save mr-1"></i>변경
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h4 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-graduation-cap mr-2"></i>WOW-CAMPUS
+                    </h4>
+                    <p class="text-gray-400 text-sm">글로벌 취업의 새로운 시작</p>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">서비스</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/jobs.html" class="hover:text-white">채용정보</a></li>
+                        <li><a href="/static/companies.html" class="hover:text-white">기업정보</a></li>
+                        <li><a href="/static/resume.html" class="hover:text-white">이력서</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">고객지원</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/faq" class="hover:text-white">자주묻는질문</a></li>
+                        <li><a href="/static/contact" class="hover:text-white">문의하기</a></li>
+                        <li><a href="/static/notice" class="hover:text-white">공지사항</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">정책</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/terms" class="hover:text-white">이용약관</a></li>
+                        <li><a href="/static/privacy" class="hover:text-white">개인정보처리방침</a></li>
+                        <li><a href="/static/cookies" class="hover:text-white">쿠키정책</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
+                <p>&copy; 2024 WOW-CAMPUS. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/jobseeker-profile.js"></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>탭 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-6 py-8">
+        <h1 class="text-2xl font-bold mb-6">구직자 프로필 탭 테스트</h1>
+        
+        <!-- 탭 네비게이션 -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex">
+                    <button onclick="switchTab('profile')" id="tab-profile" class="px-6 py-4 text-sm font-medium border-b-2 border-wowcampus-blue text-wowcampus-blue">
+                        <i class="fas fa-user mr-2"></i>내 프로필
+                    </button>
+                    <button onclick="switchTab('applications')" id="tab-applications" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-paper-plane mr-2"></i>지원 내역
+                    </button>
+                    <button onclick="switchTab('matches')" id="tab-matches" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-handshake mr-2"></i>매칭 결과
+                    </button>
+                    <button onclick="switchTab('jobs')" id="tab-jobs" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-briefcase mr-2"></i>추천 구인공고
+                    </button>
+                    <button onclick="switchTab('documents')" id="tab-documents" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-file-alt mr-2"></i>서류 관리
+                    </button>
+                </nav>
+            </div>
+
+            <!-- 탭 컨텐츠 -->
+            <div class="p-6">
+                <div id="content-profile" class="tab-content">
+                    <h2 class="text-xl font-semibold mb-4">프로필 정보</h2>
+                    <p>프로필 내용이 여기에 표시됩니다.</p>
+                </div>
+                
+                <div id="content-applications" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-4">지원 내역</h2>
+                    <p>지원 내역이 여기에 표시됩니다.</p>
+                </div>
+                
+                <div id="content-matches" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-4">매칭 결과</h2>
+                    <p>매칭 결과가 여기에 표시됩니다.</p>
+                </div>
+                
+                <div id="content-jobs" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-4">추천 구인공고</h2>
+                    <p>추천 공고가 여기에 표시됩니다.</p>
+                </div>
+                
+                <div id="content-documents" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-4">서류 관리</h2>
+                    <p>업로드된 서류가 여기에 표시됩니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 테스트용 JavaScript -->
+    <script>
+        // 테스트용 로그인 데이터 설정
+        localStorage.setItem('token', 'token_1_jobseeker');
+        localStorage.setItem('user', JSON.stringify({
+            id: 1,
+            email: 'nguyenvan@example.com',
+            type: 'jobseeker',
+            name: '응우엔 반',
+            status: 'active'
+        }));
+
+        // 탭 전환 함수
+        function switchTab(tabName) {
+            console.log('switchTab 호출됨:', tabName);
+            
+            // 모든 탭 버튼 비활성화
+            document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+                tab.classList.remove('border-blue-500', 'text-blue-600');
+                tab.classList.add('border-transparent', 'text-gray-600');
+            });
+
+            // 선택된 탭 활성화
+            const activeTab = document.getElementById(`tab-${tabName}`);
+            if (activeTab) {
+                activeTab.classList.remove('border-transparent', 'text-gray-600');
+                activeTab.classList.add('border-blue-500', 'text-blue-600');
+            }
+
+            // 모든 컨텐츠 숨기기
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            // 선택된 컨텐츠 표시
+            const activeContent = document.getElementById(`content-${tabName}`);
+            if (activeContent) {
+                activeContent.classList.remove('hidden');
+                console.log('탭 전환 성공:', tabName);
+            } else {
+                console.error('컨텐츠를 찾을 수 없음:', `content-${tabName}`);
+            }
+        }
+    </script>
+</body>
+</html>
