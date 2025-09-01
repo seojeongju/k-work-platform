@@ -135,12 +135,26 @@ function convertKoreanLevelForJobSeeker(level: string): string {
   if (!level) return 'beginner'
   
   const levelMap: Record<string, string> = {
+    // 급수 기준
     '1급': 'beginner',
     '2급': 'beginner',
     '3급': 'intermediate', 
     '4급': 'intermediate',
     '5급': 'advanced',
     '6급': 'advanced',
+    // 한국어 레벨 기준
+    '초급': 'beginner',
+    '기초': 'beginner',
+    '중급': 'intermediate',
+    '고급': 'advanced',
+    '최고급': 'native',
+    '원어민': 'native',
+    // 영어 레벨 (그대로)
+    'beginner': 'beginner',
+    'intermediate': 'intermediate', 
+    'advanced': 'advanced',
+    'native': 'native',
+    // 기타
     '기타': 'beginner'
   }
   
@@ -1424,18 +1438,23 @@ app.post('/api/auth/login', async (c) => {
       default: return c.json({ error: '잘못된 사용자 유형입니다.' }, 400);
     }
 
+    // 사용자 조회 (패스워드 포함)
     const user = await c.env.DB.prepare(
-      `SELECT id, email, status FROM ${tableName} WHERE email = ? AND password = ?`
-    ).bind(email, password).first()
+      `SELECT id, email, password, status FROM ${tableName} WHERE email = ?`
+    ).bind(email).first()
 
     if (!user) {
       return c.json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' }, 401)
     }
 
-    // 상태 검증 (에이전트와 기업은 pending도 허용)
-    const allowedStatuses = userType === 'jobseeker' 
-      ? ['active'] 
-      : ['approved', 'active', 'pending'];
+    // 패스워드 해시 비교
+    const hashedInputPassword = await hash(password);
+    if (user.password !== hashedInputPassword) {
+      return c.json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' }, 401)
+    }
+
+    // 상태 검증 (모든 사용자 유형에서 pending, approved, active 허용)
+    const allowedStatuses = ['pending', 'approved', 'active'];
     
     if (!allowedStatuses.includes(user.status)) {
       return c.json({ error: '승인되지 않은 계정입니다.' }, 401)
@@ -1489,6 +1508,9 @@ app.post('/api/auth/register/employer', async (c) => {
       return c.json({ error: '이미 등록된 사업자번호입니다.' }, 400)
     }
 
+    // 패스워드 해시화
+    const hashedPassword = await hash(password);
+
     const result = await c.env.DB.prepare(`
       INSERT INTO employers (
         email, password, company_name, business_number, industry, 
@@ -1496,7 +1518,7 @@ app.post('/api/auth/register/employer', async (c) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     `).bind(
       email,
-      password, // 실제 환경에서는 해시화 필요
+      hashedPassword,
       company_name,
       business_number,
       industry,
@@ -1552,6 +1574,11 @@ app.post('/api/auth/register/jobseeker', async (c) => {
     // 한국어 레벨 변환
     const convertedKoreanLevel = convertKoreanLevelForJobSeeker(korean_level || '')
 
+    // 성별 값 변환 (한국어 → 영어)
+    const convertedGender = gender === '남성' ? 'male' : 
+                           gender === '여성' ? 'female' : 
+                           gender; // 이미 영어면 그대로
+
     // 에이전트 ID 유효성 검사 (선택사항)
     if (agent_id) {
       const agentExists = await c.env.DB.prepare(`
@@ -1563,6 +1590,9 @@ app.post('/api/auth/register/jobseeker', async (c) => {
       }
     }
 
+    // 패스워드 해시화
+    const hashedPassword = await hash(password);
+
     const result = await c.env.DB.prepare(`
       INSERT INTO job_seekers (
         email, password, name, birth_date, gender, nationality, 
@@ -1571,10 +1601,10 @@ app.post('/api/auth/register/jobseeker', async (c) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     `).bind(
       email,
-      password, // 실제 환경에서는 해시화 필요
+      hashedPassword,
       name,
       birth_date || null,
-      gender || null,
+      convertedGender || null,
       nationality,
       current_visa || null,
       desired_visa || null,
@@ -1590,14 +1620,14 @@ app.post('/api/auth/register/jobseeker', async (c) => {
     const token = `token_${result.meta.last_row_id}_jobseeker`
 
     return c.json({
-      message: '구직자 회원가입이 완료되었습니다.',
+      message: '구직자 회원가입이 완료되었습니다. 관리자 승인 후 이용 가능합니다.',
       token,
       user: {
         id: result.meta.last_row_id,
         email,
         type: 'jobseeker',
         name,
-        status: 'active'
+        status: 'pending'
       }
     }, 201)
   } catch (error) {
@@ -1627,6 +1657,9 @@ app.post('/api/auth/register/agent', async (c) => {
       return c.json({ error: '이미 등록된 이메일입니다.' }, 400)
     }
 
+    // 패스워드 해시화
+    const hashedPassword = await hash(password);
+
     const result = await c.env.DB.prepare(`
       INSERT INTO agents (
         email, password, company_name, country, contact_person, 
@@ -1634,7 +1667,7 @@ app.post('/api/auth/register/agent', async (c) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     `).bind(
       email,
-      password, // 실제 환경에서는 해시화 필요
+      hashedPassword,
       company_name,
       country,
       contact_person,
