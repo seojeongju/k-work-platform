@@ -288,6 +288,22 @@ class AdminDashboard {
         if (!this.selectedUser) return;
 
         try {
+            const userType = this.currentTab.slice(0, -1); // Remove 's' from end
+            
+            // 사용자 유형별로 적절한 상태값 매핑
+            let actualStatus = status;
+            if (userType === 'jobseeker') {
+                // job_seekers 테이블의 허용 상태: pending, active, inactive, matched, suspended
+                if (status === 'approved') {
+                    actualStatus = 'active'; // approved -> active로 변환
+                }
+            } else if (userType === 'employer' || userType === 'agent') {
+                // employers, agents 테이블의 허용 상태: pending, approved, suspended
+                // 이미 올바른 상태값 사용
+            }
+
+            console.log('Status mapping:', { originalStatus: status, actualStatus, userType });
+
             const response = await fetch(`/api/admin/users/${this.selectedUser.id}/status`, {
                 method: 'PUT',
                 headers: {
@@ -295,21 +311,22 @@ class AdminDashboard {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ 
-                    status, 
-                    userType: this.currentTab.slice(0, -1) // Remove 's' from end
+                    status: actualStatus, 
+                    userType: userType
                 })
             });
 
             if (!response.ok) {
-                throw new Error('상태 업데이트 실패');
+                const errorData = await response.json();
+                throw new Error(errorData.error || '상태 업데이트 실패');
             }
 
             this.closeUserModal();
             this.loadUserManagement();
-            this.showSuccess(`사용자 상태가 ${this.getStatusText(status)}(으)로 변경되었습니다.`);
+            this.showSuccess(`사용자 상태가 ${this.getStatusText(actualStatus)}(으)로 변경되었습니다.`);
         } catch (error) {
             console.error('상태 업데이트 실패:', error);
-            this.showError('상태 업데이트에 실패했습니다.');
+            this.showError(`상태 업데이트에 실패했습니다: ${error.message}`);
         }
     }
 

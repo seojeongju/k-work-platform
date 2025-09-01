@@ -299,6 +299,10 @@
                         window.location.href = `/static/agent-dashboard?agentId=${response.data.user.id}`;
                     } else if (selectedUserType === 'admin') {
                         window.location.href = '/static/admin-dashboard.html';
+                    } else if (selectedUserType === 'employer') {
+                        window.location.href = '/static/employer-dashboard.html';
+                    } else if (selectedUserType === 'jobseeker') {
+                        window.location.href = '/static/jobseeker-profile.html';
                     } else {
                         window.location.href = '/';
                     }

@@ -12,13 +12,16 @@ class EmployerDashboard {
         // 로그인 상태 및 권한 확인
         this.checkAuthAndPermissions();
         
-        // URL에서 employerId 가져오기
-        const urlParams = new URLSearchParams(window.location.search);
-        this.employerId = urlParams.get('employerId');
+        // 로그인한 사용자의 ID를 employerId로 사용
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        this.employerId = user.id;
+        
+        console.log('DEBUG - localStorage user:', user);
+        console.log('DEBUG - employerId:', this.employerId);
         
         if (!this.employerId) {
-            alert('잘못된 접근입니다.');
-            window.location.href = '/';
+            alert('사용자 정보를 찾을 수 없습니다. User: ' + JSON.stringify(user));
+            window.location.href = '/static/login.html';
             return;
         }
 
@@ -46,12 +49,6 @@ class EmployerDashboard {
         }
 
         this.currentUser = user;
-        
-        // 회사명 표시
-        const companyNameEl = document.getElementById('company-name');
-        if (companyNameEl) {
-            companyNameEl.textContent = user.company_name || user.name || '기업명';
-        }
     }
 
     bindEvents() {
@@ -75,6 +72,9 @@ class EmployerDashboard {
 
     async loadInitialData() {
         try {
+            // 사용자 정보 업데이트 (로그인 정보에서 회사명 가져오기)
+            this.updateUserInfo();
+            
             await Promise.all([
                 this.loadStats(),
                 this.loadMyJobs()
@@ -84,9 +84,36 @@ class EmployerDashboard {
         }
     }
 
+    updateUserInfo() {
+        const user = this.currentUser;
+        console.log('updateUserInfo - currentUser:', user);
+        console.log('updateUserInfo - employerId:', this.employerId);
+        
+        // 회사명 표시
+        const companyNameEl = document.getElementById('company-name');
+        if (companyNameEl && user.company_name) {
+            companyNameEl.textContent = user.company_name;
+        }
+
+        // 담당자명 표시 (있는 경우)
+        const contactPersonEl = document.getElementById('contact-person');
+        if (contactPersonEl && user.contact_person) {
+            contactPersonEl.textContent = user.contact_person;
+        }
+
+        // 사용자 이메일 표시
+        const userEmailEl = document.getElementById('user-email');
+        if (userEmailEl) {
+            userEmailEl.textContent = user.email;
+        }
+    }
+
     async loadStats() {
         try {
             const token = localStorage.getItem('token');
+            console.log('loadStats - employerId:', this.employerId);
+            console.log('loadStats - token:', token);
+            
             const [jobsResponse, applicationsResponse, matchesResponse] = await Promise.all([
                 axios.get(`/api/employers/${this.employerId}/jobs`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -103,14 +130,19 @@ class EmployerDashboard {
             const applications = applicationsResponse.data.applications || [];
             const matches = matchesResponse.data.matches || [];
 
+            console.log('loadStats - jobs response:', jobsResponse.data);
+            console.log('loadStats - jobs count:', jobs.length);
+            console.log('loadStats - applications count:', applications.length);
+
             // 통계 업데이트
             document.getElementById('stat-jobs').textContent = jobs.length;
             document.getElementById('stat-applications').textContent = applications.length;
-            document.getElementById('stat-pending').textContent = applications.filter(app => app.status === 'pending').length;
+            document.getElementById('stat-pending').textContent = applications.filter(app => app.application_status === 'pending').length;
             document.getElementById('stat-matches').textContent = matches.filter(match => match.status === 'accepted').length;
 
         } catch (error) {
             console.error('통계 로드 실패:', error);
+            alert('통계 로드 실패: ' + error.message);
             // 기본값으로 설정
             document.getElementById('stat-jobs').textContent = '0';
             document.getElementById('stat-applications').textContent = '0';
@@ -122,22 +154,28 @@ class EmployerDashboard {
     async loadMyJobs() {
         try {
             const token = localStorage.getItem('token');
-            const filter = document.getElementById('jobs-filter').value;
+            const filter = document.getElementById('jobs-filter') ? document.getElementById('jobs-filter').value : 'all';
             
-            let url = `/api/jobs?employer_id=${this.employerId}`;
+            let url = `/api/employers/${this.employerId}/jobs`;
             if (filter !== 'all') {
-                url += `&status=${filter}`;
+                url += `?status=${filter}`;
             }
+
+            console.log('loadMyJobs - URL:', url);
+            console.log('loadMyJobs - employerId:', this.employerId);
 
             const response = await axios.get(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
             const jobs = response.data.jobs || [];
+            console.log('loadMyJobs - jobs response:', response.data);
+            console.log('loadMyJobs - jobs count:', jobs.length);
             this.renderJobsList(jobs);
 
         } catch (error) {
             console.error('구인공고 로드 실패:', error);
+            alert('구인공고 로드 실패: ' + error.message);
             this.renderJobsList([]);
         }
     }
@@ -456,18 +494,47 @@ class EmployerDashboard {
         const isEdit = !!jobId;
         
         const formData = {
-            title: document.getElementById('job-title').value,
+            title: document.getElementById('job-title').value.trim(),
             job_category: document.getElementById('job-category').value,
-            work_location: document.getElementById('work-location').value,
+            work_location: document.getElementById('work-location').value.trim(),
             required_visa: document.getElementById('required-visa').value,
             salary_min: document.getElementById('salary-min').value ? parseInt(document.getElementById('salary-min').value) * 10000 : null,
             salary_max: document.getElementById('salary-max').value ? parseInt(document.getElementById('salary-max').value) * 10000 : null,
             positions: parseInt(document.getElementById('positions').value) || 1,
-            korean_level_required: document.getElementById('korean-level').value,
+            korean_level_required: document.getElementById('korean-level').value || 'none',
             deadline: document.getElementById('deadline').value || null,
-            description: document.getElementById('job-description').value,
+            description: document.getElementById('job-description').value.trim(),
             employer_id: parseInt(this.employerId)
         };
+
+        // 디버깅: 전송할 데이터 확인
+        console.log('전송할 구인공고 데이터:', formData);
+        console.log('korean_level_required 값:', formData.korean_level_required);
+
+        // 필수 필드 검증
+        if (!formData.title) {
+            alert('구인공고 제목을 입력해주세요.');
+            document.getElementById('job-title').focus();
+            return;
+        }
+        
+        if (!formData.job_category) {
+            alert('직종을 선택해주세요.');
+            document.getElementById('job-category').focus();
+            return;
+        }
+        
+        if (!formData.work_location) {
+            alert('근무지역을 입력해주세요.');
+            document.getElementById('work-location').focus();
+            return;
+        }
+        
+        if (!formData.required_visa) {
+            alert('비자 유형을 선택해주세요.');
+            document.getElementById('required-visa').focus();
+            return;
+        }
 
         try {
             const token = localStorage.getItem('token');
@@ -492,7 +559,16 @@ class EmployerDashboard {
 
         } catch (error) {
             console.error('구인공고 저장 실패:', error);
-            alert('구인공고 저장에 실패했습니다. 다시 시도해주세요.');
+            
+            // API 응답에서 구체적인 오류 메시지 추출
+            let errorMessage = '구인공고 저장에 실패했습니다.';
+            if (error.response && error.response.data && error.response.data.error) {
+                errorMessage = error.response.data.error;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            alert(errorMessage + ' 다시 시도해주세요.');
         }
     }
 

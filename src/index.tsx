@@ -1438,18 +1438,29 @@ app.post('/api/auth/login', async (c) => {
       default: return c.json({ error: '잘못된 사용자 유형입니다.' }, 400);
     }
 
-    // 사용자 조회 (패스워드 포함)
+    // 사용자 조회 (패스워드 포함, 구인기업인 경우 회사명도 포함)
+    let selectFields = 'id, email, password, status';
+    if (tableName === 'employers') {
+      selectFields += ', company_name, contact_person';
+    } else if (tableName === 'job_seekers') {
+      selectFields += ', name';
+    } else if (tableName === 'agents') {
+      selectFields += ', company_name, contact_person';
+    }
+    
     const user = await c.env.DB.prepare(
-      `SELECT id, email, password, status FROM ${tableName} WHERE email = ?`
+      `SELECT ${selectFields} FROM ${tableName} WHERE email = ?`
     ).bind(email).first()
 
     if (!user) {
       return c.json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' }, 401)
     }
 
-    // 패스워드 해시 비교
+    // 패스워드 비교 (해시된 비밀번호와 평문 비밀번호 모두 지원)
     const hashedInputPassword = await hash(password);
-    if (user.password !== hashedInputPassword) {
+    const isPasswordValid = user.password === hashedInputPassword || user.password === password;
+    
+    if (!isPasswordValid) {
       return c.json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' }, 401)
     }
 
@@ -1463,15 +1474,29 @@ app.post('/api/auth/login', async (c) => {
     // 토큰 생성 (간단한 형식 유지)
     const token = `token_${user.id}_${userType}`
 
+    // 사용자 정보 구성 (사용자 타입별로 필요한 정보 추가)
+    const userInfo = {
+      id: user.id,
+      email: user.email,
+      type: userType,
+      status: user.status
+    };
+
+    // 사용자 타입별 추가 정보
+    if (userType === 'employer') {
+      userInfo.company_name = user.company_name;
+      userInfo.contact_person = user.contact_person;
+    } else if (userType === 'jobseeker') {
+      userInfo.name = user.name;
+    } else if (userType === 'agent') {
+      userInfo.company_name = user.company_name;
+      userInfo.contact_person = user.contact_person;
+    }
+
     return c.json({
       success: true,
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        type: userType,
-        status: user.status
-      }
+      user: userInfo
     })
   } catch (error) {
     return c.json({ error: '로그인 중 오류가 발생했습니다.' }, 500)
@@ -3054,6 +3079,12 @@ app.get('/api/employers/:id/jobs', async (c) => {
     const employerId = c.req.param('id');
     const { status } = c.req.query();
     
+    // 인증 체크
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: '인증이 필요합니다.' }, 401);
+    }
+    
     let query = 'SELECT * FROM job_postings WHERE employer_id = ?';
     const params = [employerId];
     
@@ -3076,6 +3107,12 @@ app.get('/api/employers/:id/applications', async (c) => {
   try {
     const employerId = c.req.param('id');
     const { status } = c.req.query();
+    
+    // 인증 체크
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: '인증이 필요합니다.' }, 401);
+    }
     
     let query = `
       SELECT 
@@ -3111,6 +3148,12 @@ app.get('/api/employers/:id/applications', async (c) => {
 app.get('/api/employers/:id/matches', async (c) => {
   try {
     const employerId = c.req.param('id');
+    
+    // 인증 체크
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: '인증이 필요합니다.' }, 401);
+    }
     
     const matches = await c.env.DB.prepare(`
       SELECT 
@@ -3230,8 +3273,35 @@ app.get('/api/jobs/recommended/:jobSeekerId', async (c) => {
 // 구인공고 수정 API (PUT)
 app.put('/api/jobs/:id', async (c) => {
   try {
+    // 인증 체크
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: '인증이 필요합니다.' }, 401);
+    }
+    
     const jobId = c.req.param('id');
-    const jobData = await c.req.json();
+    const {
+      title, job_category, work_location, region, required_visa,
+      salary_min, salary_max, korean_level_required, description,
+      positions, deadline, requirements, benefits, work_hours, experience_required
+    } = await c.req.json();
+
+    // region이 없으면 work_location에서 추출 시도, 그것도 안되면 기본값 제공
+    const workRegion = region || 
+                      (work_location && work_location.includes('서울') ? '서울' : 
+                       work_location && work_location.includes('경기') ? '경기' : 
+                       work_location && work_location.includes('인천') ? '인천' : 
+                       work_location && work_location.includes('부산') ? '부산' :
+                       work_location && work_location.includes('대구') ? '대구' :
+                       work_location && work_location.includes('대전') ? '대전' :
+                       work_location && work_location.includes('광주') ? '광주' :
+                       work_location && work_location.includes('울산') ? '울산' :
+                       '전국'); // 기본값으로 '전국' 사용
+
+    // 필수 필드 검증
+    if (!title || !job_category || !work_location) {
+      return c.json({ error: '필수 정보가 누락되었습니다.' }, 400);
+    }
     
     // 권한 확인 (구인기업이 자신의 공고만 수정할 수 있도록)
     const existingJob = await c.env.DB.prepare(
@@ -3245,21 +3315,15 @@ app.put('/api/jobs/:id', async (c) => {
     // 구인공고 업데이트
     const result = await c.env.DB.prepare(`
       UPDATE job_postings SET 
-        title = ?, job_category = ?, work_location = ?, required_visa = ?,
-        salary_min = ?, salary_max = ?, positions = ?, korean_level_required = ?,
-        deadline = ?, description = ?, updated_at = CURRENT_TIMESTAMP
+        title = ?, job_category = ?, work_location = ?, region = ?, required_visa = ?,
+        salary_min = ?, salary_max = ?, korean_level_required = ?, description = ?,
+        requirements = ?, benefits = ?, work_hours = ?, experience_required = ?, deadline = ?,
+        updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
-      jobData.title,
-      jobData.job_category,
-      jobData.work_location,
-      jobData.required_visa,
-      jobData.salary_min,
-      jobData.salary_max,
-      jobData.positions,
-      jobData.korean_level_required,
-      jobData.deadline,
-      jobData.description,
+      title, job_category, work_location, workRegion, required_visa,
+      salary_min, salary_max, korean_level_required || 'none', description,
+      requirements || null, benefits || null, work_hours || null, experience_required || null, deadline || null,
       jobId
     ).run();
     
@@ -3301,14 +3365,16 @@ app.put('/api/job-seekers/:id', async (c) => {
     const jobSeekerId = c.req.param('id');
     const seekerData = await c.req.json();
     
-    // 구직자 정보 업데이트
+    console.log('구직자 프로필 수정 요청:', { jobSeekerId, seekerData });
+
+    // 구직자 정보 업데이트 - 올바른 컬럼명 사용
     const result = await c.env.DB.prepare(`
       UPDATE job_seekers SET 
         name = ?, email = ?, birth_date = ?, gender = ?, nationality = ?,
         phone = ?, current_visa = ?, desired_visa = ?, korean_level = ?,
         current_address = ?, education_level = ?, desired_job_category = ?,
-        work_experience = ?, desired_location = ?, desired_salary = ?,
-        introduction = ?, updated_at = CURRENT_TIMESTAMP
+        work_experience = ?, preferred_region = ?, desired_salary_min = ?,
+        self_introduction = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
       seekerData.name,
@@ -3324,11 +3390,13 @@ app.put('/api/job-seekers/:id', async (c) => {
       seekerData.education_level,
       seekerData.desired_job_category,
       seekerData.work_experience,
-      seekerData.desired_location,
-      seekerData.desired_salary,
-      seekerData.introduction,
+      seekerData.preferred_region,
+      seekerData.desired_salary_min,
+      seekerData.self_introduction,
       jobSeekerId
     ).run();
+
+    console.log('업데이트 결과:', result);
     
     if (result.success) {
       return c.json({ success: true, message: '프로필이 수정되었습니다.' });
@@ -3497,7 +3565,10 @@ app.get('/api/admin/users', async (c) => {
 app.put('/api/admin/users/:id/status', async (c) => {
   try {
     const userId = c.req.param('id');
-    const { status, userType } = await c.req.json();
+    const requestBody = await c.req.json();
+    const { status, userType } = requestBody;
+    
+    console.log('Status update request:', { userId, status, userType, requestBody });
     
     let tableName;
     switch (userType) {
@@ -3508,24 +3579,47 @@ app.put('/api/admin/users/:id/status', async (c) => {
         tableName = 'agents';
         break;
       case 'jobseeker':
+      case 'jobseekers': // 복수형도 허용
         tableName = 'job_seekers';
         break;
       default:
-        return c.json({ error: '잘못된 사용자 타입입니다.' }, 400);
+        console.error('Invalid userType:', userType);
+        return c.json({ error: `잘못된 사용자 타입입니다: ${userType}` }, 400);
     }
+
+    console.log('Using table:', tableName, 'for userType:', userType);
+
+    // 사용자 존재 여부 확인
+    const existingUser = await c.env.DB.prepare(
+      `SELECT id FROM ${tableName} WHERE id = ?`
+    ).bind(userId).first();
+
+    if (!existingUser) {
+      console.error('User not found:', userId, 'in table:', tableName);
+      return c.json({ error: '사용자를 찾을 수 없습니다.' }, 404);
+    }
+
+    console.log('Found user:', existingUser);
 
     const result = await c.env.DB.prepare(
       `UPDATE ${tableName} SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
     ).bind(status, userId).run();
 
+    console.log('Update result:', result);
+
     if (result.success) {
-      return c.json({ success: true, message: '사용자 상태가 업데이트되었습니다.' });
+      return c.json({ 
+        success: true, 
+        message: '사용자 상태가 업데이트되었습니다.',
+        changes: result.meta?.changes || result.changes || 0
+      });
     } else {
-      return c.json({ error: '상태 업데이트에 실패했습니다.' }, 500);
+      console.error('Update failed:', result);
+      return c.json({ error: '상태 업데이트에 실패했습니다.', details: result }, 500);
     }
   } catch (error) {
     console.error('사용자 상태 변경 오류:', error);
-    return c.json({ error: '사용자 상태 변경에 실패했습니다.' }, 500);
+    return c.json({ error: '사용자 상태 변경에 실패했습니다.', details: error.message }, 500);
   }
 });
 
@@ -3689,23 +3783,49 @@ app.put('/api/job-seekers/:id/agent', async (c) => {
 // 구인정보 등록 API (에이전트 정보 포함)
 app.post('/api/jobs', async (c) => {
   try {
+    // 인증 체크
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: '인증이 필요합니다.' }, 401);
+    }
+
     const {
       title, job_category, work_location, region, required_visa,
       salary_min, salary_max, korean_level_required, description,
-      employer_id, agent_id, agent_fee_percentage, agent_notes
+      employer_id, agent_id, agent_fee_percentage, agent_notes,
+      positions, deadline, requirements, benefits, work_hours, experience_required
     } = await c.req.json();
+
+    // region이 없으면 work_location에서 추출 시도, 그것도 안되면 기본값 제공
+    const workRegion = region || 
+                      (work_location && work_location.includes('서울') ? '서울' : 
+                       work_location && work_location.includes('경기') ? '경기' : 
+                       work_location && work_location.includes('인천') ? '인천' : 
+                       work_location && work_location.includes('부산') ? '부산' :
+                       work_location && work_location.includes('대구') ? '대구' :
+                       work_location && work_location.includes('대전') ? '대전' :
+                       work_location && work_location.includes('광주') ? '광주' :
+                       work_location && work_location.includes('울산') ? '울산' :
+                       '전국'); // 기본값으로 '전국' 사용
+
+    // 필수 필드 검증
+    if (!title || !job_category || !work_location || !employer_id) {
+      return c.json({ error: '필수 정보가 누락되었습니다.' }, 400);
+    }
 
     // 구인정보 등록
     const result = await c.env.DB.prepare(`
       INSERT INTO job_postings (
         employer_id, title, job_category, work_location, region, required_visa,
         salary_min, salary_max, korean_level_required, description, 
+        requirements, benefits, work_hours, experience_required, deadline,
         agent_id, agent_fee_percentage, agent_notes, status, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP)
     `).bind(
-      employer_id, title, job_category, work_location, region, required_visa,
+      employer_id, title, job_category, work_location, workRegion, required_visa,
       salary_min, salary_max, korean_level_required, description,
-      agent_id, agent_fee_percentage, agent_notes
+      requirements || null, benefits || null, work_hours || null, experience_required || null, deadline || null,
+      agent_id || null, agent_fee_percentage || 0, agent_notes || null
     ).run();
 
     if (result.success) {

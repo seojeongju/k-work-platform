@@ -60,6 +60,7 @@ class JobSeekerProfile {
         }
 
         this.currentUser = user;
+        this.token = token; // 토큰 설정 추가
         
         // 사용자명 표시
         const userNameEl = document.getElementById('user-name');
@@ -204,16 +205,16 @@ class JobSeekerProfile {
         preferenceInfo.innerHTML = `
             <div class="flex justify-between">
                 <span class="text-gray-600">희망 지역:</span>
-                <span class="font-medium">${profile.desired_location || '미입력'}</span>
+                <span class="font-medium">${profile.preferred_region || '미입력'}</span>
             </div>
             <div class="flex justify-between">
                 <span class="text-gray-600">희망 급여:</span>
-                <span class="font-medium">${profile.desired_salary ? this.formatSalary(profile.desired_salary) : '미입력'}</span>
+                <span class="font-medium">${profile.desired_salary_min ? this.formatSalary(profile.desired_salary_min) : '미입력'}</span>
             </div>
             <div class="mt-3">
                 <span class="text-gray-600">자기소개:</span>
-                <p class="mt-1 text-sm ${profile.introduction ? 'text-gray-800' : 'text-gray-400'}">
-                    ${profile.introduction || '자기소개가 없습니다.'}
+                <p class="mt-1 text-sm ${profile.self_introduction ? 'text-gray-800' : 'text-gray-400'}">
+                    ${profile.self_introduction || '자기소개가 없습니다.'}
                 </p>
             </div>
         `;
@@ -235,7 +236,7 @@ class JobSeekerProfile {
 
         const optionalFields = [
             'birth_date', 'gender', 'phone', 'desired_visa', 'current_address',
-            'work_experience', 'desired_location', 'desired_salary', 'introduction'
+            'work_experience', 'preferred_region', 'desired_salary_min', 'self_introduction'
         ];
 
         let filledRequired = 0;
@@ -635,9 +636,9 @@ class JobSeekerProfile {
         document.getElementById('edit-education').value = profile.education_level || '';
         document.getElementById('edit-desired-category').value = profile.desired_job_category || '';
         document.getElementById('edit-experience').value = profile.work_experience || '';
-        document.getElementById('edit-desired-location').value = profile.desired_location || '';
-        document.getElementById('edit-desired-salary').value = profile.desired_salary ? profile.desired_salary / 10000 : '';
-        document.getElementById('edit-introduction').value = profile.introduction || '';
+        document.getElementById('edit-desired-location').value = profile.preferred_region || '';
+        document.getElementById('edit-desired-salary').value = profile.desired_salary_min ? profile.desired_salary_min / 10000 : '';
+        document.getElementById('edit-introduction').value = profile.self_introduction || '';
 
         document.getElementById('profile-modal').classList.remove('hidden');
     }
@@ -659,9 +660,9 @@ class JobSeekerProfile {
             education_level: document.getElementById('edit-education').value || null,
             desired_job_category: document.getElementById('edit-desired-category').value || null,
             work_experience: document.getElementById('edit-experience').value || null,
-            desired_location: document.getElementById('edit-desired-location').value || null,
-            desired_salary: document.getElementById('edit-desired-salary').value ? parseInt(document.getElementById('edit-desired-salary').value) * 10000 : null,
-            introduction: document.getElementById('edit-introduction').value || null
+            preferred_region: document.getElementById('edit-desired-location').value || null,
+            desired_salary_min: document.getElementById('edit-desired-salary').value ? parseInt(document.getElementById('edit-desired-salary').value) * 10000 : null,
+            self_introduction: document.getElementById('edit-introduction').value || null
         };
 
         try {
@@ -807,8 +808,93 @@ class JobSeekerProfile {
     }
 
     async viewJobDetail(jobId) {
-        // 구인공고 상세 보기 (새 창에서)
-        window.open(`/static/job-detail.html?jobId=${jobId}`, '_blank');
+        // 모달 열기
+        const modal = document.getElementById('job-detail-modal');
+        const loading = document.getElementById('job-detail-loading');
+        const content = document.getElementById('job-detail-content');
+        const error = document.getElementById('job-detail-error');
+
+        modal.classList.remove('hidden');
+        loading.classList.remove('hidden');
+        content.classList.add('hidden');
+        error.classList.add('hidden');
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`/api/jobs/${jobId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.status === 200) {
+                const job = response.data.job || response.data;
+                this.populateJobDetailModal(job);
+                
+                loading.classList.add('hidden');
+                content.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('구인공고 상세 정보 로드 실패:', error);
+            loading.classList.add('hidden');
+            error.classList.remove('hidden');
+
+            // 로그인이 필요한 경우 처리
+            if (error.response && error.response.status === 401) {
+                const errorData = error.response.data;
+                if (errorData.requireAuth) {
+                    alert(errorData.message || '로그인이 필요합니다.');
+                    this.closeJobDetailModal();
+                    // 로그인 페이지로 리디렉션할 수도 있음
+                    // window.location.href = '/static/login.html';
+                }
+            }
+        }
+    }
+
+    populateJobDetailModal(job) {
+        // 기본 정보
+        document.getElementById('job-title').textContent = job.title || '제목 없음';
+        document.getElementById('job-company').textContent = job.company_name || '회사명 없음';
+        document.getElementById('job-location').textContent = job.work_location || '위치 정보 없음';
+        document.getElementById('job-status').textContent = this.getJobStatusText(job.status);
+        document.getElementById('job-deadline').textContent = job.deadline ? new Date(job.deadline).toLocaleDateString('ko-KR') : '상시모집';
+
+        // 급여 정보
+        const salaryText = this.formatSalaryRange(job.salary_min, job.salary_max);
+        document.getElementById('job-salary').textContent = salaryText;
+
+        // 기타 정보
+        document.getElementById('job-visa').textContent = job.required_visa || '비자 정보 없음';
+        document.getElementById('job-category').textContent = job.job_category || '직종 정보 없음';
+        document.getElementById('job-description').textContent = job.description || '업무 내용이 없습니다.';
+        document.getElementById('job-requirements').textContent = job.requirements || '자격 요건이 없습니다.';
+        document.getElementById('job-hours').textContent = job.work_hours || '근무 시간 정보 없음';
+        document.getElementById('job-benefits').textContent = job.benefits || '복리후생 정보 없음';
+        document.getElementById('job-korean-level').textContent = this.getKoreanLevelText(job.korean_level_required) || '수준 정보 없음';
+        document.getElementById('job-experience').textContent = job.experience_required || '경력 요건 없음';
+
+        // 지원하기 버튼에 jobId 설정
+        const applyBtn = document.getElementById('job-apply-btn');
+        applyBtn.onclick = () => this.applyToJob(job.id);
+    }
+
+    getJobStatusText(status) {
+        const statusMap = {
+            'active': '모집중',
+            'pending': '검토중',
+            'closed': '마감',
+            'suspended': '일시정지'
+        };
+        return statusMap[status] || status;
+    }
+
+    formatSalaryRange(min, max) {
+        if (!min && !max) return '급여 정보 없음';
+        if (!max || min === max) return this.formatSalary(min);
+        return `${this.formatSalary(min)} ~ ${this.formatSalary(max)}`;
+    }
+
+    closeJobDetailModal() {
+        document.getElementById('job-detail-modal').classList.add('hidden');
     }
 
     async applyToJob(jobId) {
@@ -862,10 +948,10 @@ class JobSeekerProfile {
 
     // 서류 관리 메서드들
     async loadDocuments() {
-        if (!this.user) return;
+        if (!this.currentUser) return;
 
         try {
-            const response = await fetch(`/api/jobseeker/${this.user.id}/documents`, {
+            const response = await fetch(`/api/jobseeker/${this.currentUser.id}/documents`, {
                 headers: {
                     'Authorization': `Bearer ${this.token}`
                 }
@@ -1276,8 +1362,8 @@ function deleteDocument(documentId) {
     }
 }
 
-// 서류 업로드 폼 처리
-document.addEventListener('DOMContentLoaded', () => {
+// 서류 업로드 폼 처리 함수
+function initializeUploadForm() {
     const uploadForm = document.getElementById('document-upload-form');
     if (uploadForm) {
         uploadForm.addEventListener('submit', async (e) => {
@@ -1316,8 +1402,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+}
 
-    // 에이전트 변경 폼 처리
+// 에이전트 변경 폼 초기화 함수
+function initializeAgentForm() {
     const agentEditForm = document.getElementById('agentEditForm');
     if (agentEditForm) {
         agentEditForm.addEventListener('submit', async (e) => {
@@ -1331,10 +1419,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-});
+}
 
 // 프로필 관리 초기화
 let profile;
 document.addEventListener('DOMContentLoaded', () => {
     profile = new JobSeekerProfile();
+    
+    // 폼 초기화
+    initializeUploadForm();
+    initializeAgentForm();
 });
+
+// 전역 함수들 (HTML onclick에서 사용)
+function closeJobDetailModal() {
+    if (profile) {
+        profile.closeJobDetailModal();
+    }
+}
