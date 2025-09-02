@@ -3425,7 +3425,7 @@ app.post('/api/applications', async (c) => {
     
     // 지원 등록
     const result = await c.env.DB.prepare(`
-      INSERT INTO job_applications (job_posting_id, job_seeker_id, status, created_at)
+      INSERT INTO job_applications (job_posting_id, job_seeker_id, application_status, applied_at)
       VALUES (?, ?, 'pending', CURRENT_TIMESTAMP)
     `).bind(job_posting_id, job_seeker_id).run();
     
@@ -5028,6 +5028,170 @@ app.get('/api/faqs', async (c) => {
   } catch (error) {
     console.error('Fetch public FAQs error:', error);
     return c.json({ error: 'FAQ 조회 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// ===== 구인기업 지원자 관리 API =====
+
+// 구직자 상세 정보 조회 API (구인기업용)
+app.get('/api/job-seekers/:id/profile', async (c) => {
+  try {
+    const jobSeekerId = c.req.param('id');
+    const token = c.req.header('authorization');
+    
+    if (!token) {
+      return c.json({ error: '인증이 필요합니다.' }, 401);
+    }
+
+    // 구직자 기본 정보
+    const jobSeeker = await c.env.DB.prepare(`
+      SELECT 
+        js.id, js.email, js.name, js.nationality, js.gender, 
+        js.birth_date, js.phone, js.current_address,
+        js.current_visa, js.desired_visa, js.visa_expiry,
+        js.korean_level, js.english_level, js.other_languages,
+        js.education_level, js.major, js.university, js.graduation_year,
+        js.work_experience, js.skills, js.certifications,
+        js.desired_job_type, js.desired_location, js.desired_salary,
+        js.introduction, js.status, js.created_at,
+        a.company_name as agent_company_name, a.contact_person as agent_contact
+      FROM job_seekers js
+      LEFT JOIN agents a ON js.agent_id = a.id
+      WHERE js.id = ?
+    `).bind(jobSeekerId).first();
+
+    if (!jobSeeker) {
+      return c.json({ error: '구직자를 찾을 수 없습니다.' }, 404);
+    }
+
+    // 지원 이력 조회
+    const applications = await c.env.DB.prepare(`
+      SELECT 
+        ja.id, ja.application_status, ja.applied_at, ja.cover_letter, ja.notes,
+        jp.title as job_title, jp.company_name, jp.work_location
+      FROM job_applications ja
+      JOIN job_postings jp ON ja.job_posting_id = jp.id
+      WHERE ja.job_seeker_id = ?
+      ORDER BY ja.applied_at DESC
+    `).bind(jobSeekerId).all();
+
+    // 업로드된 서류 정보 조회
+    const documents = await c.env.DB.prepare(`
+      SELECT document_id, document_type, original_filename, file_size, uploaded_at
+      FROM job_seeker_documents 
+      WHERE job_seeker_id = ?
+      ORDER BY uploaded_at DESC
+    `).bind(jobSeekerId).all();
+
+    return c.json({
+      jobSeeker,
+      applications: applications.results || [],
+      documents: documents.results || []
+    });
+
+  } catch (error) {
+    console.error('구직자 프로필 조회 오류:', error);
+    return c.json({ error: '구직자 정보를 조회할 수 없습니다.' }, 500);
+  }
+});
+
+// 지원 상태 변경 API
+app.put('/api/applications/:id/status', async (c) => {
+  try {
+    const applicationId = c.req.param('id');
+    const { status, notes } = await c.req.json();
+    const token = c.req.header('authorization');
+    
+    if (!token) {
+      return c.json({ error: '인증이 필요합니다.' }, 401);
+    }
+
+    // 유효한 상태값 확인
+    const validStatuses = ['pending', 'submitted', 'interview', 'accepted', 'rejected'];
+    if (!validStatuses.includes(status)) {
+      return c.json({ error: '유효하지 않은 상태입니다.' }, 400);
+    }
+
+    // 지원서 존재 여부 확인
+    const application = await c.env.DB.prepare(`
+      SELECT ja.id, ja.job_seeker_id, jp.employer_id, js.name as job_seeker_name, jp.title as job_title
+      FROM job_applications ja
+      JOIN job_postings jp ON ja.job_posting_id = jp.id
+      JOIN job_seekers js ON ja.job_seeker_id = js.id
+      WHERE ja.id = ?
+    `).bind(applicationId).first();
+
+    if (!application) {
+      return c.json({ error: '지원서를 찾을 수 없습니다.' }, 404);
+    }
+
+    // 지원 상태 업데이트
+    const updateResult = await c.env.DB.prepare(`
+      UPDATE job_applications 
+      SET application_status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(status, notes || null, applicationId).run();
+
+    if (!updateResult.success) {
+      return c.json({ error: '지원 상태 업데이트에 실패했습니다.' }, 500);
+    }
+
+    // 상태 변경 알림 로그 (실제 환경에서는 이메일/SMS 발송)
+    console.log(`지원 상태 변경: ${application.job_seeker_name} -> ${application.job_title} (${status})`);
+
+    return c.json({ 
+      success: true, 
+      message: '지원 상태가 업데이트되었습니다.',
+      application: {
+        id: applicationId,
+        status,
+        job_seeker_name: application.job_seeker_name,
+        job_title: application.job_title
+      }
+    });
+
+  } catch (error) {
+    console.error('지원 상태 변경 오류:', error);
+    return c.json({ error: '지원 상태 변경에 실패했습니다.' }, 500);
+  }
+});
+
+// 지원서 일괄 처리 API
+app.put('/api/applications/batch-update', async (c) => {
+  try {
+    const { applicationIds, status, notes } = await c.req.json();
+    const token = c.req.header('authorization');
+    
+    if (!token) {
+      return c.json({ error: '인증이 필요합니다.' }, 401);
+    }
+
+    if (!Array.isArray(applicationIds) || applicationIds.length === 0) {
+      return c.json({ error: '지원서 ID 목록이 필요합니다.' }, 400);
+    }
+
+    const validStatuses = ['pending', 'submitted', 'interview', 'accepted', 'rejected'];
+    if (!validStatuses.includes(status)) {
+      return c.json({ error: '유효하지 않은 상태입니다.' }, 400);
+    }
+
+    // 일괄 업데이트
+    const placeholders = applicationIds.map(() => '?').join(',');
+    const updateResult = await c.env.DB.prepare(`
+      UPDATE job_applications 
+      SET application_status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id IN (${placeholders})
+    `).bind(status, notes || null, ...applicationIds).run();
+
+    return c.json({ 
+      success: true, 
+      message: `${applicationIds.length}개의 지원서 상태가 ${status}로 변경되었습니다.`,
+      updatedCount: updateResult.changes || 0
+    });
+
+  } catch (error) {
+    console.error('지원서 일괄 처리 오류:', error);
+    return c.json({ error: '지원서 일괄 처리에 실패했습니다.' }, 500);
   }
 });
 
