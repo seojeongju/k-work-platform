@@ -19,11 +19,89 @@ async function hash(password: string): Promise<string> {
   return hashHex
 }
 
+// 입력 검증 함수들
+function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email) && email.length <= 255
+}
+
+function validatePassword(password: string): boolean {
+  // 최소 8자, 영문자+숫자 조합
+  return password.length >= 8 && password.length <= 100 && 
+         /^(?=.*[A-Za-z])(?=.*\d)/.test(password)
+}
+
+function sanitizeInput(input: string): string {
+  if (typeof input !== 'string') return ''
+  return input.trim().replace(/[<>'"&]/g, '')
+}
+
+function validatePhoneNumber(phone: string): boolean {
+  // 한국 전화번호 형식
+  const phoneRegex = /^(\+82|0)(\d{1,2})-?(\d{3,4})-?(\d{4})$/
+  return phoneRegex.test(phone)
+}
+
+// SQL 인젝션 방지를 위한 매개변수 검증
+function validateId(id: string): boolean {
+  return /^\d+$/.test(id) && parseInt(id) > 0
+}
+
 const app = new Hono<{ Bindings: Bindings }>()
+
+// 보안 헤더 미들웨어
+app.use('*', async (c, next) => {
+  // 보안 헤더 설정
+  c.header('X-Content-Type-Options', 'nosniff')
+  c.header('X-Frame-Options', 'DENY')
+  c.header('X-XSS-Protection', '1; mode=block')
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin')
+  c.header('Content-Security-Policy', 
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
+    "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
+    "font-src 'self' https://cdn.jsdelivr.net; " +
+    "img-src 'self' data: https:; " +
+    "connect-src 'self' https://w-campus.com https://www.w-campus.com"
+  )
+  
+  await next()
+})
+
+// Rate Limiting (간단한 구현)
+const requestCounts = new Map<string, { count: number; resetTime: number }>()
+app.use('/api/*', async (c, next) => {
+  const clientIP = c.req.header('CF-Connecting-IP') || 
+                   c.req.header('X-Forwarded-For') || 
+                   'unknown'
+  const now = Date.now()
+  const windowMs = 15 * 60 * 1000 // 15분
+  const maxRequests = 100
+  
+  const key = `rate_limit_${clientIP}`
+  const current = requestCounts.get(key)
+  
+  if (!current || now > current.resetTime) {
+    requestCounts.set(key, { count: 1, resetTime: now + windowMs })
+  } else {
+    current.count++
+    if (current.count > maxRequests) {
+      return c.json({ error: '요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.' }, 429)
+    }
+  }
+  
+  await next()
+})
 
 // CORS 설정
 app.use('/api/*', cors({
-  origin: ['http://localhost:3000', 'https://job-platform.pages.dev'],
+  origin: [
+    'http://localhost:3000',
+    'https://w-campus.com',
+    'https://www.w-campus.com',
+    'https://w-campus-com.pages.dev',
+    'https://job-platform.pages.dev'
+  ],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
 }))
@@ -34,8 +112,8 @@ app.use('/static/*', serveStatic({ root: './public' }))
 // 렌더러 설정
 app.use(renderer)
 
-// JWT 토큰 검증 미들웨어
-const JWT_SECRET = 'job-platform-secret-key-2024';
+// JWT 토큰 검증 미들웨어 
+const JWT_SECRET = 'w-campus-secure-jwt-secret-key-2025';
 
 async function verifyToken(c: any, next: any) {
   const authHeader = c.req.header('Authorization');
@@ -160,6 +238,56 @@ function convertKoreanLevelForJobSeeker(level: string): string {
   
   return levelMap[level] || 'beginner'
 }
+
+// 헬스체크 엔드포인트
+app.get('/health', async (c) => {
+  try {
+    // 데이터베이스 연결 확인
+    await c.env.DB.prepare('SELECT 1').first()
+    
+    return c.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      service: 'WOW-CAMPUS K-Work Platform',
+      version: '1.0.0',
+      database: 'connected'
+    })
+  } catch (error) {
+    return c.json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      service: 'WOW-CAMPUS K-Work Platform',
+      version: '1.0.0',
+      database: 'error',
+      error: 'Database connection failed'
+    }, 500)
+  }
+})
+
+// 시스템 상태 API
+app.get('/api/system/status', async (c) => {
+  try {
+    const dbCheck = await c.env.DB.prepare('SELECT COUNT(*) as total FROM employers').first()
+    const userCounts = {
+      employers: dbCheck?.total || 0,
+      jobSeekers: (await c.env.DB.prepare('SELECT COUNT(*) as total FROM job_seekers').first())?.total || 0,
+      agents: (await c.env.DB.prepare('SELECT COUNT(*) as total FROM agents').first())?.total || 0,
+      jobPostings: (await c.env.DB.prepare('SELECT COUNT(*) as total FROM job_postings').first())?.total || 0
+    }
+    
+    return c.json({
+      status: 'operational',
+      timestamp: new Date().toISOString(),
+      counts: userCounts,
+      uptime: process.uptime ? Math.floor(process.uptime()) : 0
+    })
+  } catch (error) {
+    return c.json({ 
+      error: '시스템 상태 확인 중 오류가 발생했습니다.',
+      timestamp: new Date().toISOString()
+    }, 500)
+  }
+})
 
 // 메인 페이지
 app.get('/', (c) => {

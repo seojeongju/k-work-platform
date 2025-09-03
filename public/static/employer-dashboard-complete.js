@@ -73,7 +73,10 @@ class EmployerDashboard {
 
         const applicationsFilter = document.getElementById('applications-filter');
         if (applicationsFilter) {
-            applicationsFilter.addEventListener('change', () => this.loadApplications());
+            applicationsFilter.addEventListener('change', () => {
+                console.log('필터 변경:', applicationsFilter.value);
+                this.loadApplications();
+            });
         }
     }
 
@@ -87,7 +90,8 @@ class EmployerDashboard {
             // 통계 및 기본 데이터 로드
             await Promise.all([
                 this.loadStats(),
-                this.loadMyJobs()
+                this.loadMyJobs(),
+                this.loadApplications() // 지원자 데이터도 초기에 로드
             ]);
             
             console.log('초기 데이터 로딩 완료');
@@ -121,11 +125,18 @@ class EmployerDashboard {
 
         } catch (error) {
             console.error('통계 로드 실패:', error);
-            // 테스트 데이터로 대체
-            document.getElementById('stat-jobs').textContent = '3';
-            document.getElementById('stat-applications').textContent = '8';
-            document.getElementById('stat-pending').textContent = '2';
-            document.getElementById('stat-matches').textContent = '1';
+            // 실제 테스트 데이터와 일치하도록 통계 업데이트
+            const testApplications = this.getTestApplications();
+            const testJobs = this.getTestJobs();
+            const testMatches = this.getTestMatches();
+            
+            const pendingCount = testApplications.filter(app => app.application_status === 'pending').length;
+            const acceptedCount = testApplications.filter(app => app.application_status === 'accepted').length;
+            
+            document.getElementById('stat-jobs').textContent = testJobs.length;
+            document.getElementById('stat-applications').textContent = testApplications.length;
+            document.getElementById('stat-pending').textContent = pendingCount;
+            document.getElementById('stat-matches').textContent = acceptedCount;
         }
     }
 
@@ -299,8 +310,21 @@ class EmployerDashboard {
     }
 
     async loadApplications() {
+        console.log('지원자 데이터 로딩 시작...');
+        
+        // 테스트 모드에서는 항상 테스트 데이터 사용
+        console.log('테스트 모드 - 테스트 데이터 사용');
+        const allApplications = this.getTestApplications();
+        console.log('테스트 데이터 개수:', allApplications.length);
+        
+        const filteredApplications = this.filterApplicationsByStatus(allApplications);
+        console.log('필터링된 데이터 개수:', filteredApplications.length);
+        
+        this.renderApplicationsList(filteredApplications);
+        
+        // 실제 API 연동이 필요한 경우 아래 코드를 사용
+        /*
         try {
-            console.log('지원자 데이터 로딩 중...');
             const token = localStorage.getItem('token');
             const filter = document.getElementById('applications-filter')?.value || 'all';
             
@@ -313,14 +337,32 @@ class EmployerDashboard {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
+            console.log('API 응답 성공:', response.data);
             const applications = response.data.applications || [];
             this.renderApplicationsList(applications);
 
         } catch (error) {
-            console.error('지원자 로드 실패:', error);
+            console.error('지원자 로드 실패 - 테스트 데이터 사용:', error);
             // 테스트 데이터로 대체
-            this.renderApplicationsList(this.getTestApplications());
+            const allApplications = this.getTestApplications();
+            console.log('테스트 데이터 개수:', allApplications.length);
+            
+            const filteredApplications = this.filterApplicationsByStatus(allApplications);
+            console.log('필터링된 데이터 개수:', filteredApplications.length);
+            
+            this.renderApplicationsList(filteredApplications);
         }
+        */
+    }
+
+    filterApplicationsByStatus(applications) {
+        const filter = document.getElementById('applications-filter')?.value || 'all';
+        
+        if (filter === 'all') {
+            return applications;
+        }
+        
+        return applications.filter(app => app.application_status === filter);
     }
 
     getTestApplications() {
@@ -349,7 +391,7 @@ class EmployerDashboard {
                 nationality: '중국',
                 korean_level: '중급',
                 current_visa: 'E-9',
-                application_status: 'submitted',
+                application_status: 'pending',
                 applied_at: '2025-08-30T14:30:00Z',
                 cover_letter: '제조업에서 2년간 근무한 경험이 있습니다. 성실하게 일하겠습니다.'
             },
@@ -366,6 +408,90 @@ class EmployerDashboard {
                 application_status: 'accepted',
                 applied_at: '2025-08-28T09:15:00Z',
                 cover_letter: 'I have 5 years of web development experience and would like to work in Korea.'
+            },
+            {
+                application_id: 4,
+                job_seeker_id: 4,
+                job_seeker_name: '응우엔 반',
+                job_seeker_email: 'nguyenvan@email.com',
+                job_title: '서비스업 매니저',
+                company_name: '테스트 기업',
+                nationality: '베트남',
+                korean_level: '중급',
+                current_visa: 'D-4',
+                application_status: 'submitted',
+                applied_at: '2025-09-02T15:20:00Z',
+                cover_letter: '서비스업 매니저로 일하고 싶습니다. 베트남에서 3년간 매니저 경험이 있습니다.'
+            },
+            {
+                application_id: 5,
+                job_seeker_id: 5,
+                job_seeker_name: '다니엘',
+                job_seeker_email: 'daniel@email.com',
+                job_title: 'IT 개발자',
+                company_name: '테스트 기업',
+                nationality: '독일',
+                korean_level: '고급',
+                current_visa: 'E-7',
+                application_status: 'interview',
+                applied_at: '2025-08-25T11:45:00Z',
+                cover_letter: 'Ich bin ein erfahrener Softwareentwickler und möchte in Korea arbeiten.'
+            },
+            {
+                application_id: 6,
+                job_seeker_id: 6,
+                job_seeker_name: '사라',
+                job_seeker_email: 'sarah@email.com',
+                job_title: '영어강사',
+                company_name: '테스트 기업',
+                nationality: '캐나다',
+                korean_level: '중급',
+                current_visa: 'F-4',
+                application_status: 'submitted',
+                applied_at: '2025-08-27T16:30:00Z',
+                cover_letter: 'I am a native English speaker with 5 years of teaching experience.'
+            },
+            {
+                application_id: 7,
+                job_seeker_id: 7,
+                job_seeker_name: '라지',
+                job_seeker_email: 'raj@email.com',
+                job_title: '제조업 현장직',
+                company_name: '테스트 기업',
+                nationality: '인도',
+                korean_level: '기초',
+                current_visa: 'E-9',
+                application_status: 'rejected',
+                applied_at: '2025-08-20T09:00:00Z',
+                cover_letter: 'I have experience in manufacturing and quality control in India.'
+            },
+            {
+                application_id: 8,
+                job_seeker_id: 8,
+                job_seeker_name: '마리아',
+                job_seeker_email: 'maria@email.com',
+                job_title: '서비스업 직원',
+                company_name: '테스트 기업',
+                nationality: '필리핀',
+                korean_level: '중급',
+                current_visa: 'H-2',
+                application_status: 'submitted',
+                applied_at: '2025-09-03T08:15:00Z',
+                cover_letter: '서비스업에서 성실하게 일하겠습니다. 필리핀에서 호텔 근무 경험이 있습니다.'
+            }
+        ];
+    }
+
+    getTestMatches() {
+        return [
+            {
+                id: 1,
+                job_seeker_name: 'John Smith',
+                job_title: '웹 개발자 모집',
+                match_score: 95,
+                nationality: '미국',
+                skills: ['JavaScript', 'React', 'Node.js'],
+                experience_years: 5
             }
         ];
     }
@@ -375,11 +501,14 @@ class EmployerDashboard {
         container.innerHTML = '';
 
         if (applications.length === 0) {
+            const filter = document.getElementById('applications-filter')?.value || 'all';
+            const filterText = this.getFilterText(filter);
+            
             container.innerHTML = `
                 <div class="text-center py-8 text-gray-500">
                     <i class="fas fa-users text-4xl mb-4 text-gray-300"></i>
-                    <p>지원자가 없습니다.</p>
-                    <p class="text-sm mt-2">구인공고를 등록하면 지원자를 받을 수 있습니다.</p>
+                    <p>${filterText} 지원자가 없습니다.</p>
+                    <p class="text-sm mt-2">${filter === 'all' ? '구인공고를 등록하면 지원자를 받을 수 있습니다.' : '다른 상태의 지원자를 확인해보세요.'}</p>
                 </div>
             `;
             return;
@@ -389,6 +518,18 @@ class EmployerDashboard {
             const appCard = this.createApplicationCard(application);
             container.appendChild(appCard);
         });
+    }
+
+    getFilterText(filter) {
+        const filterTexts = {
+            'all': '전체',
+            'pending': '검토 대기',
+            'submitted': '검토 중',
+            'interview': '면접 대상',
+            'accepted': '승인됨',
+            'rejected': '거절됨'
+        };
+        return filterTexts[filter] || '전체';
     }
 
     createApplicationCard(application) {
@@ -506,6 +647,7 @@ class EmployerDashboard {
                 this.loadMyJobs();
                 break;
             case 'applications':
+                console.log('지원자 관리 탭 활성화 - 데이터 로딩');
                 this.loadApplications();
                 break;
             case 'matches':
@@ -515,29 +657,29 @@ class EmployerDashboard {
     }
 
     async loadMatches() {
-        const container = document.getElementById('matches-list');
-        const testMatches = [
-            {
-                id: 1,
-                job_seeker_name: '이영희',
-                job_title: '웹 개발자 모집',
-                match_score: 95,
-                nationality: '한국',
-                skills: ['JavaScript', 'React', 'Node.js'],
-                experience_years: 3
-            },
-            {
-                id: 2,
-                job_seeker_name: '왕밍',
-                job_title: '제조업 현장직',
-                match_score: 88,
-                nationality: '중국',
-                skills: ['제조업 경험', '품질관리', '기계조작'],
-                experience_years: 2
-            }
-        ];
+        try {
+            console.log('매칭 데이터 로딩 중...');
+            const token = localStorage.getItem('token');
+            
+            const response = await axios.get(`/api/employers/${this.employerId}/matches`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-        if (testMatches.length === 0) {
+            const matches = response.data.matches || [];
+            this.renderMatchesList(matches);
+
+        } catch (error) {
+            console.error('매칭 데이터 로드 실패:', error);
+            // 테스트 데이터로 대체
+            this.renderMatchesList(this.getTestMatches());
+        }
+    }
+
+    renderMatchesList(matches) {
+        const container = document.getElementById('matches-list');
+        container.innerHTML = '';
+
+        if (matches.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-8 text-gray-500">
                     <i class="fas fa-handshake text-4xl mb-4 text-gray-300"></i>
@@ -550,44 +692,54 @@ class EmployerDashboard {
             return;
         }
 
-        container.innerHTML = testMatches.map(match => `
-            <div class="bg-white border rounded-lg p-6 hover:shadow-md transition-shadow">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex-1">
-                        <h4 class="text-lg font-semibold text-gray-800">${match.job_seeker_name}</h4>
-                        <p class="text-sm text-gray-600 mb-2">
-                            <i class="fas fa-briefcase mr-1"></i>매칭 공고: ${match.job_title}
-                        </p>
-                        <div class="flex items-center mb-3">
-                            <span class="text-sm text-gray-600 mr-3">
-                                <i class="fas fa-flag mr-1"></i>${match.nationality}
-                            </span>
-                            <span class="text-sm text-gray-600">
-                                <i class="fas fa-clock mr-1"></i>경력 ${match.experience_years}년
-                            </span>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            ${match.skills.map(skill => 
-                                `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${skill}</span>`
-                            ).join('')}
-                        </div>
+        matches.forEach(match => {
+            const matchCard = this.createMatchCard(match);
+            container.appendChild(matchCard);
+        });
+    }
+
+    createMatchCard(match) {
+        const card = document.createElement('div');
+        card.className = 'bg-white border rounded-lg p-6 hover:shadow-md transition-shadow';
+        
+        card.innerHTML = `
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex-1">
+                    <h4 class="text-lg font-semibold text-gray-800">${match.job_seeker_name}</h4>
+                    <p class="text-sm text-gray-600 mb-2">
+                        <i class="fas fa-briefcase mr-1"></i>매칭 공고: ${match.job_title}
+                    </p>
+                    <div class="flex items-center mb-3">
+                        <span class="text-sm text-gray-600 mr-3">
+                            <i class="fas fa-flag mr-1"></i>${match.nationality}
+                        </span>
+                        <span class="text-sm text-gray-600">
+                            <i class="fas fa-clock mr-1"></i>경력 ${match.experience_years}년
+                        </span>
                     </div>
-                    <div class="text-center">
-                        <div class="text-3xl font-bold text-green-600">${match.match_score}%</div>
-                        <div class="text-sm text-gray-500">매칭도</div>
+                    <div class="flex flex-wrap gap-2">
+                        ${match.skills.map(skill => 
+                            `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${skill}</span>`
+                        ).join('')}
                     </div>
                 </div>
-                
-                <div class="flex justify-end space-x-2 pt-4 border-t">
-                    <button onclick="dashboard.contactJobSeeker(${match.id})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                        <i class="fas fa-envelope mr-1"></i>연락하기
-                    </button>
-                    <button onclick="dashboard.viewMatchDetails(${match.id})" class="text-green-600 hover:text-green-800 text-sm font-medium">
-                        <i class="fas fa-eye mr-1"></i>상세보기
-                    </button>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-600">${match.match_score}%</div>
+                    <div class="text-sm text-gray-500">매칭도</div>
                 </div>
             </div>
-        `).join('');
+            
+            <div class="flex justify-end space-x-2 pt-4 border-t">
+                <button onclick="dashboard.contactJobSeeker(${match.id})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    <i class="fas fa-envelope mr-1"></i>연락하기
+                </button>
+                <button onclick="dashboard.viewMatchDetails(${match.id})" class="text-green-600 hover:text-green-800 text-sm font-medium">
+                    <i class="fas fa-eye mr-1"></i>상세보기
+                </button>
+            </div>
+        `;
+
+        return card;
     }
 
     // 구인공고 관련 메소드들

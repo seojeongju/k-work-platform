@@ -1,34 +1,26 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "wow-campus",
+  "name": "w-campus-com",
   "compatibility_date": "2025-08-25",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "MY_KV_NAMESPACE",
-  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
-  // "r2_buckets": [
-  //   {
-  //     "binding": "MY_BUCKET",
-  //     "bucket_name": "my-bucket"
-  //   }
-  // ],
+  "vars": {
+    "DOMAIN_NAME": "w-campus.com",
+    "SITE_NAME": "WOW-CAMPUS",
+    "ENVIRONMENT": "production"
+  },
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "wow-campus-production",
+      "database_name": "w-campus-production",
       "database_id": "placeholder-id-will-be-set-when-deployed"
     }
   ],
-  // "ai": {
-  //   "binding": "AI"
-  // }
+  // Note: Routes will be configured in Cloudflare Dashboard for custom domain
+  // "routes": [
+  //   "w-campus.com/*",
+  //   "www.w-campus.com/*"
+  // ]
 }
