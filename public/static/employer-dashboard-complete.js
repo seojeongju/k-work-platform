@@ -898,7 +898,289 @@ class EmployerDashboard {
 
     // 지원자 관리 메소드들
     async viewApplicantDetail(jobSeekerId) {
-        alert(`지원자 상세보기 (지원자 ID: ${jobSeekerId})\n실제 환경에서는 지원자의 상세한 프로필 정보를 모달로 표시합니다.`);
+        console.log('지원자 상세보기:', jobSeekerId);
+        
+        // 테스트 데이터에서 해당 지원자 찾기
+        const applications = this.getTestApplications();
+        const application = applications.find(app => app.job_seeker_id === jobSeekerId);
+        
+        if (!application) {
+            alert('지원자 정보를 찾을 수 없습니다.');
+            return;
+        }
+        
+        this.showApplicantDetailModal(application);
+    }
+
+    showApplicantDetailModal(application) {
+        // 상태별 색상 및 텍스트 정의
+        const statusColors = {
+            'pending': 'bg-yellow-100 text-yellow-800',
+            'submitted': 'bg-blue-100 text-blue-800',
+            'interview': 'bg-purple-100 text-purple-800',
+            'accepted': 'bg-green-100 text-green-800',
+            'rejected': 'bg-red-100 text-red-800'
+        };
+
+        const statusTexts = {
+            'pending': '검토 대기',
+            'submitted': '검토 중',
+            'interview': '면접 대상',
+            'accepted': '승인됨',
+            'rejected': '거절됨'
+        };
+
+        const koreanLevelTexts = {
+            'basic': '기초',
+            'intermediate': '중급',
+            'advanced': '고급'
+        };
+
+        // 모달 HTML 생성
+        const modalHtml = `
+            <div id="applicant-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-0 w-full max-w-4xl max-h-screen overflow-hidden">
+                    <!-- 모달 헤더 -->
+                    <div class="bg-wowcampus-blue text-white p-6 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xl font-semibold">${application.job_seeker_name} 님의 지원 정보</h3>
+                            <p class="text-wowcampus-light text-sm mt-1">${application.job_title} 지원</p>
+                        </div>
+                        <button onclick="dashboard.closeApplicantDetailModal()" class="text-white hover:text-gray-200">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- 모달 컨텐츠 -->
+                    <div class="p-6 overflow-y-auto" style="max-height: calc(100vh - 200px);">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            
+                            <!-- 기본 정보 -->
+                            <div class="space-y-4">
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h4 class="text-lg font-semibold mb-4 flex items-center">
+                                        <i class="fas fa-user text-wowcampus-blue mr-2"></i>
+                                        기본 정보
+                                    </h4>
+                                    
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">이름:</span>
+                                            <span class="font-medium">${application.job_seeker_name}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">이메일:</span>
+                                            <span class="font-medium">${application.job_seeker_email}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">국적:</span>
+                                            <span class="font-medium">${application.nationality}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">한국어 수준:</span>
+                                            <span class="font-medium">${koreanLevelTexts[application.korean_level] || application.korean_level}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">현재 비자:</span>
+                                            <span class="font-medium">${application.current_visa}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 지원 정보 -->
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h4 class="text-lg font-semibold mb-4 flex items-center">
+                                        <i class="fas fa-briefcase text-wowcampus-blue mr-2"></i>
+                                        지원 정보
+                                    </h4>
+                                    
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">지원 직무:</span>
+                                            <span class="font-medium">${application.job_title}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">지원 일시:</span>
+                                            <span class="font-medium">${new Date(application.applied_at).toLocaleDateString('ko-KR')} ${new Date(application.applied_at).toLocaleTimeString('ko-KR')}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-gray-600">지원 상태:</span>
+                                            <span class="px-2 py-1 text-xs rounded-full ${statusColors[application.application_status] || statusColors.pending}">
+                                                ${statusTexts[application.application_status] || application.application_status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 자기소개서 및 추가 정보 -->
+                            <div class="space-y-4">
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h4 class="text-lg font-semibold mb-4 flex items-center">
+                                        <i class="fas fa-file-alt text-wowcampus-blue mr-2"></i>
+                                        자기소개서
+                                    </h4>
+                                    <div class="bg-white rounded-lg p-4 border">
+                                        <p class="text-gray-800 leading-relaxed">${application.cover_letter || '자기소개서가 제공되지 않았습니다.'}</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- 가상의 추가 정보 -->
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h4 class="text-lg font-semibold mb-4 flex items-center">
+                                        <i class="fas fa-chart-line text-wowcampus-blue mr-2"></i>
+                                        경력 정보
+                                    </h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">경력 기간:</span>
+                                            <span class="font-medium">${this.getRandomExperience()} 년</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">이전 직장:</span>
+                                            <span class="font-medium">${this.getRandomCompany(application.nationality)}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">희망 급여:</span>
+                                            <span class="font-medium">${this.getRandomSalary()}만원</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 연락처 정보 -->
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h4 class="text-lg font-semibold mb-4 flex items-center">
+                                        <i class="fas fa-phone text-wowcampus-blue mr-2"></i>
+                                        연락처 정보
+                                    </h4>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">연락처:</span>
+                                            <span class="font-medium">${this.getRandomPhoneNumber()}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">주소:</span>
+                                            <span class="font-medium">${this.getRandomAddress()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 액션 버튼들 -->
+                        <div class="mt-6 pt-6 border-t">
+                            <div class="flex flex-wrap gap-3 justify-center">
+                                <button onclick="dashboard.contactApplicant(${application.job_seeker_id})" 
+                                        class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-envelope mr-2"></i>
+                                    메일 보내기
+                                </button>
+                                
+                                <button onclick="dashboard.scheduleInterview(${application.application_id})" 
+                                        class="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                    <i class="fas fa-calendar-alt mr-2"></i>
+                                    면접 일정 잡기
+                                </button>
+                                
+                                ${application.application_status === 'pending' || application.application_status === 'submitted' ? `
+                                    <button onclick="dashboard.updateApplicationStatus(${application.application_id}, 'accepted')" 
+                                            class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                        <i class="fas fa-check mr-2"></i>
+                                        승인하기
+                                    </button>
+                                    
+                                    <button onclick="dashboard.updateApplicationStatus(${application.application_id}, 'rejected')" 
+                                            class="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                        <i class="fas fa-times mr-2"></i>
+                                        거절하기
+                                    </button>
+                                ` : ''}
+                                
+                                <button onclick="dashboard.downloadResume(${application.job_seeker_id})" 
+                                        class="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                                    <i class="fas fa-download mr-2"></i>
+                                    이력서 다운로드
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 모달 푸터 -->
+                    <div class="bg-gray-50 px-6 py-4 flex justify-end">
+                        <button onclick="dashboard.closeApplicantDetailModal()" 
+                                class="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+                            닫기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 모달을 body에 추가
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    closeApplicantDetailModal() {
+        const modal = document.getElementById('applicant-detail-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    // 헬퍼 메서드들 - 가상의 데이터 생성
+    getRandomExperience() {
+        return Math.floor(Math.random() * 10) + 1;
+    }
+
+    getRandomCompany(nationality) {
+        const companies = {
+            '한국': ['삼성전자', 'LG전자', '네이버', '카카오', '현대자동차'],
+            '중국': ['Alibaba', 'Tencent', 'Huawei', 'ByteDance', 'Xiaomi'],
+            '미국': ['Google', 'Apple', 'Microsoft', 'Amazon', 'Facebook'],
+            '베트남': ['VinGroup', 'Techcombank', 'Viettel', 'BIDV', 'VPBank'],
+            '독일': ['SAP', 'Siemens', 'BMW', 'Mercedes-Benz', 'Bosch'],
+            '캐나다': ['Shopify', 'BlackBerry', 'Bombardier', 'CGI', 'Magna'],
+            '인도': ['TCS', 'Infosys', 'Wipro', 'HCL', 'Tech Mahindra'],
+            '필리핀': ['Ayala Corp', 'SM Group', 'BDO', 'Globe Telecom', 'PLDT']
+        };
+        
+        const countryCompanies = companies[nationality] || companies['한국'];
+        return countryCompanies[Math.floor(Math.random() * countryCompanies.length)];
+    }
+
+    getRandomSalary() {
+        const salaries = [250, 300, 350, 400, 450, 500, 550, 600];
+        return salaries[Math.floor(Math.random() * salaries.length)];
+    }
+
+    getRandomPhoneNumber() {
+        return `010-${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}`;
+    }
+
+    getRandomAddress() {
+        const addresses = [
+            '서울시 강남구 테헤란로',
+            '서울시 종로구 세종대로',
+            '서울시 마포구 홍대입구',
+            '서울시 영등포구 여의도',
+            '인천시 연수구 송도',
+            '경기도 성남시 분당구',
+            '경기도 수원시 영통구'
+        ];
+        return addresses[Math.floor(Math.random() * addresses.length)];
+    }
+
+    // 추가 액션 메서드들
+    async contactApplicant(jobSeekerId) {
+        alert(`${jobSeekerId}번 지원자에게 메일을 보내는 기능입니다.\n실제 환경에서는 메일 작성 모달이 열립니다.`);
+    }
+
+    async scheduleInterview(applicationId) {
+        alert(`지원서 ID ${applicationId}의 면접 일정을 잡는 기능입니다.\n실제 환경에서는 일정 선택 모달이 열립니다.`);
+    }
+
+    async downloadResume(jobSeekerId) {
+        alert(`${jobSeekerId}번 지원자의 이력서를 다운로드하는 기능입니다.\n실제 환경에서는 PDF 파일이 다운로드됩니다.`);
     }
 
     async updateApplicationStatus(applicationId, newStatus) {
