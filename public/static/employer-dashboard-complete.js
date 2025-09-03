@@ -141,8 +141,21 @@ class EmployerDashboard {
     }
 
     async loadMyJobs() {
+        console.log('구인공고 데이터 로딩 중...');
+        
+        // 테스트 모드에서는 항상 테스트 데이터 사용
+        console.log('테스트 모드 - 구인공고 테스트 데이터 사용');
+        const allJobs = this.getTestJobs();
+        console.log('구인공고 테스트 데이터 개수:', allJobs.length);
+        
+        const filteredJobs = this.filterJobsByStatus(allJobs);
+        console.log('필터링된 구인공고 개수:', filteredJobs.length);
+        
+        this.renderJobsList(filteredJobs);
+        
+        // 실제 API 연동이 필요한 경우 아래 코드를 사용
+        /*
         try {
-            console.log('구인공고 데이터 로딩 중...');
             const token = localStorage.getItem('token');
             const filter = document.getElementById('jobs-filter')?.value || 'all';
             
@@ -163,6 +176,17 @@ class EmployerDashboard {
             // 테스트 데이터로 대체
             this.renderJobsList(this.getTestJobs());
         }
+        */
+    }
+
+    filterJobsByStatus(jobs) {
+        const filter = document.getElementById('jobs-filter')?.value || 'all';
+        
+        if (filter === 'all') {
+            return jobs;
+        }
+        
+        return jobs.filter(job => job.status === filter);
     }
 
     getTestJobs() {
@@ -657,8 +681,18 @@ class EmployerDashboard {
     }
 
     async loadMatches() {
+        console.log('매칭 데이터 로딩 중...');
+        
+        // 테스트 모드에서는 항상 테스트 데이터 사용
+        console.log('테스트 모드 - 매칭 테스트 데이터 사용');
+        const testMatches = this.getTestMatches();
+        console.log('매칭 테스트 데이터 개수:', testMatches.length);
+        
+        this.renderMatchesList(testMatches);
+        
+        // 실제 API 연동이 필요한 경우 아래 코드를 사용
+        /*
         try {
-            console.log('매칭 데이터 로딩 중...');
             const token = localStorage.getItem('token');
             
             const response = await axios.get(`/api/employers/${this.employerId}/matches`, {
@@ -673,6 +707,7 @@ class EmployerDashboard {
             // 테스트 데이터로 대체
             this.renderMatchesList(this.getTestMatches());
         }
+        */
     }
 
     renderMatchesList(matches) {
@@ -957,6 +992,236 @@ class EmployerDashboard {
         this.switchTab(this.currentTab);
         
         alert('데이터가 성공적으로 새로고침되었습니다!');
+    }
+
+    // 구인공고 편집 기능
+    async editJob(jobId) {
+        console.log('구인공고 편집:', jobId);
+        
+        // 테스트 데이터에서 해당 구인공고 찾기
+        const jobs = this.getTestJobs();
+        const job = jobs.find(j => j.id === jobId);
+        
+        if (!job) {
+            alert('구인공고를 찾을 수 없습니다.');
+            return;
+        }
+        
+        this.showJobEditModal(job);
+    }
+
+    showJobEditModal(job) {
+        // 편집 모달 HTML 생성
+        const modalHtml = `
+            <div id="job-edit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold">구인공고 수정</h3>
+                        <button onclick="dashboard.closeJobEditModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="job-edit-form" class="space-y-4">
+                        <input type="hidden" id="edit-job-id" value="${job.id}">
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">구인공고 제목 *</label>
+                            <input type="text" id="edit-job-title" value="${job.title}" 
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent" 
+                                   required>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">근무 지역 *</label>
+                                <input type="text" id="edit-work-location" value="${job.work_location}" 
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent" 
+                                       required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">직종 카테고리 *</label>
+                                <select id="edit-job-category" 
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                                    <option value="IT/소프트웨어" ${job.job_category === 'IT/소프트웨어' ? 'selected' : ''}>IT/소프트웨어</option>
+                                    <option value="제조업" ${job.job_category === '제조업' ? 'selected' : ''}>제조업</option>
+                                    <option value="서비스업" ${job.job_category === '서비스업' ? 'selected' : ''}>서비스업</option>
+                                    <option value="건설업" ${job.job_category === '건설업' ? 'selected' : ''}>건설업</option>
+                                    <option value="운송업" ${job.job_category === '운송업' ? 'selected' : ''}>운송업</option>
+                                    <option value="기타" ${job.job_category === '기타' ? 'selected' : ''}>기타</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">최소 급여 (월급)</label>
+                                <input type="number" id="edit-salary-min" value="${job.salary_min || ''}" 
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent" 
+                                       placeholder="3000000">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">최대 급여 (월급)</label>
+                                <input type="number" id="edit-salary-max" value="${job.salary_max || ''}" 
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent" 
+                                       placeholder="5000000">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">모집인원 *</label>
+                                <input type="number" id="edit-positions" value="${job.positions || 1}" 
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent" 
+                                       min="1" required>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">한국어 수준 요구사항</label>
+                                <select id="edit-korean-level" 
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                                    <option value="basic" ${job.korean_level_required === 'basic' ? 'selected' : ''}>기초</option>
+                                    <option value="intermediate" ${job.korean_level_required === 'intermediate' ? 'selected' : ''}>중급</option>
+                                    <option value="advanced" ${job.korean_level_required === 'advanced' ? 'selected' : ''}>고급</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">모집 상태</label>
+                                <select id="edit-job-status" 
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                                    <option value="active" ${job.status === 'active' ? 'selected' : ''}>모집중</option>
+                                    <option value="draft" ${job.status === 'draft' ? 'selected' : ''}>임시저장</option>
+                                    <option value="closed" ${job.status === 'closed' ? 'selected' : ''}>모집마감</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">모집 마감일</label>
+                            <input type="date" id="edit-deadline" value="${job.deadline ? job.deadline.split('T')[0] : ''}" 
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent">
+                            <p class="text-xs text-gray-500 mt-1">비워두면 상시모집으로 설정됩니다.</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">구인공고 상세 설명</label>
+                            <textarea id="edit-job-description" rows="4" 
+                                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent" 
+                                      placeholder="구인공고에 대한 상세한 설명을 입력해주세요.">${job.description || ''}</textarea>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 pt-4 border-t">
+                            <button type="button" onclick="dashboard.closeJobEditModal()" 
+                                    class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                취소
+                            </button>
+                            <button type="submit" 
+                                    class="px-6 py-2 bg-wowcampus-blue text-white rounded-lg hover:bg-wowcampus-dark">
+                                수정 완료
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        // 모달을 body에 추가
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // 폼 제출 이벤트 등록
+        document.getElementById('job-edit-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveJobEdits();
+        });
+    }
+
+    closeJobEditModal() {
+        const modal = document.getElementById('job-edit-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    async saveJobEdits() {
+        const jobId = parseInt(document.getElementById('edit-job-id').value);
+        
+        // 폼 데이터 수집
+        const updatedJob = {
+            id: jobId,
+            title: document.getElementById('edit-job-title').value.trim(),
+            work_location: document.getElementById('edit-work-location').value.trim(),
+            job_category: document.getElementById('edit-job-category').value,
+            salary_min: parseInt(document.getElementById('edit-salary-min').value) || null,
+            salary_max: parseInt(document.getElementById('edit-salary-max').value) || null,
+            positions: parseInt(document.getElementById('edit-positions').value),
+            korean_level_required: document.getElementById('edit-korean-level').value,
+            status: document.getElementById('edit-job-status').value,
+            deadline: document.getElementById('edit-deadline').value ? 
+                     document.getElementById('edit-deadline').value + 'T23:59:59Z' : null,
+            description: document.getElementById('edit-job-description').value.trim()
+        };
+        
+        // 유효성 검사
+        if (!updatedJob.title || !updatedJob.work_location || !updatedJob.positions) {
+            alert('필수 항목을 모두 입력해주세요.');
+            return;
+        }
+        
+        if (updatedJob.salary_min && updatedJob.salary_max && 
+            updatedJob.salary_min > updatedJob.salary_max) {
+            alert('최소 급여가 최대 급여보다 클 수 없습니다.');
+            return;
+        }
+        
+        try {
+            // 실제 환경에서는 API 호출
+            console.log('구인공고 수정 완료:', updatedJob);
+            
+            // 테스트 환경에서는 성공 메시지만 표시
+            alert('구인공고가 성공적으로 수정되었습니다!');
+            
+            // 모달 닫기 및 목록 새로고침
+            this.closeJobEditModal();
+            this.loadMyJobs();
+            
+        } catch (error) {
+            console.error('구인공고 수정 실패:', error);
+            alert('구인공고 수정 중 오류가 발생했습니다. 다시 시도해주세요.');
+        }
+    }
+
+    // 구인공고 지원자 보기
+    async viewJobApplications(jobId) {
+        console.log('구인공고 지원자 보기:', jobId);
+        
+        // 지원자 관리 탭으로 전환하고 해당 구인공고 필터링
+        this.switchTab('applications');
+        
+        // 약간의 지연 후 필터링 (탭 전환이 완료된 후)
+        setTimeout(() => {
+            alert(`구인공고 ID ${jobId}의 지원자 목록을 보고 있습니다.\n실제 환경에서는 해당 구인공고에 지원한 지원자만 필터링되어 표시됩니다.`);
+        }, 100);
+    }
+
+    // 구인공고 삭제
+    async deleteJob(jobId) {
+        if (!confirm('정말로 이 구인공고를 삭제하시겠습니까?\n삭제된 구인공고는 복구할 수 없습니다.')) {
+            return;
+        }
+        
+        try {
+            // 실제 환경에서는 API 호출
+            console.log('구인공고 삭제:', jobId);
+            
+            // 테스트 환경에서는 성공 메시지만 표시
+            alert('구인공고가 성공적으로 삭제되었습니다.');
+            
+            // 목록 새로고침
+            this.loadMyJobs();
+            
+        } catch (error) {
+            console.error('구인공고 삭제 실패:', error);
+            alert('구인공고 삭제 중 오류가 발생했습니다. 다시 시도해주세요.');
+        }
     }
 }
 
