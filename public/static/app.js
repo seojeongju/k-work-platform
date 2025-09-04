@@ -9,6 +9,7 @@ class JobPlatformApp {
     }
 
     init() {
+        console.log('JobPlatformApp initializing...');
         this.setupTabs();
         this.setupJobSubTabs();
         this.setupJobSeekerSubTabs();
@@ -18,10 +19,20 @@ class JobPlatformApp {
         this.loadInitialData();
         this.bindEvents();
         
+        // 즉시 한 번 실행
+        this.setupUserNavigation();
+        
         // DOM이 완전히 로드된 후 사용자 네비게이션 설정
         setTimeout(() => {
+            console.log('Running delayed setupUserNavigation...');
             this.setupUserNavigation();
         }, 200);
+        
+        // 추가로 더 지연 후에도 실행
+        setTimeout(() => {
+            console.log('Running final setupUserNavigation...');
+            this.setupUserNavigation();
+        }, 1000);
     }
 
     setupTabs() {
@@ -1112,6 +1123,23 @@ class JobPlatformApp {
     }
 
     bindEvents() {
+        // localStorage 변경 감지
+        window.addEventListener('storage', (e) => {
+            console.log('localStorage changed:', e.key, e.newValue);
+            if (e.key === 'user' || e.key === 'token') {
+                console.log('Auth related localStorage changed, updating UI...');
+                this.checkAuthStatus();
+                this.setupUserNavigation();
+            }
+        });
+        
+        // 페이지 focus 시 상태 재확인
+        window.addEventListener('focus', () => {
+            console.log('Window focused, rechecking auth status...');
+            this.checkAuthStatus();
+            this.setupUserNavigation();
+        });
+        
         // 모바일 메뉴 토글
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileMenu = document.getElementById('mobile-menu');
@@ -1198,8 +1226,22 @@ class JobPlatformApp {
 
     // 로그인 상태 확인
     checkAuthStatus() {
-        this.isLoggedIn = !!localStorage.getItem('token');
-        this.currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('user');
+        
+        console.log('checkAuthStatus called:', { token, userStr });
+        
+        this.isLoggedIn = !!token;
+        
+        try {
+            this.currentUser = userStr ? JSON.parse(userStr) : {};
+        } catch (e) {
+            console.error('Error parsing user data:', e);
+            this.currentUser = {};
+            this.isLoggedIn = false;
+        }
+        
+        console.log('Auth status updated:', { isLoggedIn: this.isLoggedIn, currentUser: this.currentUser });
     }
 
     // 로그인 상태에 따른 UI 업데이트
@@ -1546,3 +1588,93 @@ window.addEventListener('load', () => {
         }
     }, 1500);
 });
+
+// 정기적으로 로그인 상태 확인 (5초마다)
+setInterval(() => {
+    if (app && app.checkAuthStatus && app.setupUserNavigation) {
+        const wasLoggedIn = app.isLoggedIn;
+        app.checkAuthStatus();
+        
+        // 로그인 상태가 변경된 경우에만 UI 업데이트
+        if (wasLoggedIn !== app.isLoggedIn) {
+            console.log('Login status changed, updating UI...');
+            app.setupUserNavigation();
+        }
+    }
+}, 5000);
+
+// 글로벌 테스트 함수들
+window.testLogin = function(userType = 'employer') {
+    const testUsers = {
+        employer: {
+            id: 1,
+            type: 'employer',
+            name: '테크코퍼레이션',
+            company_name: '테크코퍼레이션',
+            email: 'hr@techcorp.com'
+        },
+        jobseeker: {
+            id: 2,
+            type: 'jobseeker',
+            name: '응우엔 반',
+            email: 'nguyenvan@example.com'
+        },
+        agent: {
+            id: 3,
+            type: 'agent',
+            name: '글로벌인재에이전시',
+            company_name: '글로벌인재에이전시',
+            email: 'agent1@wowcampus.com'
+        },
+        admin: {
+            id: 4,
+            type: 'admin',
+            name: '관리자',
+            email: 'admin@wowcampus.com'
+        }
+    };
+    
+    const user = testUsers[userType];
+    const testToken = `test-token-${userType}-${Date.now()}`;
+    
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('token', testToken);
+    
+    console.log('Test login set:', user);
+    
+    // 강제로 UI 업데이트
+    if (app) {
+        app.checkAuthStatus();
+        app.setupUserNavigation();
+    }
+    
+    return 'Login set! Check the header.';
+};
+
+window.testLogout = function() {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    
+    console.log('Test logout completed');
+    
+    // 강제로 UI 업데이트
+    if (app) {
+        app.checkAuthStatus();
+        app.setupUserNavigation();
+    }
+    
+    return 'Logout completed! Check the header.';
+};
+
+window.checkAuthStatus = function() {
+    const user = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    
+    console.log('Current localStorage:', { user, token });
+    console.log('Current app state:', { 
+        isLoggedIn: app ? app.isLoggedIn : 'app not ready',
+        currentUser: app ? app.currentUser : 'app not ready'
+    });
+    
+    return { user, token, app: app ? { isLoggedIn: app.isLoggedIn, currentUser: app.currentUser } : null };
+};
