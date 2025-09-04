@@ -901,6 +901,8 @@ class JobPlatformApp {
         const token = localStorage.getItem('token');
 
         const authButtons = document.getElementById('auth-buttons');
+        const loginBtn = document.getElementById('login-btn');
+        const registerBtn = document.getElementById('register-btn');
         const agentMenu = document.getElementById('agent-menu');
         const mobileAgentMenu = document.getElementById('mobile-agent-menu');
         const userMenu = document.getElementById('user-menu');
@@ -910,9 +912,21 @@ class JobPlatformApp {
         console.log('setupUserNavigation called:', { user, token, authButtons });
 
         if (user && token) {
-            // 로그인 상태
-            if (authButtons) authButtons.classList.add('hidden');
-            if (userMenu) userMenu.classList.remove('hidden');
+            // 로그인 상태 - 인라인 스타일 직접 조작으로 숨김
+            if (authButtons) {
+                authButtons.style.display = 'none';
+                authButtons.classList.add('hidden');
+            }
+            if (loginBtn) {
+                loginBtn.style.display = 'none';
+            }
+            if (registerBtn) {
+                registerBtn.style.display = 'none';
+            }
+            if (userMenu) {
+                userMenu.classList.remove('hidden');
+                userMenu.style.display = 'flex';
+            }
             if (userName) userName.textContent = user.name || user.company_name || user.email || '사용자님';
 
             // 권한별 메뉴 업데이트
@@ -926,9 +940,21 @@ class JobPlatformApp {
                 logoutBtn.setAttribute('data-event-bound', 'true');
             }
         } else {
-            // 로그아웃 상태
-            if (authButtons) authButtons.classList.remove('hidden');
-            if (userMenu) userMenu.classList.add('hidden');
+            // 로그아웃 상태 - 인라인 스타일 직접 조작으로 표시
+            if (authButtons) {
+                authButtons.style.display = 'flex';
+                authButtons.classList.remove('hidden');
+            }
+            if (loginBtn) {
+                loginBtn.style.display = 'inline-block';
+            }
+            if (registerBtn) {
+                registerBtn.style.display = 'inline-block';
+            }
+            if (userMenu) {
+                userMenu.classList.add('hidden');
+                userMenu.style.display = 'none';
+            }
             if (agentMenu) agentMenu.classList.add('hidden');
             if (mobileAgentMenu) mobileAgentMenu.classList.add('hidden');
             
