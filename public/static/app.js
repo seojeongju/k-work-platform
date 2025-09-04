@@ -926,20 +926,26 @@ class JobPlatformApp {
         console.log('Current registerBtn style:', registerBtn ? registerBtn.style.display : 'not found');
 
         if (user && token) {
-            // 로그인 상태 - 인라인 스타일 직접 조작으로 숨김
+            // 로그인 상태 - CSS 클래스와 인라인 스타일 모두 사용
+            document.body.classList.add('auth-logged-in');
+            
             if (authButtons) {
                 authButtons.style.display = 'none';
                 authButtons.classList.add('hidden');
+                authButtons.style.visibility = 'hidden';
             }
             if (loginBtn) {
                 loginBtn.style.display = 'none';
+                loginBtn.style.visibility = 'hidden';
             }
             if (registerBtn) {
                 registerBtn.style.display = 'none';
+                registerBtn.style.visibility = 'hidden';
             }
             if (userMenu) {
                 userMenu.classList.remove('hidden');
                 userMenu.style.display = 'flex';
+                userMenu.style.visibility = 'visible';
             }
             if (userName) userName.textContent = user.name || user.company_name || user.email || '사용자님';
 
@@ -958,20 +964,26 @@ class JobPlatformApp {
                 logoutBtn.setAttribute('data-event-bound', 'true');
             }
         } else {
-            // 로그아웃 상태 - 인라인 스타일 직접 조작으로 표시
+            // 로그아웃 상태 - CSS 클래스와 인라인 스타일 모두 사용
+            document.body.classList.remove('auth-logged-in');
+            
             if (authButtons) {
                 authButtons.style.display = 'flex';
                 authButtons.classList.remove('hidden');
+                authButtons.style.visibility = 'visible';
             }
             if (loginBtn) {
                 loginBtn.style.display = 'inline-block';
+                loginBtn.style.visibility = 'visible';
             }
             if (registerBtn) {
                 registerBtn.style.display = 'inline-block';
+                registerBtn.style.visibility = 'visible';
             }
             if (userMenu) {
                 userMenu.classList.add('hidden');
                 userMenu.style.display = 'none';
+                userMenu.style.visibility = 'hidden';
             }
             if (agentMenu) agentMenu.classList.add('hidden');
             if (mobileAgentMenu) mobileAgentMenu.classList.add('hidden');
@@ -1123,6 +1135,9 @@ class JobPlatformApp {
     }
 
     bindEvents() {
+        // MutationObserver로 DOM 변경 감지 및 강제 숨기기
+        this.setupAuthButtonObserver();
+        
         // localStorage 변경 감지
         window.addEventListener('storage', (e) => {
             console.log('localStorage changed:', e.key, e.newValue);
@@ -1677,4 +1692,49 @@ window.checkAuthStatus = function() {
     });
     
     return { user, token, app: app ? { isLoggedIn: app.isLoggedIn, currentUser: app.currentUser } : null };
+};
+
+// MutationObserver 설정 함수를 JobPlatformApp 클래스에 추가
+JobPlatformApp.prototype.setupAuthButtonObserver = function() {
+    const observer = new MutationObserver((mutations) => {
+        const user = localStorage.getItem('user');
+        const token = localStorage.getItem('token');
+        
+        if (user && token) {
+            // 로그인 상태에서 auth 버튼들이 다시 나타나면 강제로 숨김
+            const authButtons = document.getElementById('auth-buttons');
+            const loginBtn = document.getElementById('login-btn');
+            const registerBtn = document.getElementById('register-btn');
+            
+            if (authButtons && authButtons.style.display !== 'none') {
+                console.log('MutationObserver: Force hiding auth buttons');
+                authButtons.style.display = 'none';
+                authButtons.style.visibility = 'hidden';
+            }
+            if (loginBtn && loginBtn.style.display !== 'none') {
+                loginBtn.style.display = 'none';
+                loginBtn.style.visibility = 'hidden';
+            }
+            if (registerBtn && registerBtn.style.display !== 'none') {
+                registerBtn.style.display = 'none';
+                registerBtn.style.visibility = 'hidden';
+            }
+            
+            // user-menu가 숨겨져 있으면 강제로 표시
+            const userMenu = document.getElementById('user-menu');
+            if (userMenu && userMenu.classList.contains('hidden')) {
+                userMenu.classList.remove('hidden');
+                userMenu.style.display = 'flex';
+                userMenu.style.visibility = 'visible';
+            }
+        }
+    });
+    
+    // 전체 body를 관찰
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class']
+    });
 };

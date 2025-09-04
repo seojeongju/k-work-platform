@@ -385,6 +385,15 @@ app.get('/', (c) => {
               display: none;
             }
           }
+          /* 로그인 상태에서 auth-buttons 강제 숨기기 */
+          .auth-logged-in #auth-buttons,
+          .auth-logged-in #login-btn,
+          .auth-logged-in #register-btn {
+            display: none !important;
+          }
+          .auth-logged-in #user-menu {
+            display: flex !important;
+          }
         </style>
     </head>
     <body class="bg-gray-50 min-h-screen font-sans">
