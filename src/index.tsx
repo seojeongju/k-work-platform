@@ -291,6 +291,10 @@ app.get('/api/system/status', async (c) => {
 
 // 메인 페이지
 app.get('/', (c) => {
+  // 쿠키에서 토큰 확인 (실제 구현에서는 JWT 검증 필요)
+  const token = c.req.header('Authorization') || c.req.query('token') || '';
+  const isLoggedIn = token && token.length > 0;
+  
   return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
@@ -464,8 +468,8 @@ app.get('/', (c) => {
                             <i class="fas fa-bars text-xl"></i>
                         </button>
                         
-                        <!-- Auth Buttons -->
-                        <div id="auth-buttons" class="flex items-center space-x-3">
+                        <!-- Auth Buttons (Only show when not logged in) -->
+                        <div id="auth-buttons" class="flex items-center space-x-3" style="display: none;">
                             <a href="/static/login.html" id="login-btn" class="bg-wowcampus-blue text-white px-4 md:px-6 py-2 rounded-full font-medium hover:bg-wowcampus-dark transition-colors text-sm md:text-base">
                                 <i class="fas fa-sign-in-alt mr-1 md:mr-2"></i>로그인
                             </a>
@@ -1548,6 +1552,68 @@ app.get('/', (c) => {
                 };
                 return typeNames[userType] || userType;
             }
+        </script>
+        
+        <script>
+            // 즉시 실행되는 로그인 상태 확인 및 UI 업데이트
+            (function() {
+                function updateAuthUI() {
+                    const user = localStorage.getItem('user');
+                    const token = localStorage.getItem('token');
+                    const authButtons = document.getElementById('auth-buttons');
+                    const userMenu = document.getElementById('user-menu');
+                    const userName = document.getElementById('user-name');
+                    
+                    console.log('Immediate auth check:', { user: !!user, token: !!token });
+                    
+                    if (user && token) {
+                        // 로그인 상태
+                        console.log('User is logged in, hiding auth buttons');
+                        if (authButtons) {
+                            authButtons.style.display = 'none';
+                            authButtons.style.visibility = 'hidden';
+                        }
+                        if (userMenu) {
+                            userMenu.style.display = 'flex';
+                            userMenu.classList.remove('hidden');
+                        }
+                        if (userName) {
+                            try {
+                                const userObj = JSON.parse(user);
+                                userName.textContent = userObj.name || userObj.company_name || userObj.email || '사용자님';
+                            } catch (e) {
+                                userName.textContent = '사용자님';
+                            }
+                        }
+                        document.body.classList.add('auth-logged-in');
+                    } else {
+                        // 로그아웃 상태
+                        console.log('User is not logged in, showing auth buttons');
+                        if (authButtons) {
+                            authButtons.style.display = 'flex';
+                            authButtons.style.visibility = 'visible';
+                        }
+                        if (userMenu) {
+                            userMenu.style.display = 'none';
+                            userMenu.classList.add('hidden');
+                        }
+                        document.body.classList.remove('auth-logged-in');
+                    }
+                }
+                
+                // DOM 준비되면 즉시 실행
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', updateAuthUI);
+                } else {
+                    updateAuthUI();
+                }
+                
+                // localStorage 변경 감지
+                window.addEventListener('storage', updateAuthUI);
+                
+                // 정기적으로 체크 (1초마다)
+                setInterval(updateAuthUI, 1000);
+            })();
         </script>
         <script src="/static/app.js"></script>
     </body>
