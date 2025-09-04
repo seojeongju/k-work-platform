@@ -455,12 +455,12 @@ app.get('/', (c) => {
                             <i class="fas fa-bars text-xl"></i>
                         </button>
                         
-                        <!-- Auth Buttons (Always Visible) -->
-                        <div id="auth-buttons" class="flex items-center space-x-3" style="display: flex !important;">
-                            <a href="/static/login.html" id="login-btn" class="bg-wowcampus-blue text-white px-4 md:px-6 py-2 rounded-full font-medium hover:bg-wowcampus-dark transition-colors text-sm md:text-base" style="display: inline-block !important; background-color: #1E40AF !important; color: white !important;">
+                        <!-- Auth Buttons -->
+                        <div id="auth-buttons" class="flex items-center space-x-3">
+                            <a href="/static/login.html" id="login-btn" class="bg-wowcampus-blue text-white px-4 md:px-6 py-2 rounded-full font-medium hover:bg-wowcampus-dark transition-colors text-sm md:text-base">
                                 <i class="fas fa-sign-in-alt mr-1 md:mr-2"></i>로그인
                             </a>
-                            <a href="/static/register.html" id="register-btn" class="border-2 border-wowcampus-blue text-wowcampus-blue px-4 md:px-6 py-2 rounded-full font-medium hover:bg-wowcampus-blue hover:text-white transition-colors text-sm md:text-base" style="display: inline-block !important; border: 2px solid #1E40AF !important; color: #1E40AF !important;">
+                            <a href="/static/register.html" id="register-btn" class="border-2 border-wowcampus-blue text-wowcampus-blue px-4 md:px-6 py-2 rounded-full font-medium hover:bg-wowcampus-blue hover:text-white transition-colors text-sm md:text-base">
                                 <i class="fas fa-user-plus mr-1 md:mr-2"></i>회원가입
                             </a>
                         </div>

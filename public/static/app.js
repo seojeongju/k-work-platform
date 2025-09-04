@@ -909,7 +909,10 @@ class JobPlatformApp {
         const userName = document.getElementById('user-name');
         const logoutBtn = document.getElementById('logout-btn');
 
-        console.log('setupUserNavigation called:', { user, token, authButtons });
+        console.log('setupUserNavigation called:', { user, token, authButtons, loginBtn, registerBtn, userMenu });
+        console.log('Current authButtons style:', authButtons ? authButtons.style.display : 'not found');
+        console.log('Current loginBtn style:', loginBtn ? loginBtn.style.display : 'not found');
+        console.log('Current registerBtn style:', registerBtn ? registerBtn.style.display : 'not found');
 
         if (user && token) {
             // 로그인 상태 - 인라인 스타일 직접 조작으로 숨김
@@ -928,6 +931,10 @@ class JobPlatformApp {
                 userMenu.style.display = 'flex';
             }
             if (userName) userName.textContent = user.name || user.company_name || user.email || '사용자님';
+
+            console.log('After hiding auth buttons - authButtons style:', authButtons ? authButtons.style.display : 'not found');
+            console.log('After hiding auth buttons - loginBtn style:', loginBtn ? loginBtn.style.display : 'not found');
+            console.log('After hiding auth buttons - registerBtn style:', registerBtn ? registerBtn.style.display : 'not found');
 
             // 권한별 메뉴 업데이트
             this.updateMenusByUserType(user.type, user.id);
@@ -1200,8 +1207,11 @@ class JobPlatformApp {
         // 로그인 상태 재확인
         this.checkAuthStatus();
         
+        // 즉시 실행
+        this.setupUserNavigation();
+        
         setTimeout(() => {
-            // 사용자 네비게이션 업데이트
+            // 사용자 네비게이션 업데이트 (추가 보장)
             this.setupUserNavigation();
             
             // 구인정보 자세히 보기 버튼 업데이트
@@ -1513,5 +1523,26 @@ function closeMobileMenu() {
 // 앱 초기화
 let app;
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded - Initializing app');
     app = new JobPlatformApp();
+    
+    // 추가 지연 후 네비게이션 강제 업데이트
+    setTimeout(() => {
+        console.log('Force updating user navigation after app init');
+        if (app && app.setupUserNavigation) {
+            app.setupUserNavigation();
+        }
+    }, 1000);
+});
+
+// 페이지 완전 로드 후 추가 실행
+window.addEventListener('load', () => {
+    console.log('Window loaded - Final navigation setup');
+    
+    setTimeout(() => {
+        console.log('Final force update of user navigation');
+        if (app && app.setupUserNavigation) {
+            app.setupUserNavigation();
+        }
+    }, 1500);
 });
