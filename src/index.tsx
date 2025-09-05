@@ -451,6 +451,49 @@ app.get('/', (c) => {
             opacity: 1 !important;
             pointer-events: auto !important;
           }
+          
+          /* 🔥 프로덕션용 추가 안전장치 */
+          .auth-hidden-prod {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            position: absolute !important;
+            left: -99999px !important;
+            top: -99999px !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            z-index: -9999 !important;
+          }
+          
+          /* 특정 텍스트가 포함된 버튼/링크 강제 숨김 */
+          a[href*="login"]:not([href*="logout"]),
+          button:contains("로그인"),
+          a:contains("로그인"):not(:contains("로그아웃")),
+          button:contains("회원가입"),
+          a:contains("회원가입") {
+            display: none !important;
+            position: absolute !important;
+            left: -99999px !important;
+          }
+          
+          /* 로그인 상태에서만 적용되는 규칙 */
+          body.auth-logged-in a[href*="login"]:not([href*="logout"]),
+          body.auth-logged-in button:contains("로그인"),
+          body.auth-logged-in a:contains("로그인"):not(:contains("로그아웃")),
+          body.auth-logged-in button:contains("회원가입"),
+          body.auth-logged-in a:contains("회원가입") {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            position: absolute !important;
+            left: -99999px !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }
         </style>
     </head>
     <body class="bg-gray-50 min-h-screen font-sans">
@@ -1608,9 +1651,59 @@ app.get('/', (c) => {
         </script>
         
         <script>
-            // 인증 상태 관리는 app.js에서 처리
-            // CSS만으로 인증 상태별 UI 제어
+            // 🔥 CRITICAL: 즉시 로딩 인증 UI 제어 (프로덕션용)
+            (function(){
+                console.log('🔧 즉시 인증 UI 제어 시작...');
+                
+                function quickAuthFix() {
+                    const user = localStorage.getItem('user');
+                    const token = localStorage.getItem('token');
+                    const isLoggedIn = !!(user && token);
+                    
+                    if (isLoggedIn) {
+                        // 모든 로그인/회원가입 버튼 즉시 숨김
+                        const authSelectors = [
+                            '#auth-buttons', '#login-btn', '#register-btn',
+                            'a[href*="login"]', 'a[href*="register"]',
+                            '.login-btn', '.register-btn'
+                        ];
+                        
+                        authSelectors.forEach(selector => {
+                            document.querySelectorAll(selector).forEach(el => {
+                                el.style.setProperty('display', 'none', 'important');
+                                el.style.setProperty('position', 'absolute', 'important');
+                                el.style.setProperty('left', '-99999px', 'important');
+                            });
+                        });
+                        
+                        // 텍스트 기반 검색도 실행
+                        document.querySelectorAll('a, button').forEach(el => {
+                            const text = el.textContent?.trim();
+                            if (text === '로그인' || text === '회원가입') {
+                                el.style.setProperty('display', 'none', 'important');
+                                el.style.setProperty('position', 'absolute', 'important');
+                                el.style.setProperty('left', '-99999px', 'important');
+                            }
+                        });
+                        
+                        console.log('✅ 즉시 인증 버튼 숨김 완료');
+                    }
+                }
+                
+                // 즉시 실행
+                quickAuthFix();
+                
+                // DOM 로드 시 재실행
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', quickAuthFix);
+                }
+                
+                // 100ms, 500ms 후에도 재실행 (안전장치)
+                setTimeout(quickAuthFix, 100);
+                setTimeout(quickAuthFix, 500);
+            })();
         </script>
+        <script src="/static/production_auth_fix.js"></script>
         <script src="/static/app.js"></script>
     </body>
     </html>
