@@ -15,7 +15,7 @@
     {
       "binding": "DB",
       "database_name": "w-campus-production",
-      "database_id": "placeholder-id-will-be-set-when-deployed"
+      "database_id": "35e76aa0-0043-4008-9a96-8546ac02b99c"
     }
   ],
   // Note: Routes will be configured in Cloudflare Dashboard for custom domain
