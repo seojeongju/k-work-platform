@@ -452,30 +452,77 @@ app.get('/', (c) => {
             pointer-events: auto !important;
           }
           
-          /* 🔥 프로덕션용 추가 안전장치 */
-          .auth-hidden-prod {
+          /* 🚀 WOW-CAMPUS V2 초강력 프로덕션 안전장치 */
+          .auth-hidden-prod,
+          .auth-hidden-prod-v2,
+          .wcampus-destroyed-v2,
+          .wcampus-emergency-destroyed,
+          .completely-removed,
+          [data-wcampus-destroyed-v2="true"],
+          [data-emergency-destroyed="true"] {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
             pointer-events: none !important;
-            position: absolute !important;
-            left: -99999px !important;
-            top: -99999px !important;
+            position: fixed !important;
+            left: -999999px !important;
+            top: -999999px !important;
+            right: -999999px !important;
+            bottom: -999999px !important;
             width: 0 !important;
             height: 0 !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            max-width: 0 !important;
+            max-height: 0 !important;
             overflow: hidden !important;
-            z-index: -9999 !important;
+            z-index: -99999 !important;
+            transform: scale(0) translate(-99999px, -99999px) !important;
+            clip-path: circle(0%) !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            outline: none !important;
+            font-size: 0 !important;
+            line-height: 0 !important;
+            user-select: none !important;
           }
           
-          /* 특정 텍스트가 포함된 버튼/링크 강제 숨김 */
-          a[href*="login"]:not([href*="logout"]),
-          button:contains("로그인"),
-          a:contains("로그인"):not(:contains("로그아웃")),
-          button:contains("회원가입"),
-          a:contains("회원가입") {
+          /* 로그인 상태에서 모든 인증 버튼 완전 차단 */
+          body.wcampus-logged-in-emergency a[href*="login"],
+          body.wcampus-logged-in-emergency a[href*="register"],
+          body.wcampus-logged-in-emergency a[href*="signin"],
+          body.wcampus-logged-in-emergency a[href*="signup"],
+          body.wcampus-logged-in-v2 a[href*="login"],
+          body.wcampus-logged-in-v2 a[href*="register"],
+          body.wcampus-logged-in-v2 a[href*="signin"],
+          body.wcampus-logged-in-v2 a[href*="signup"] {
             display: none !important;
-            position: absolute !important;
-            left: -99999px !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            position: fixed !important;
+            left: -999999px !important;
+          }
+          
+          /* 텍스트 기반 완전 차단 (더 강력한 버전) */
+          body.wcampus-logged-in-emergency a:contains("로그인"):not(:contains("로그아웃")),
+          body.wcampus-logged-in-emergency a:contains("회원가입"),
+          body.wcampus-logged-in-emergency button:contains("로그인"),
+          body.wcampus-logged-in-emergency button:contains("회원가입"),
+          body.wcampus-logged-in-v2 a:contains("로그인"):not(:contains("로그아웃")),
+          body.wcampus-logged-in-v2 a:contains("회원가입"),
+          body.wcampus-logged-in-v2 button:contains("로그인"),
+          body.wcampus-logged-in-v2 button:contains("회원가입") {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+          }
+          
+          /* 부모 요소도 숨김 처리 */
+          .wcampus-parent-destroyed {
+            display: none !important;
+            visibility: hidden !important;
           }
           
           /* 로그인 상태에서만 적용되는 규칙 */
@@ -1651,59 +1698,140 @@ app.get('/', (c) => {
         </script>
         
         <script>
-            // 🔥 CRITICAL: 즉시 로딩 인증 UI 제어 (프로덕션용)
+            // 🚀 CRITICAL: 초강력 즉시 로딩 인증 UI 제어 V2 (프로덕션용)
             (function(){
-                console.log('🔧 즉시 인증 UI 제어 시작...');
+                console.log('🚀 WOW-CAMPUS 초강력 즉시 인증 UI 제어 V2 시작...');
                 
-                function quickAuthFix() {
+                function superQuickAuthFix() {
                     const user = localStorage.getItem('user');
                     const token = localStorage.getItem('token');
-                    const isLoggedIn = !!(user && token);
+                    const sessionUser = sessionStorage.getItem('user');
+                    
+                    let isLoggedIn = false;
+                    
+                    // localStorage 체크
+                    if (user && token) {
+                        try {
+                            const userInfo = JSON.parse(user);
+                            isLoggedIn = !!(userInfo && (userInfo.id || userInfo.email));
+                        } catch (e) {
+                            console.log('localStorage 파싱 오류');
+                        }
+                    }
+                    
+                    // sessionStorage 체크
+                    if (!isLoggedIn && sessionUser) {
+                        try {
+                            const userInfo = JSON.parse(sessionUser);
+                            isLoggedIn = !!(userInfo && (userInfo.id || userInfo.email));
+                        } catch (e) {
+                            console.log('sessionStorage 파싱 오류');
+                        }
+                    }
+                    
+                    // DOM에서 로그인 상태 확인 (admin@wowcampus.com 텍스트로)
+                    if (!isLoggedIn) {
+                        const allTexts = document.querySelectorAll('*');
+                        for (let el of allTexts) {
+                            const text = el.textContent?.trim() || '';
+                            if (text.includes('admin@wowcampus.com') || 
+                                (text.includes('환영합니다') && text.includes('@'))) {
+                                isLoggedIn = true;
+                                console.log('🔍 DOM에서 로그인 상태 감지:', text);
+                                break;
+                            }
+                        }
+                    }
                     
                     if (isLoggedIn) {
-                        // 모든 로그인/회원가입 버튼 즉시 숨김
+                        console.log('🔐 로그인 상태 - 모든 인증 버튼 완전 파괴');
+                        
+                        // body에 로그인 상태 표시
+                        document.body.classList.add('wcampus-logged-in-emergency');
+                        
+                        // 초강력 파괴 스타일 배열
+                        const destructiveStyles = [
+                            ['display', 'none'],
+                            ['visibility', 'hidden'],
+                            ['opacity', '0'],
+                            ['pointer-events', 'none'],
+                            ['position', 'fixed'],
+                            ['left', '-999999px'],
+                            ['top', '-999999px'],
+                            ['width', '0'],
+                            ['height', '0'],
+                            ['overflow', 'hidden'],
+                            ['z-index', '-99999'],
+                            ['transform', 'scale(0)'],
+                            ['margin', '0'],
+                            ['padding', '0']
+                        ];
+                        
+                        // 모든 인증 버튼 완전 파괴
                         const authSelectors = [
-                            '#auth-buttons', '#login-btn', '#register-btn',
-                            'a[href*="login"]', 'a[href*="register"]',
-                            '.login-btn', '.register-btn'
+                            '#auth-buttons', '#login-btn', '#register-btn', '#signin-btn',
+                            'a[href*="login"]', 'a[href*="register"]', 'a[href*="signin"]',
+                            '.login-btn', '.register-btn', '.auth-btn', '.signin-btn'
                         ];
                         
                         authSelectors.forEach(selector => {
-                            document.querySelectorAll(selector).forEach(el => {
-                                el.style.setProperty('display', 'none', 'important');
-                                el.style.setProperty('position', 'absolute', 'important');
-                                el.style.setProperty('left', '-99999px', 'important');
-                            });
-                        });
-                        
-                        // 텍스트 기반 검색도 실행
-                        document.querySelectorAll('a, button').forEach(el => {
-                            const text = el.textContent?.trim();
-                            if (text === '로그인' || text === '회원가입') {
-                                el.style.setProperty('display', 'none', 'important');
-                                el.style.setProperty('position', 'absolute', 'important');
-                                el.style.setProperty('left', '-99999px', 'important');
+                            try {
+                                document.querySelectorAll(selector).forEach(el => {
+                                    destructiveStyles.forEach(([prop, value]) => {
+                                        el.style.setProperty(prop, value, 'important');
+                                    });
+                                    el.classList.add('wcampus-emergency-destroyed');
+                                    el.setAttribute('data-emergency-destroyed', 'true');
+                                });
+                            } catch (e) {
+                                console.log('선택자 오류:', selector);
                             }
                         });
                         
-                        console.log('✅ 즉시 인증 버튼 숨김 완료');
+                        // 텍스트 기반 완전 파괴 (가장 확실한 방법)
+                        document.querySelectorAll('a, button').forEach(el => {
+                            const text = el.textContent?.trim() || '';
+                            const href = el.getAttribute('href') || '';
+                            
+                            if (text === '로그인' || text === '회원가입' || text === 'Login' || 
+                                text === 'Sign Up' || text === 'Register' ||
+                                href.includes('login') || href.includes('register')) {
+                                
+                                destructiveStyles.forEach(([prop, value]) => {
+                                    el.style.setProperty(prop, value, 'important');
+                                });
+                                el.classList.add('wcampus-emergency-destroyed');
+                                el.setAttribute('data-emergency-destroyed', 'true');
+                                el.textContent = ''; // 텍스트도 제거
+                                
+                                console.log('🔥 완전 파괴:', text || href, el);
+                            }
+                        });
+                        
+                        console.log('✅ 초강력 인증 버튼 완전 파괴 완료');
+                    } else {
+                        console.log('🔓 로그아웃 상태 - 버튼 표시');
+                        document.body.classList.remove('wcampus-logged-in-emergency');
                     }
                 }
                 
                 // 즉시 실행
-                quickAuthFix();
+                superQuickAuthFix();
                 
                 // DOM 로드 시 재실행
                 if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', quickAuthFix);
+                    document.addEventListener('DOMContentLoaded', superQuickAuthFix);
                 }
                 
-                // 100ms, 500ms 후에도 재실행 (안전장치)
-                setTimeout(quickAuthFix, 100);
-                setTimeout(quickAuthFix, 500);
+                // 여러 시점에서 재실행 (더 많은 안전장치)
+                setTimeout(superQuickAuthFix, 50);
+                setTimeout(superQuickAuthFix, 100);
+                setTimeout(superQuickAuthFix, 200);
+                setTimeout(superQuickAuthFix, 500);
+                setTimeout(superQuickAuthFix, 1000);
             })();
         </script>
-        <script src="/static/production_auth_fix.js"></script>
+        <script src="/static/production_auth_fix_v2.js"></script>
         <script src="/static/app.js"></script>
     </body>
     </html>
