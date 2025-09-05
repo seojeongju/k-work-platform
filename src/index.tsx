@@ -395,12 +395,12 @@ app.get('/', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>WOW-CAMPUS 외국인 구인구직 및 유학생 지원플랫폼</title>
-        <!-- Deployment Version: v2.2.0-force-deploy | Last Updated: 2025-09-05T18:00:00Z -->
-        <meta name="build-version" content="v2.2.0-force-deploy">
-        <meta name="last-updated" content="2025-09-05T18:00:00Z">
-        <meta name="deployment-status" content="force-deployed">
+        <!-- Deployment Version: v2.3.0-improved-navigation | Last Updated: 2025-09-05T18:15:00Z -->
+        <meta name="build-version" content="v2.3.0-improved-navigation">
+        <meta name="last-updated" content="2025-09-05T18:15:00Z">
+        <meta name="deployment-status" content="navigation-improved">
         <meta name="cloudflare-project" content="w-campus-com">
-        <meta name="git-trigger" content="manual-force-push">
+        <meta name="feature-update" content="enhanced-scroll-navigation">
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <script>
@@ -818,12 +818,12 @@ app.get('/', (c) => {
                         
                         <!-- Auth Buttons (Show by default, hide when logged in) -->
                         <div id="auth-buttons" class="flex items-center space-x-3">
-                            <a href="/static/login.html" id="login-btn" class="btn-primary px-4 md:px-6 py-2 rounded-full font-medium text-sm md:text-base">
+                            <button onclick="goToLogin()" id="login-btn" class="btn-primary px-4 md:px-6 py-2 rounded-full font-medium text-sm md:text-base cursor-pointer">
                                 <i class="fas fa-sign-in-alt mr-1 md:mr-2"></i>로그인
-                            </a>
-                            <a href="/static/register.html" id="register-btn" class="btn-secondary px-4 md:px-6 py-2 rounded-full font-medium text-sm md:text-base">
+                            </button>
+                            <button onclick="goToRegister()" id="register-btn" class="btn-secondary px-4 md:px-6 py-2 rounded-full font-medium text-sm md:text-base cursor-pointer">
                                 <i class="fas fa-user-plus mr-1 md:mr-2"></i>회원가입
-                            </a>
+                            </button>
                         </div>
                         
                         <!-- User Menu (Hidden by default) -->
@@ -1585,7 +1585,7 @@ app.get('/', (c) => {
                     const restrictMessage = "에이전트 전용 메뉴입니다\\n\\n죄송합니다. 이 기능은 에이전트 회원만 이용할 수 있습니다.\\n\\n현재 회원 유형: " + getUserTypeName(user.type) + "\\n\\n에이전트 기능을 이용하시려면:\\n- 에이전트 계정으로 새로 회원가입\\n- 또는 에이전트 계정으로 로그인\\n\\n에이전트 회원가입을 진행하시겠습니까?";
 
                     if (confirm(restrictMessage)) {
-                        window.location.href = '/static/register.html?type=agent';
+                        goToRegister(); // 안전한 회원가입 함수 사용
                     }
                 }
             }

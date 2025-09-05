@@ -1808,6 +1808,47 @@ function smoothScrollToSection(sectionId, hashName) {
     }, 250);
 }
 
+// 안전한 로그인/회원가입 네비게이션 함수들
+function goToLogin() {
+    console.log('로그인 페이지로 이동 시도');
+    
+    // 가능한 로그인 경로들을 순서대로 시도
+    const loginPaths = [
+        '/static/login.html',
+        '/login.html',
+        '/login'
+    ];
+    
+    // 첫 번째 경로로 이동
+    try {
+        window.location.href = loginPaths[0];
+    } catch (error) {
+        console.error('로그인 페이지 이동 오류:', error);
+        // 대체 경로 시도
+        window.location.href = loginPaths[1];
+    }
+}
+
+function goToRegister() {
+    console.log('회원가입 페이지로 이동 시도');
+    
+    // 가능한 회원가입 경로들을 순서대로 시도  
+    const registerPaths = [
+        '/static/register.html',
+        '/register.html',
+        '/register'
+    ];
+    
+    // 첫 번째 경로로 이동
+    try {
+        window.location.href = registerPaths[0];
+    } catch (error) {
+        console.error('회원가입 페이지 이동 오류:', error);
+        // 대체 경로 시도
+        window.location.href = registerPaths[1];
+    }
+}
+
 // 앱 초기화
 let app;
 document.addEventListener('DOMContentLoaded', () => {
