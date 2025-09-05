@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "w-campus-com",
+  "name": "w-campus",
   "compatibility_date": "2025-08-25",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
