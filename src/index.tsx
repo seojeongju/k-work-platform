@@ -530,31 +530,29 @@ app.get('/', (c) => {
             opacity: 0;
             visibility: hidden;
             transform: translateY(-10px);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: none;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
           }
           
-          .nav-dropdown:hover .nav-dropdown-menu {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-            pointer-events: auto;
+          .nav-dropdown-menu.hidden {
+            display: none !important;
+          }
+          
+          .nav-dropdown-menu:not(.hidden) {
+            display: block;
           }
           
           .nav-dropdown-btn {
-            transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           }
           
           .nav-dropdown-btn:hover {
             color: #1E40AF;
           }
           
-          .nav-dropdown-menu:hover {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-            pointer-events: auto;
+          .nav-dropdown-btn .fa-chevron-down {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           }
           
           .nav-dropdown.active .nav-dropdown-menu {
@@ -780,10 +778,10 @@ app.get('/', (c) => {
                     <!-- Desktop Navigation -->
                     <nav class="hidden md:flex items-center space-x-8">
                         <div class="relative nav-dropdown">
-                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium py-2">
-                                구인정보 <i class="fas fa-chevron-down ml-1 text-xs transition-transform"></i>
+                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium py-2" onclick="toggleJobsDropdown()" id="jobs-dropdown-btn">
+                                구인정보 <i class="fas fa-chevron-down ml-1 text-xs transition-transform" id="jobs-dropdown-icon"></i>
                             </button>
-                            <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 bg-white shadow-xl rounded-lg border border-gray-100 py-2 z-50">
+                            <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-56 bg-white shadow-xl rounded-lg border border-gray-100 py-2 z-50 hidden" id="jobs-dropdown-menu">
                                 <a href="#jobs-view" onclick="event.preventDefault(); showJobListView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
                                     <i class="fas fa-list mr-2"></i>구인정보 보기
                                 </a>

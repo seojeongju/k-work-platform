@@ -1920,3 +1920,66 @@ JobPlatformApp.prototype.setupAuthButtonObserver = function() {
         attributeFilter: ['style', 'class']
     });
 };
+
+function toggleJobsDropdown() {
+    const dropdown = document.getElementById('jobs-dropdown-menu');
+    const icon = document.getElementById('jobs-dropdown-icon');
+    
+    if (dropdown && icon) {
+        if (dropdown.classList.contains('hidden')) {
+            // 다른 모든 드롭다운 닫기
+            closeAllDropdowns();
+            
+            // 현재 드롭다운 열기
+            dropdown.classList.remove('hidden');
+            dropdown.style.opacity = '1';
+            dropdown.style.visibility = 'visible';
+            dropdown.style.transform = 'translateY(0)';
+            dropdown.style.pointerEvents = 'auto';
+            
+            // 아이콘 회전
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            // 드롭다운 닫기
+            dropdown.classList.add('hidden');
+            dropdown.style.opacity = '0';
+            dropdown.style.visibility = 'hidden';
+            dropdown.style.transform = 'translateY(-10px)';
+            dropdown.style.pointerEvents = 'none';
+            
+            // 아이콘 원래대로
+            icon.style.transform = 'rotate(0deg)';
+        }
+    }
+}
+
+function closeAllDropdowns() {
+    const dropdowns = document.querySelectorAll('.nav-dropdown-menu');
+    const icons = document.querySelectorAll('.nav-dropdown .fa-chevron-down');
+    
+    dropdowns.forEach(dropdown => {
+        dropdown.classList.add('hidden');
+        dropdown.style.opacity = '0';
+        dropdown.style.visibility = 'hidden';
+        dropdown.style.transform = 'translateY(-10px)';
+        dropdown.style.pointerEvents = 'none';
+    });
+    
+    icons.forEach(icon => {
+        icon.style.transform = 'rotate(0deg)';
+    });
+}
+
+// 문서 클릭 시 드롭다운 닫기
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(event) {
+        const jobsDropdown = document.getElementById('jobs-dropdown-btn');
+        const jobsMenu = document.getElementById('jobs-dropdown-menu');
+        
+        if (jobsDropdown && jobsMenu && 
+            !jobsDropdown.contains(event.target) && 
+            !jobsMenu.contains(event.target)) {
+            closeAllDropdowns();
+        }
+    });
+});
