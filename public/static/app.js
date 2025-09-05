@@ -17,6 +17,12 @@ class JobPlatformApp {
         this.loadInitialData();
         this.bindEvents();
         
+        // 기본 탭을 jobs로 설정하고 구인정보 보기 활성화
+        setTimeout(() => {
+            this.switchTab('jobs');
+            this.showJobView();
+        }, 100);
+        
         // 즉시 한 번 실행
         this.setupUserNavigation();
         
@@ -51,20 +57,23 @@ class JobPlatformApp {
     switchTab(tabId) {
         // Update button states
         document.querySelectorAll('.tab-button').forEach(btn => {
-            btn.classList.remove('bg-primary', 'text-white', 'border-primary');
-            btn.classList.add('text-gray-600', 'hover:bg-gray-50');
+            btn.classList.remove('active');
         });
         
         const activeButton = document.getElementById(`tab-${tabId}`);
-        activeButton.classList.remove('text-gray-600', 'hover:bg-gray-50');
-        activeButton.classList.add('bg-primary', 'text-white', 'border-b-2', 'border-primary');
+        if (activeButton) {
+            activeButton.classList.add('active');
+        }
 
         // Update content visibility
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.add('hidden');
         });
         
-        document.getElementById(`content-${tabId}`).classList.remove('hidden');
+        const activeContent = document.getElementById(`content-${tabId}`);
+        if (activeContent) {
+            activeContent.classList.remove('hidden');
+        }
         
         this.currentTab = tabId;
         this.loadTabData(tabId).then(() => {
@@ -606,17 +615,22 @@ class JobPlatformApp {
     showJobView() {
         // 버튼 상태 변경
         document.querySelectorAll('.job-sub-btn').forEach(btn => {
-            btn.classList.remove('bg-primary', 'text-white');
-            btn.classList.add('bg-gray-300', 'text-gray-700');
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
         });
         
         const viewBtn = document.getElementById('job-view-btn');
-        viewBtn.classList.remove('bg-gray-300', 'text-gray-700');
-        viewBtn.classList.add('bg-primary', 'text-white');
+        if (viewBtn) {
+            viewBtn.classList.remove('btn-secondary');
+            viewBtn.classList.add('btn-primary');
+        }
         
         // 컨텐츠 표시/숨김
-        document.getElementById('job-view-section').classList.remove('hidden');
-        document.getElementById('job-register-section').classList.add('hidden');
+        const viewSection = document.getElementById('job-view-section');
+        const registerSection = document.getElementById('job-register-section');
+        
+        if (viewSection) viewSection.classList.remove('hidden');
+        if (registerSection) registerSection.classList.add('hidden');
         
         // 구인 정보 새로고침
         this.loadJobListings();
