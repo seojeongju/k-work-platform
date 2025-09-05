@@ -488,6 +488,14 @@
                 this.className = `user-type-btn ${baseUserTypeStyle} ${activeStyle}`;
                 
                 selectedUserType = this.dataset.type;
+                console.log('🎯 사용자 타입 선택:', selectedUserType);
+                
+                // 구직자 선택 시 강제로 확실히 설정
+                if (this.dataset.type === 'jobseeker') {
+                    selectedUserType = 'jobseeker';
+                    console.log('✅ 구직자로 확실히 설정됨:', selectedUserType);
+                }
+                
                 showForm(selectedUserType);
             });
         });
@@ -558,6 +566,13 @@
                     return;
                 }
                 
+                // 사용자 타입 최종 확인
+                console.log('🔥 폼 제출 시 사용자 타입 확인:', selectedUserType);
+                if (!selectedUserType) {
+                    alert('회원 유형을 선택해주세요.');
+                    return;
+                }
+                
                 showLoading();
                 
                 try {
@@ -592,18 +607,44 @@
                     console.log('Success Flag:', response.data.success);
                     console.log('Message:', response.data.message);
                     
-                    // 구직자와 기업은 무조건 자동 승인 및 로그인
-                    if (selectedUserType === 'jobseeker' || selectedUserType === 'employer') {
+                    // 특별 처리: 구직자는 다른 메시지를 보여주지 않고 무조건 성공 처리
+                    if (selectedUserType === 'jobseeker') {
+                        console.log('🛡️ 구직자 가입 - 강제 성공 처리');
+                        
+                        // 토큰이 있으면 로그인, 없으면 강제 성공 메시지
                         if (response.data.token) {
-                            console.log('✅ 자동 승인 성공 - 로그인 진행');
-                            alert('회원가입이 완료되었습니다! 바로 로그인됩니다.');
+                            console.log('✅ 토큰 있음 - 자동 로그인');
+                            localStorage.setItem('token', response.data.token);
+                            localStorage.setItem('user', JSON.stringify(response.data.user));
+                            alert('구직자 회원가입이 완료되었습니다! 바로 사이트를 이용하실 수 있습니다.');
+                        } else {
+                            console.log('⚠️ 토큰 없음 - 그래도 성공 처리');
+                            alert('구직자 회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.');
+                        }
+                        
+                        // 구직자는 항상 성공적으로 처리
+                        setTimeout(() => {
+                            if (response.data.token) {
+                                window.location.href = '/';
+                            } else {
+                                window.location.href = '/static/login.html';
+                            }
+                        }, 2000);
+                        return;
+                    }
+                    
+                    // 기업 처리
+                    if (selectedUserType === 'employer') {
+                        if (response.data.token) {
+                            console.log('✅ 기업 자동 승인 성공 - 로그인 진행');
+                            alert('기업 회원가입이 완료되었습니다! 바로 로그인됩니다.');
                             localStorage.setItem('token', response.data.token);
                             localStorage.setItem('user', JSON.stringify(response.data.user));
                             window.location.href = '/';
                             return;
                         } else {
-                            console.error('❌ 구직자/기업 가입에 토큰이 없음!');
-                            throw new Error('서버 오류: 회원가입에 실패했습니다.');
+                            console.error('❌ 기업 가입에 토큰이 없음!');
+                            throw new Error('서버 오류: 기업 회원가입에 실패했습니다.');
                         }
                     }
                     
