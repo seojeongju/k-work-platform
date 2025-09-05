@@ -2435,6 +2435,7 @@ app.post('/api/auth/register/employer', async (c) => {
     const token = `token_${result.meta.last_row_id}_employer`
 
     return c.json({
+      success: true,
       message: '구인 기업 회원가입이 완료되었습니다. 바로 로그인하여 이용하실 수 있습니다.',
       token,
       user: {
@@ -2522,6 +2523,7 @@ app.post('/api/auth/register/jobseeker', async (c) => {
     const token = `token_${result.meta.last_row_id}_jobseeker`
 
     return c.json({
+      success: true,
       message: '구직자 회원가입이 완료되었습니다. 바로 로그인하여 이용하실 수 있습니다.',
       token,
       user: {
