@@ -930,22 +930,31 @@ class JobPlatformApp {
             document.body.classList.add('auth-logged-in');
             
             if (authButtons) {
-                authButtons.style.display = 'none';
-                authButtons.classList.add('hidden');
-                authButtons.style.visibility = 'hidden';
+                authButtons.style.setProperty('display', 'none', 'important');
+                authButtons.classList.add('hidden', 'force-hide-auth');
+                authButtons.style.setProperty('visibility', 'hidden', 'important');
+                authButtons.style.setProperty('opacity', '0', 'important');
+                authButtons.style.setProperty('pointer-events', 'none', 'important');
             }
             if (loginBtn) {
-                loginBtn.style.display = 'none';
-                loginBtn.style.visibility = 'hidden';
+                loginBtn.style.setProperty('display', 'none', 'important');
+                loginBtn.style.setProperty('visibility', 'hidden', 'important');
+                loginBtn.style.setProperty('opacity', '0', 'important');
+                loginBtn.classList.add('force-hide-auth');
             }
             if (registerBtn) {
-                registerBtn.style.display = 'none';
-                registerBtn.style.visibility = 'hidden';
+                registerBtn.style.setProperty('display', 'none', 'important');
+                registerBtn.style.setProperty('visibility', 'hidden', 'important');
+                registerBtn.style.setProperty('opacity', '0', 'important');
+                registerBtn.classList.add('force-hide-auth');
             }
             if (userMenu) {
                 userMenu.classList.remove('hidden');
-                userMenu.style.display = 'flex';
-                userMenu.style.visibility = 'visible';
+                userMenu.classList.add('force-show-user');
+                userMenu.style.setProperty('display', 'flex', 'important');
+                userMenu.style.setProperty('visibility', 'visible', 'important');
+                userMenu.style.setProperty('opacity', '1', 'important');
+                userMenu.style.setProperty('pointer-events', 'auto', 'important');
             }
             if (userName) userName.textContent = user.name || user.company_name || user.email || '사용자님';
 
@@ -968,22 +977,31 @@ class JobPlatformApp {
             document.body.classList.remove('auth-logged-in');
             
             if (authButtons) {
-                authButtons.style.display = 'flex';
-                authButtons.classList.remove('hidden');
-                authButtons.style.visibility = 'visible';
+                authButtons.style.setProperty('display', 'flex', 'important');
+                authButtons.classList.remove('hidden', 'force-hide-auth');
+                authButtons.style.setProperty('visibility', 'visible', 'important');
+                authButtons.style.setProperty('opacity', '1', 'important');
+                authButtons.style.setProperty('pointer-events', 'auto', 'important');
             }
             if (loginBtn) {
-                loginBtn.style.display = 'inline-block';
-                loginBtn.style.visibility = 'visible';
+                loginBtn.style.setProperty('display', 'inline-block', 'important');
+                loginBtn.style.setProperty('visibility', 'visible', 'important');
+                loginBtn.style.setProperty('opacity', '1', 'important');
+                loginBtn.classList.remove('force-hide-auth');
             }
             if (registerBtn) {
-                registerBtn.style.display = 'inline-block';
-                registerBtn.style.visibility = 'visible';
+                registerBtn.style.setProperty('display', 'inline-block', 'important');
+                registerBtn.style.setProperty('visibility', 'visible', 'important');
+                registerBtn.style.setProperty('opacity', '1', 'important');
+                registerBtn.classList.remove('force-hide-auth');
             }
             if (userMenu) {
                 userMenu.classList.add('hidden');
-                userMenu.style.display = 'none';
-                userMenu.style.visibility = 'hidden';
+                userMenu.classList.remove('force-show-user');
+                userMenu.style.setProperty('display', 'none', 'important');
+                userMenu.style.setProperty('visibility', 'hidden', 'important');
+                userMenu.style.setProperty('opacity', '0', 'important');
+                userMenu.style.setProperty('pointer-events', 'none', 'important');
             }
             if (agentMenu) agentMenu.classList.add('hidden');
             if (mobileAgentMenu) mobileAgentMenu.classList.add('hidden');
