@@ -2455,15 +2455,23 @@ app.post('/api/auth/register/employer', async (c) => {
 // 구직자 회원가입 API
 app.post('/api/auth/register/jobseeker', async (c) => {
   try {
+    console.log('=== 구직자 회원가입 API 시작 ===');
+    
+    const requestData = await c.req.json();
+    console.log('Request Data:', requestData);
+    
     const { 
       email, password, name, birth_date, gender, nationality, 
       current_visa, desired_visa, phone, current_address, 
       korean_level, education_level, work_experience, agent_id 
-    } = await c.req.json()
+    } = requestData;
     
     if (!email || !password || !name || !nationality || !phone) {
+      console.log('❌ 필수 정보 누락');
       return c.json({ error: '필수 정보가 누락되었습니다.' }, 400)
     }
+    
+    console.log('✅ 필수 정보 확인 완료');
 
     // 중복 이메일 체크
     const existingUser = await c.env.DB.prepare(
@@ -2496,6 +2504,7 @@ app.post('/api/auth/register/jobseeker', async (c) => {
     // 패스워드 해시화
     const hashedPassword = await hash(password);
 
+    console.log('데이터베이스 삽입 시작...');
     const result = await c.env.DB.prepare(`
       INSERT INTO job_seekers (
         email, password, name, birth_date, gender, nationality, 
@@ -2517,12 +2526,16 @@ app.post('/api/auth/register/jobseeker', async (c) => {
       education_level || null,
       work_experience || null,
       agent_id || null
-    ).run()
+    ).run();
+
+    console.log('✅ 데이터베이스 삽입 완료:', result);
+    console.log('New User ID:', result.meta.last_row_id);
 
     // 토큰 생성
-    const token = `token_${result.meta.last_row_id}_jobseeker`
+    const token = `token_${result.meta.last_row_id}_jobseeker`;
+    console.log('Generated Token:', token);
 
-    return c.json({
+    const responseData = {
       success: true,
       message: '구직자 회원가입이 완료되었습니다. 바로 로그인하여 이용하실 수 있습니다.',
       token,
@@ -2533,10 +2546,14 @@ app.post('/api/auth/register/jobseeker', async (c) => {
         name,
         status: 'approved'
       }
-    }, 201)
+    };
+    
+    console.log('✅ 구직자 회원가입 성공 응답:', responseData);
+    return c.json(responseData, 201);
   } catch (error) {
-    console.error('Job seeker registration error:', error)
-    return c.json({ error: '구직자 회원가입 중 오류가 발생했습니다.' }, 500)
+    console.error('❌ 구직자 회원가입 오류:', error);
+    console.error('Error details:', error.message, error.stack);
+    return c.json({ error: '구직자 회원가입 중 오류가 발생했습니다: ' + error.message }, 500)
   }
 })
 
