@@ -180,13 +180,23 @@ curl http://localhost:3000
 
 ## 🚀 Cloudflare Pages 배포 (준비 완료)
 
+**🌐 Production URL**: https://w-campus.com  
+**📅 Last Update**: 2025-09-05 Navigation UI Improvements  
+**🔄 Deployment Status**: Updated with latest navigation features
+
+### 최신 업데이트 내용 (v2.1.0-nav-update)
+- ✅ 구직정보 네비게이션 메뉴 추가
+- ✅ Hero 섹션에 구직정보 보기 버튼 추가  
+- ✅ 모바일 메뉴에 구직정보 접근 경로 추가
+- ✅ 단순화된 네비게이션 구조로 사용성 개선
+
 ### 배포 명령어
 ```bash
 # 빌드
 npm run build
 
 # Cloudflare Pages 배포
-npx wrangler pages deploy dist --project-name k-work-platform
+npx wrangler pages deploy dist --project-name w-campus
 ```
 
 ### 환경 설정
