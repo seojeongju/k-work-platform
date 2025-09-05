@@ -12,10 +12,8 @@ class JobPlatformApp {
         console.log('JobPlatformApp initializing...');
         this.setupTabs();
         this.setupJobSubTabs();
-        this.setupJobSeekerSubTabs();
         this.setupStudySubTabs();
         this.setupJobRegistration();
-        this.setupJobSeekerRegistration();
         this.loadInitialData();
         this.bindEvents();
         
@@ -92,9 +90,6 @@ class JobPlatformApp {
         switch(tabId) {
             case 'jobs':
                 await this.loadJobListings();
-                break;
-            case 'jobseekers':
-                await this.loadJobSeekers();
                 break;
             case 'matching':
                 await this.loadMatchingData();
@@ -435,26 +430,26 @@ class JobPlatformApp {
         return `${this.formatNumber(amount)}원`;
     }
 
-    async loadJobSeekers() {
-        try {
-            const response = await axios.get('/api/job-seekers?limit=5');
-            const jobSeekers = response.data.jobSeekers;
-            
-            const jobSeekersContainer = document.getElementById('jobseekers-list');
-            jobSeekersContainer.innerHTML = '';
+    // async loadJobSeekers() {
+    //     try {
+    //         const response = await axios.get('/api/job-seekers?limit=5');
+    //         const jobSeekers = response.data.jobSeekers;
+    //         
+    //         const jobSeekersContainer = document.getElementById('jobseekers-list');
+    //         jobSeekersContainer.innerHTML = '';
 
-            if (jobSeekers && jobSeekers.length > 0) {
-                jobSeekers.forEach(jobSeeker => {
-                    jobSeekersContainer.appendChild(this.createJobSeekerCard(jobSeeker));
-                });
-            } else {
-                jobSeekersContainer.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 구직자가 없습니다.</p>';
-            }
-        } catch (error) {
-            console.error('구직자 정보 로드 실패:', error);
-            document.getElementById('jobseekers-list').innerHTML = '<p class="text-red-500 text-center py-8">구직자 정보를 불러오는데 실패했습니다.</p>';
-        }
-    }
+    //         if (jobSeekers && jobSeekers.length > 0) {
+    //             jobSeekers.forEach(jobSeeker => {
+    //                 jobSeekersContainer.appendChild(this.createJobSeekerCard(jobSeeker));
+    //             });
+    //         } else {
+    //             jobSeekersContainer.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 구직자가 없습니다.</p>';
+    //         }
+    //     } catch (error) {
+    //         console.error('구직자 정보 로드 실패:', error);
+    //         document.getElementById('jobseekers-list').innerHTML = '<p class="text-red-500 text-center py-8">구직자 정보를 불러오는데 실패했습니다.</p>';
+    //     }
+    // }
 
     async loadMatchingData() {
         try {
@@ -486,48 +481,48 @@ class JobPlatformApp {
         }
     }
 
-    createJobSeekerCard(jobSeeker) {
-        const card = document.createElement('div');
-        card.className = 'bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer';
-        
-        const koreanLevelMap = {
-            'beginner': '초급',
-            'intermediate': '중급',
-            'advanced': '고급',
-            'native': '원어민급'
-        };
+    // createJobSeekerCard(jobSeeker) {
+    //     const card = document.createElement('div');
+    //     card.className = 'bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer';
+    //     
+    //     const koreanLevelMap = {
+    //         'beginner': '초급',
+    //         'intermediate': '중급',
+    //         'advanced': '고급',
+    //         'native': '원어민급'
+    //     };
 
-        card.innerHTML = `
-            <div class="flex justify-between items-start mb-3">
-                <div>
-                    <h4 class="text-lg font-semibold text-gray-800">${jobSeeker.name}</h4>
-                    <p class="text-sm text-gray-600">${jobSeeker.nationality}</p>
-                </div>
-                <div class="flex flex-col space-y-1">
-                    ${jobSeeker.current_visa ? `<span class="badge badge-blue text-xs">${jobSeeker.current_visa}</span>` : ''}
-                    ${jobSeeker.korean_level ? `<span class="badge badge-green text-xs">${koreanLevelMap[jobSeeker.korean_level]}</span>` : ''}
-                </div>
-            </div>
-            
-            <div class="space-y-1 text-sm text-gray-600 mb-3">
-                ${jobSeeker.desired_job_category ? `<div><i class="fas fa-briefcase w-4 mr-2"></i>희망: ${jobSeeker.desired_job_category}</div>` : ''}
-                ${jobSeeker.education_level ? `<div><i class="fas fa-graduation-cap w-4 mr-2"></i>학력: ${jobSeeker.education_level}</div>` : ''}
-            </div>
-            
-            <div class="flex justify-between items-center pt-3 border-t">
-                <span class="text-xs text-gray-500">
-                    등록: ${new Date(jobSeeker.created_at).toLocaleDateString('ko-KR')}
-                </span>
-                <button class="text-primary hover:text-secondary font-medium text-sm" 
-                        onclick="app.viewJobSeekerProfile(${jobSeeker.id})"
-                        id="jobseeker-detail-btn-${jobSeeker.id}">
-                    <span class="jobseeker-detail-text">프로필 보기</span> <i class="fas fa-arrow-right ml-1"></i>
-                </button>
-            </div>
-        `;
+    //     card.innerHTML = `
+    //         <div class="flex justify-between items-start mb-3">
+    //             <div>
+    //                 <h4 class="text-lg font-semibold text-gray-800">${jobSeeker.name}</h4>
+    //                 <p class="text-sm text-gray-600">${jobSeeker.nationality}</p>
+    //             </div>
+    //             <div class="flex flex-col space-y-1">
+    //                 ${jobSeeker.current_visa ? `<span class="badge badge-blue text-xs">${jobSeeker.current_visa}</span>` : ''}
+    //                 ${jobSeeker.korean_level ? `<span class="badge badge-green text-xs">${koreanLevelMap[jobSeeker.korean_level]}</span>` : ''}
+    //             </div>
+    //         </div>
+    //         
+    //         <div class="space-y-1 text-sm text-gray-600 mb-3">
+    //             ${jobSeeker.desired_job_category ? `<div><i class="fas fa-briefcase w-4 mr-2"></i>희망: ${jobSeeker.desired_job_category}</div>` : ''}
+    //             ${jobSeeker.education_level ? `<div><i class="fas fa-graduation-cap w-4 mr-2"></i>학력: ${jobSeeker.education_level}</div>` : ''}
+    //         </div>
+    //         
+    //         <div class="flex justify-between items-center pt-3 border-t">
+    //             <span class="text-xs text-gray-500">
+    //                 등록: ${new Date(jobSeeker.created_at).toLocaleDateString('ko-KR')}
+    //             </span>
+    //             <button class="text-primary hover:text-secondary font-medium text-sm" 
+    //                     onclick="app.viewJobSeekerProfile(${jobSeeker.id})"
+    //                     id="jobseeker-detail-btn-${jobSeeker.id}">
+    //                 <span class="jobseeker-detail-text">프로필 보기</span> <i class="fas fa-arrow-right ml-1"></i>
+    //             </button>
+    //         </div>
+    //     `;
 
-        return card;
-    }
+    //     return card;
+    // }
 
     createMatchingCard(match) {
         const card = document.createElement('div');
@@ -718,114 +713,114 @@ class JobPlatformApp {
         return '기타';
     }
     
-    setupJobSeekerSubTabs() {
-        const jobSeekerViewBtn = document.getElementById('jobseeker-view-btn');
-        const jobSeekerRegisterBtn = document.getElementById('jobseeker-register-btn');
-        
-        if (jobSeekerViewBtn && jobSeekerRegisterBtn) {
-            jobSeekerViewBtn.addEventListener('click', () => this.showJobSeekerView());
-            jobSeekerRegisterBtn.addEventListener('click', () => this.showJobSeekerRegister());
-        }
-    }
+    // setupJobSeekerSubTabs() {
+    //     const jobSeekerViewBtn = document.getElementById('jobseeker-view-btn');
+    //     const jobSeekerRegisterBtn = document.getElementById('jobseeker-register-btn');
+    //     
+    //     if (jobSeekerViewBtn && jobSeekerRegisterBtn) {
+    //         jobSeekerViewBtn.addEventListener('click', () => this.showJobSeekerView());
+    //         jobSeekerRegisterBtn.addEventListener('click', () => this.showJobSeekerRegister());
+    //     }
+    // }
     
-    showJobSeekerView() {
-        // 버튼 상태 변경
-        document.querySelectorAll('.jobseeker-sub-btn').forEach(btn => {
-            btn.classList.remove('bg-primary', 'text-white');
-            btn.classList.add('bg-gray-300', 'text-gray-700');
-        });
-        
-        const viewBtn = document.getElementById('jobseeker-view-btn');
-        viewBtn.classList.remove('bg-gray-300', 'text-gray-700');
-        viewBtn.classList.add('bg-primary', 'text-white');
-        
-        // 컨텐츠 표시/숨김
-        document.getElementById('jobseeker-view-section').classList.remove('hidden');
-        document.getElementById('jobseeker-register-section').classList.add('hidden');
-        
-        // 구직자 정보 새로고침
-        this.loadJobSeekers();
-    }
+    // showJobSeekerView() {
+    //     // 버튼 상태 변경
+    //     document.querySelectorAll('.jobseeker-sub-btn').forEach(btn => {
+    //         btn.classList.remove('bg-primary', 'text-white');
+    //         btn.classList.add('bg-gray-300', 'text-gray-700');
+    //     });
+    //     
+    //     const viewBtn = document.getElementById('jobseeker-view-btn');
+    //     viewBtn.classList.remove('bg-gray-300', 'text-gray-700');
+    //     viewBtn.classList.add('bg-primary', 'text-white');
+    //     
+    //     // 컨텐츠 표시/숨김
+    //     document.getElementById('jobseeker-view-section').classList.remove('hidden');
+    //     document.getElementById('jobseeker-register-section').classList.add('hidden');
+    //     
+    //     // 구직자 정보 새로고침
+    //     this.loadJobSeekers();
+    // }
     
-    showJobSeekerRegister() {
-        // 버튼 상태 변경
-        document.querySelectorAll('.jobseeker-sub-btn').forEach(btn => {
-            btn.classList.remove('bg-primary', 'text-white');
-            btn.classList.add('bg-gray-300', 'text-gray-700');
-        });
-        
-        const registerBtn = document.getElementById('jobseeker-register-btn');
-        registerBtn.classList.remove('bg-gray-300', 'text-gray-700');
-        registerBtn.classList.add('bg-primary', 'text-white');
-        
-        // 컨텐츠 표시/숨김
-        document.getElementById('jobseeker-view-section').classList.add('hidden');
-        document.getElementById('jobseeker-register-section').classList.remove('hidden');
-    }
+    // showJobSeekerRegister() {
+    //     // 버튼 상태 변경
+    //     document.querySelectorAll('.jobseeker-sub-btn').forEach(btn => {
+    //         btn.classList.remove('bg-primary', 'text-white');
+    //         btn.classList.add('bg-gray-300', 'text-gray-700');
+    //     });
+    //     
+    //     const registerBtn = document.getElementById('jobseeker-register-btn');
+    //     registerBtn.classList.remove('bg-gray-300', 'text-gray-700');
+    //     registerBtn.classList.add('bg-primary', 'text-white');
+    //     
+    //     // 컨텐츠 표시/숨김
+    //     document.getElementById('jobseeker-view-section').classList.add('hidden');
+    //     document.getElementById('jobseeker-register-section').classList.remove('hidden');
+    // }
     
-    setupJobSeekerRegistration() {
-        const form = document.getElementById('jobseeker-register-form');
-        if (form) {
-            form.addEventListener('submit', (e) => this.handleJobSeekerRegistration(e));
-        }
-    }
+    // setupJobSeekerRegistration() {
+    //     const form = document.getElementById('jobseeker-register-form');
+    //     if (form) {
+    //         form.addEventListener('submit', (e) => this.handleJobSeekerRegistration(e));
+    //     }
+    // }
     
-    async handleJobSeekerRegistration(event) {
-        event.preventDefault();
-        
-        const formData = {
-            name: document.getElementById('jobseeker-name').value,
-            email: document.getElementById('jobseeker-email').value,
-            password: 'temp_password_' + Date.now(), // 임시 비밀번호
-            birth_date: document.getElementById('jobseeker-birth-date').value,
-            gender: document.getElementById('jobseeker-gender').value,
-            nationality: document.getElementById('jobseeker-nationality').value,
-            phone: document.getElementById('jobseeker-phone').value,
-            current_visa: document.getElementById('jobseeker-current-visa').value,
-            desired_visa: document.getElementById('jobseeker-desired-visa').value,
-            current_address: document.getElementById('jobseeker-address').value,
-            korean_level: document.getElementById('jobseeker-korean-level').value,
-            education_level: document.getElementById('jobseeker-education').value,
-            work_experience: document.getElementById('jobseeker-experience').value || null,
-            agent_id: parseInt(document.getElementById('jobseeker-agent-id').value) || 1
-        };
-        
-        try {
-            const response = await axios.post('/api/job-seekers', formData);
-            
-            if (response.status === 201) {
-                // 성공 메시지 표시
-                document.getElementById('jobseeker-register-success').classList.remove('hidden');
-                
-                // 폼 초기화
-                this.resetJobSeekerForm();
-                
-                // 3초 후 성공 메시지 숨김
-                setTimeout(() => {
-                    document.getElementById('jobseeker-register-success').classList.add('hidden');
-                }, 3000);
-                
-                // 구직자 목록 새로고침
-                if (this.currentTab === 'jobseekers') {
-                    this.loadJobSeekers();
-                }
-            }
-        } catch (error) {
-            console.error('구직정보 등록 실패:', error);
-            if (error.response && error.response.data && error.response.data.error) {
-                alert('구직정보 등록 실패: ' + error.response.data.error);
-            } else {
-                alert('구직정보 등록에 실패했습니다. 다시 시도해주세요.');
-            }
-        }
-    }
+    // async handleJobSeekerRegistration(event) {
+    //     event.preventDefault();
+    //     
+    //     const formData = {
+    //         name: document.getElementById('jobseeker-name').value,
+    //         email: document.getElementById('jobseeker-email').value,
+    //         password: 'temp_password_' + Date.now(), // 임시 비밀번호
+    //         birth_date: document.getElementById('jobseeker-birth-date').value,
+    //         gender: document.getElementById('jobseeker-gender').value,
+    //         nationality: document.getElementById('jobseeker-nationality').value,
+    //         phone: document.getElementById('jobseeker-phone').value,
+    //         current_visa: document.getElementById('jobseeker-current-visa').value,
+    //         desired_visa: document.getElementById('jobseeker-desired-visa').value,
+    //         current_address: document.getElementById('jobseeker-address').value,
+    //         korean_level: document.getElementById('jobseeker-korean-level').value,
+    //         education_level: document.getElementById('jobseeker-education').value,
+    //         work_experience: document.getElementById('jobseeker-experience').value || null,
+    //         agent_id: parseInt(document.getElementById('jobseeker-agent-id').value) || 1
+    //     };
+    //     
+    //     try {
+    //         const response = await axios.post('/api/job-seekers', formData);
+    //         
+    //         if (response.status === 201) {
+    //             // 성공 메시지 표시
+    //             document.getElementById('jobseeker-register-success').classList.remove('hidden');
+    //             
+    //             // 폼 초기화
+    //             this.resetJobSeekerForm();
+    //             
+    //             // 3초 후 성공 메시지 숨김
+    //             setTimeout(() => {
+    //                 document.getElementById('jobseeker-register-success').classList.add('hidden');
+    //             }, 3000);
+    //             
+    //             // 구직자 목록 새로고침
+    //             if (this.currentTab === 'jobseekers') {
+    //                 this.loadJobSeekers();
+    //             }
+    //         }
+    //     } catch (error) {
+    //         console.error('구직정보 등록 실패:', error);
+    //         if (error.response && error.response.data && error.response.data.error) {
+    //             alert('구직정보 등록 실패: ' + error.response.data.error);
+    //         } else {
+    //             alert('구직정보 등록에 실패했습니다. 다시 시도해주세요.');
+    //         }
+    //     }
+    // }
     
-    resetJobSeekerForm() {
-        const form = document.getElementById('jobseeker-register-form');
-        if (form) {
-            form.reset();
-        }
-    }
+    // resetJobSeekerForm() {
+    //     const form = document.getElementById('jobseeker-register-form');
+    //     if (form) {
+    //         form.reset();
+    //     }
+    // }
     
     setupStudySubTabs() {
         const studyLanguageBtn = document.getElementById('study-language-btn');
@@ -1641,11 +1636,11 @@ function showJobSeekerRegisterForm() {
     }
 }
 
-function resetJobSeekerForm() {
-    if (app) {
-        app.resetJobSeekerForm();
-    }
-}
+// function resetJobSeekerForm() {
+//     if (app) {
+//         app.resetJobSeekerForm();
+//     }
+// }
 
 function showLanguageStudyView() {
     if (app) {

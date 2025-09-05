@@ -330,35 +330,7 @@ function convertKoreanLevel(level: string): string {
   return levelMap[level] || 'none'
 }
 
-function convertKoreanLevelForJobSeeker(level: string): string {
-  if (!level) return 'beginner'
-  
-  const levelMap: Record<string, string> = {
-    // 급수 기준
-    '1급': 'beginner',
-    '2급': 'beginner',
-    '3급': 'intermediate', 
-    '4급': 'intermediate',
-    '5급': 'advanced',
-    '6급': 'advanced',
-    // 한국어 레벨 기준
-    '초급': 'beginner',
-    '기초': 'beginner',
-    '중급': 'intermediate',
-    '고급': 'advanced',
-    '최고급': 'native',
-    '원어민': 'native',
-    // 영어 레벨 (그대로)
-    'beginner': 'beginner',
-    'intermediate': 'intermediate', 
-    'advanced': 'advanced',
-    'native': 'native',
-    // 기타
-    '기타': 'beginner'
-  }
-  
-  return levelMap[level] || 'beginner'
-}
+
 
 // 헬스체크 엔드포인트
 app.get('/health', async (c) => {
@@ -818,19 +790,7 @@ app.get('/', (c) => {
         
                             </div>
                         </div>
-                        <div class="relative nav-dropdown">
-                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium py-2">
-                                구직정보 <i class="fas fa-chevron-down ml-1 text-xs transition-transform"></i>
-                            </button>
-                            <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 bg-white shadow-xl rounded-lg border border-gray-100 py-2 z-50">
-                                <a href="#jobseekers-view" onclick="event.preventDefault(); showJobSeekerListView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
-                                    <i class="fas fa-users mr-2"></i>구직자 보기
-                                </a>
-                                <a href="#jobseekers-register" onclick="event.preventDefault(); showJobSeekerRegisterForm(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
-                                    <i class="fas fa-user-plus mr-2"></i>구직정보 등록
-                                </a>
-                            </div>
-                        </div>
+
                         <div class="relative nav-dropdown">
                             <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium py-2">
                                 유학지원 <i class="fas fa-chevron-down ml-1 text-xs transition-transform"></i>
@@ -890,14 +850,7 @@ app.get('/', (c) => {
 
                     </div>
                     
-                    <div class="border-b border-gray-200 pb-4">
-                        <button onclick="showJobSeekerListView(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
-                            <i class="fas fa-users mr-3"></i>구직자 보기
-                        </button>
-                        <button onclick="showJobSeekerRegisterForm(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
-                            <i class="fas fa-user-plus mr-3"></i>구직정보 등록
-                        </button>
-                    </div>
+
                     
                     <div class="border-b border-gray-200 pb-4">
                         <button onclick="showLanguageStudyView(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
@@ -939,11 +892,8 @@ app.get('/', (c) => {
                         
                         <!-- 주요 서비스 CTA 버튼 -->
                         <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-                            <button onclick="showJobListView()" class="btn-secondary px-8 py-4 rounded-full font-semibold">
+                            <button onclick="showJobListView()" class="btn-primary px-8 py-4 rounded-full font-semibold">
                                 <i class="fas fa-briefcase mr-2"></i>구인정보 보기
-                            </button>
-                            <button onclick="showJobSeekerListView()" class="btn-primary px-8 py-4 rounded-full font-semibold">
-                                <i class="fas fa-user-graduate mr-2"></i>구직자 보기
                             </button>
                         </div>
                     </div>
@@ -1039,9 +989,6 @@ app.get('/', (c) => {
                             <button id="tab-jobs" class="tab-button active px-6 py-4 whitespace-nowrap font-medium">
                                 <i class="fas fa-briefcase mr-2"></i>구인 정보
                             </button>
-                            <button id="tab-jobseekers" class="tab-button px-6 py-4 whitespace-nowrap font-medium">
-                                <i class="fas fa-users mr-2"></i>구직정보
-                            </button>
                             <button id="tab-matching" class="tab-button px-6 py-4 whitespace-nowrap font-medium">
                                 <i class="fas fa-handshake mr-2"></i>매칭 서비스
                             </button>
@@ -1082,179 +1029,7 @@ app.get('/', (c) => {
 
                         </div>
 
-                        <div id="content-jobseekers" class="tab-content hidden">
-                            <!-- 구직 서브메뉴 -->
-                            <div class="bg-gray-50 p-4 rounded-lg mb-6">
-                                <div class="flex space-x-4">
-                                    <button id="jobseeker-view-btn" class="jobseeker-sub-btn btn-primary px-4 py-2 rounded-lg">
-                                        <i class="fas fa-users mr-2"></i>구직자 보기
-                                    </button>
-                                    <button id="jobseeker-register-btn" class="jobseeker-sub-btn btn-secondary px-4 py-2 rounded-lg">
-                                        <i class="fas fa-user-plus mr-2"></i>구직정보 등록
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- 구직자 보기 -->
-                            <div id="jobseeker-view-section" class="jobseeker-sub-content">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h3 class="text-xl font-semibold">최신 구직정보</h3>
-                                    <button class="btn-primary px-4 py-2 rounded-lg">
-                                        전체보기
-                                    </button>
-                                </div>
-                                <div id="jobseekers-list" class="space-y-4">
-                                    <!-- Job seekers will be loaded here -->
-                                </div>
-                            </div>
-                            
-                            <!-- 구직정보 등록 -->
-                            <div id="jobseeker-register-section" class="jobseeker-sub-content hidden">
-                                <h3 class="text-xl font-semibold mb-6">구직정보 등록</h3>
-                                <form id="jobseeker-register-form" class="space-y-6">
-                                    <div class="grid md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">이름 *</label>
-                                            <input type="text" id="jobseeker-name" required class="input-focus w-full px-3 py-2 rounded-lg">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">이메일 *</label>
-                                            <input type="email" id="jobseeker-email" required class="input-focus w-full px-3 py-2 rounded-lg">
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="grid md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">생년월일 *</label>
-                                            <input type="date" id="jobseeker-birth-date" required class="input-focus w-full px-3 py-2 rounded-lg">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">성별 *</label>
-                                            <select id="jobseeker-gender" required class="input-focus w-full px-3 py-2 rounded-lg">
-                                                <option value="">성별 선택</option>
-                                                <option value="male">남성</option>
-                                                <option value="female">여성</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="grid md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">국적 *</label>
-                                            <select id="jobseeker-nationality" required class="input-focus w-full px-3 py-2 rounded-lg">
-                                                <option value="">국적 선택</option>
-                                                <option value="중국">중국</option>
-                                                <option value="베트남">베트남</option>
-                                                <option value="필리핀">필리핀</option>
-                                                <option value="태국">태국</option>
-                                                <option value="캄보디아">캄보디아</option>
-                                                <option value="미얀마">미얀마</option>
-                                                <option value="네팔">네팔</option>
-                                                <option value="스리랑카">스리랑카</option>
-                                                <option value="방글라데시">방글라데시</option>
-                                                <option value="기타">기타</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">연락처 *</label>
-                                            <input type="tel" id="jobseeker-phone" required class="input-focus w-full px-3 py-2 rounded-lg" placeholder="예: 010-1234-5678">
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="grid md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">현재 비자 *</label>
-                                            <select id="jobseeker-current-visa" required class="input-focus w-full px-3 py-2 rounded-lg">
-                                                <option value="">현재 비자 선택</option>
-                                                <option value="E-9">E-9 (비전문취업)</option>
-                                                <option value="E-7">E-7 (특정활동)</option>
-                                                <option value="H-2">H-2 (방문취업)</option>
-                                                <option value="F-4">F-4 (재외동포)</option>
-                                                <option value="F-5">F-5 (영주)</option>
-                                                <option value="F-6">F-6 (결혼이민)</option>
-                                                <option value="D-2">D-2 (유학)</option>
-                                                <option value="D-4">D-4 (일반연수)</option>
-                                                <option value="관광비자">관광비자</option>
-                                                <option value="무비자">무비자</option>
-                                                <option value="기타">기타</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">희망 비자 *</label>
-                                            <select id="jobseeker-desired-visa" required class="input-focus w-full px-3 py-2 rounded-lg">
-                                                <option value="">희망 비자 선택</option>
-                                                <option value="E-9">E-9 (비전문취업)</option>
-                                                <option value="E-7">E-7 (특정활동)</option>
-                                                <option value="H-2">H-2 (방문취업)</option>
-                                                <option value="F-4">F-4 (재외동포)</option>
-                                                <option value="F-5">F-5 (영주)</option>
-                                                <option value="F-6">F-6 (결혼이민)</option>
-                                                <option value="기타">기타</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">현재 주소 *</label>
-                                        <input type="text" id="jobseeker-address" required class="input-focus w-full px-3 py-2 rounded-lg" placeholder="현재 거주지 주소를 입력해주세요">
-                                    </div>
-                                    
-                                    <div class="grid md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">한국어 수준 *</label>
-                                            <select id="jobseeker-korean-level" required class="input-focus w-full px-3 py-2 rounded-lg">
-                                                <option value="">한국어 수준 선택</option>
-                                                <option value="1급">초급 (1급)</option>
-                                                <option value="2급">초급 (2급)</option>
-                                                <option value="3급">중급 (3급)</option>
-                                                <option value="4급">중급 (4급)</option>
-                                                <option value="5급">고급 (5급)</option>
-                                                <option value="6급">고급 (6급)</option>
-                                                <option value="기타">기타</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">학력 *</label>
-                                            <select id="jobseeker-education" required class="input-focus w-full px-3 py-2 rounded-lg">
-                                                <option value="">학력 선택</option>
-                                                <option value="초등학교졸업">초등학교 졸업</option>
-                                                <option value="중학교졸업">중학교 졸업</option>
-                                                <option value="고등학교졸업">고등학교 졸업</option>
-                                                <option value="대학재학">대학교 재학</option>
-                                                <option value="대학졸업">대학교 졸업</option>
-                                                <option value="대학원졸업">대학원 졸업</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">경력 사항</label>
-                                        <textarea id="jobseeker-experience" rows="4" class="input-focus w-full px-3 py-2 rounded-lg" placeholder="이전 직장 경험, 기술, 자격증 등을 입력해주세요 (선택사항)"></textarea>
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">에이전트 ID</label>
-                                        <input type="number" id="jobseeker-agent-id" min="1" class="input-focus w-full px-3 py-2 rounded-lg" placeholder="담당 에이전트 ID (선택사항)">
-                                    </div>
-                                    
-                                    <div class="flex justify-end space-x-4">
-                                        <button type="button" onclick="resetJobSeekerForm()" class="btn-secondary px-6 py-2 rounded-lg">
-                                            초기화
-                                        </button>
-                                        <button type="submit" class="btn-primary px-6 py-2 rounded-lg">
-                                            등록하기
-                                        </button>
-                                    </div>
-                                </form>
-                                
-                                <div id="jobseeker-register-success" class="hidden mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                                        <span class="text-green-800">구직정보가 성공적으로 등록되었습니다!</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
 
                         <div id="content-matching" class="tab-content hidden">
                             <div class="mb-6">
