@@ -395,11 +395,12 @@ app.get('/', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>WOW-CAMPUS 외국인 구인구직 및 유학생 지원플랫폼</title>
-        <!-- Deployment Version: v2.1.1-deployment-verified | Last Updated: 2025-09-05T17:50:00Z -->
-        <meta name="build-version" content="v2.1.1-deployment-verified">
-        <meta name="last-updated" content="2025-09-05T17:50:00Z">
-        <meta name="deployment-status" content="production-verified">
-        <meta name="cloudflare-project" content="w-campus">
+        <!-- Deployment Version: v2.2.0-force-deploy | Last Updated: 2025-09-05T18:00:00Z -->
+        <meta name="build-version" content="v2.2.0-force-deploy">
+        <meta name="last-updated" content="2025-09-05T18:00:00Z">
+        <meta name="deployment-status" content="force-deployed">
+        <meta name="cloudflare-project" content="w-campus-com">
+        <meta name="git-trigger" content="manual-force-push">
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <script>
