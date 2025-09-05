@@ -849,7 +849,9 @@ app.get('/', (c) => {
                         <button onclick="showJobListView(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
                             <i class="fas fa-briefcase mr-3"></i>구인정보 보기
                         </button>
-
+                        <button onclick="showJobSeekersView(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
+                            <i class="fas fa-users mr-3"></i>구직정보 보기
+                        </button>
                     </div>
                     
 
@@ -896,6 +898,9 @@ app.get('/', (c) => {
                         <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16">
                             <button onclick="showJobListView()" class="btn-primary px-8 py-4 rounded-full font-semibold">
                                 <i class="fas fa-briefcase mr-2"></i>구인정보 보기
+                            </button>
+                            <button onclick="showJobSeekersView()" class="btn-secondary px-8 py-4 rounded-full font-semibold">
+                                <i class="fas fa-users mr-2"></i>구직정보 보기
                             </button>
                         </div>
                     </div>
