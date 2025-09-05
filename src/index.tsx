@@ -444,53 +444,256 @@ app.get('/', (c) => {
           }
         </script>
         <style>
+          /* 부드러운 호버 전환 효과 */
+          .smooth-transition {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .smooth-transition-fast {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .smooth-transition-slow {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          /* 내비게이션 링크 호버 효과 */
+          .nav-link {
+            position: relative;
+            color: #374151;
+            transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #1E40AF;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .nav-link:hover {
+            color: #1E40AF;
+          }
+          
+          .nav-link:hover::after {
+            width: 100%;
+          }
+          
+          /* 버튼 호버 효과 */
+          .btn-primary {
+            background-color: #1E40AF;
+            color: white;
+            transform: translateY(0);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .btn-primary:hover {
+            background-color: #1D4ED8;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          }
+          
+          .btn-secondary {
+            border: 2px solid #1E40AF;
+            color: #1E40AF;
+            background-color: transparent;
+            transform: translateY(0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .btn-secondary:hover {
+            background-color: #1E40AF;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(30, 64, 175, 0.2), 0 4px 6px -2px rgba(30, 64, 175, 0.1);
+          }
+          
+          .btn-success {
+            background-color: #059669;
+            color: white;
+            transform: translateY(0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .btn-success:hover {
+            background-color: #047857;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(5, 150, 105, 0.2), 0 4px 6px -2px rgba(5, 150, 105, 0.1);
+          }
+          
+          /* 탭 버튼 스타일 */
+          .tab-button {
+            position: relative;
+            background-color: #F8FAFC;
+            color: #64748B;
+            border: 1px solid #E2E8F0;
+            padding: 12px 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+          }
+          
+          .tab-button.active {
+            background-color: #1E40AF;
+            color: white;
+            border-color: #1E40AF;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -5px rgba(30, 64, 175, 0.3);
+          }
+          
+          .tab-button:hover:not(.active) {
+            background-color: #E0F2FE;
+            color: #1E40AF;
+            border-color: #1E40AF;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(30, 64, 175, 0.1);
+          }
+          
+          /* 드롭다운 메뉴 */
           .nav-dropdown-menu {
             opacity: 0;
             visibility: hidden;
             transform: translateY(-10px);
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: none;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
           }
+          
           .nav-dropdown:hover .nav-dropdown-menu {
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
             pointer-events: auto;
           }
+          
+          .nav-dropdown-btn {
+            transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
           .nav-dropdown-btn:hover {
             color: #1E40AF;
           }
+          
           .nav-dropdown-menu:hover {
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
             pointer-events: auto;
           }
+          
           .nav-dropdown.active .nav-dropdown-menu {
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
             pointer-events: auto;
           }
+          
           .nav-dropdown-menu a {
             display: flex;
             align-items: center;
             text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 8px 16px;
           }
+          
           .nav-dropdown-menu a:hover {
             background-color: #E0F2FE;
             color: #1E40AF;
+            transform: translateX(4px);
           }
+          
+          /* 카드 효과 */
           .hero-gradient {
             background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #059669 100%);
           }
+          
           .card-shadow {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
           }
+          
           .card-shadow:hover {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            transform: translateY(-2px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            transform: translateY(-8px);
+          }
+          
+          /* 프로필 카드 효과 */
+          .profile-card {
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+            background-color: white;
+          }
+          
+          .profile-card:hover {
+            border-color: #1E40AF;
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(30, 64, 175, 0.1), 0 10px 10px -5px rgba(30, 64, 175, 0.04);
+          }
+          
+          /* 링크 효과 */
+          .link-hover {
+            color: #1E40AF;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+          }
+          
+          .link-hover:hover {
+            color: #1D4ED8;
+            transform: translateX(2px);
+          }
+          
+          .link-hover::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background-color: #1D4ED8;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .link-hover:hover::after {
+            width: 100%;
+          }
+          
+          /* 검색 및 입력 필드 */
+          .input-focus {
+            border: 2px solid #E5E7EB;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .input-focus:focus {
+            border-color: #1E40AF;
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+            outline: none;
+          }
+          
+          /* 페이지네이션 */
+          .pagination-btn {
+            border: 1px solid #D1D5DB;
+            color: #6B7280;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          
+          .pagination-btn:hover {
+            border-color: #1E40AF;
+            color: #1E40AF;
+            transform: translateY(-1px);
+          }
+          
+          .pagination-btn.active {
+            background-color: #1E40AF;
+            border-color: #1E40AF;
+            color: white;
           }
           .step-connector {
             position: relative;
@@ -768,10 +971,10 @@ app.get('/', (c) => {
                         
                         <!-- Auth Buttons (Show by default, hide when logged in) -->
                         <div id="auth-buttons" class="flex items-center space-x-3">
-                            <a href="/static/login.html" id="login-btn" class="bg-wowcampus-blue text-white px-4 md:px-6 py-2 rounded-full font-medium hover:bg-wowcampus-dark transition-colors text-sm md:text-base">
+                            <a href="/static/login.html" id="login-btn" class="btn-primary px-4 md:px-6 py-2 rounded-full font-medium text-sm md:text-base">
                                 <i class="fas fa-sign-in-alt mr-1 md:mr-2"></i>로그인
                             </a>
-                            <a href="/static/register.html" id="register-btn" class="border-2 border-wowcampus-blue text-wowcampus-blue px-4 md:px-6 py-2 rounded-full font-medium hover:bg-wowcampus-blue hover:text-white transition-colors text-sm md:text-base">
+                            <a href="/static/register.html" id="register-btn" class="btn-secondary px-4 md:px-6 py-2 rounded-full font-medium text-sm md:text-base">
                                 <i class="fas fa-user-plus mr-1 md:mr-2"></i>회원가입
                             </a>
                         </div>
@@ -779,7 +982,7 @@ app.get('/', (c) => {
                         <!-- User Menu (Hidden by default) -->
                         <div id="user-menu" class="hidden flex items-center space-x-4">
                             <span class="text-sm text-gray-600 hidden sm:inline">환영합니다, <span id="user-name" class="font-medium">사용자님</span></span>
-                            <button id="logout-btn" class="bg-red-500 text-white px-3 md:px-4 py-2 rounded-full font-medium hover:bg-red-600 transition-colors text-sm">
+                            <button id="logout-btn" class="btn-primary px-3 md:px-4 py-2 rounded-full font-medium text-sm" style="background-color: #ef4444;">
                                 <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
                             </button>
                         </div>
@@ -850,10 +1053,10 @@ app.get('/', (c) => {
                         
                         <!-- 주요 서비스 CTA 버튼 -->
                         <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-                            <button onclick="showJobListView()" class="bg-white text-wowcampus-blue px-8 py-4 rounded-full font-semibold hover:bg-gray-50 transition-all transform hover:-translate-y-1">
+                            <button onclick="showJobListView()" class="btn-secondary px-8 py-4 rounded-full font-semibold">
                                 <i class="fas fa-briefcase mr-2"></i>구인정보 보기
                             </button>
-                            <button onclick="showJobSeekerListView()" class="bg-transparent border-2 border-white text-white px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-wowcampus-blue transition-all transform hover:-translate-y-1">
+                            <button onclick="showJobSeekerListView()" class="btn-primary px-8 py-4 rounded-full font-semibold">
                                 <i class="fas fa-user-graduate mr-2"></i>구직자 보기
                             </button>
                         </div>
@@ -947,19 +1150,19 @@ app.get('/', (c) => {
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden card-shadow">
                     <div class="border-b border-gray-100">
                         <div class="flex overflow-x-auto">
-                            <button id="tab-jobs" class="tab-button px-6 py-4 bg-wowcampus-blue text-white border-b-3 border-wowcampus-blue whitespace-nowrap font-medium">
+                            <button id="tab-jobs" class="tab-button active px-6 py-4 whitespace-nowrap font-medium">
                                 <i class="fas fa-briefcase mr-2"></i>구인 정보
                             </button>
-                            <button id="tab-jobseekers" class="tab-button px-6 py-4 text-gray-600 hover:bg-wowcampus-light hover:text-wowcampus-blue whitespace-nowrap font-medium transition-all">
+                            <button id="tab-jobseekers" class="tab-button px-6 py-4 whitespace-nowrap font-medium">
                                 <i class="fas fa-users mr-2"></i>구직정보
                             </button>
-                            <button id="tab-matching" class="tab-button px-6 py-4 text-gray-600 hover:bg-wowcampus-light hover:text-wowcampus-blue whitespace-nowrap font-medium transition-all">
+                            <button id="tab-matching" class="tab-button px-6 py-4 whitespace-nowrap font-medium">
                                 <i class="fas fa-handshake mr-2"></i>매칭 서비스
                             </button>
-                            <button id="tab-study" class="tab-button px-6 py-4 text-gray-600 hover:bg-wowcampus-light hover:text-wowcampus-blue whitespace-nowrap font-medium transition-all">
+                            <button id="tab-study" class="tab-button px-6 py-4 whitespace-nowrap font-medium">
                                 <i class="fas fa-graduation-cap mr-2"></i>유학 프로그램
                             </button>
-                            <button id="tab-stats" class="tab-button px-6 py-4 text-gray-600 hover:bg-wowcampus-light hover:text-wowcampus-blue whitespace-nowrap font-medium transition-all">
+                            <button id="tab-stats" class="tab-button px-6 py-4 whitespace-nowrap font-medium">
                                 <i class="fas fa-chart-bar mr-2"></i>통계 대시보드
                             </button>
                         </div>
@@ -971,10 +1174,10 @@ app.get('/', (c) => {
                             <!-- 구인 서브메뉴 -->
                             <div class="bg-gray-50 p-4 rounded-lg mb-6">
                                 <div class="flex space-x-4">
-                                    <button id="job-view-btn" class="job-sub-btn px-4 py-2 bg-primary text-white rounded-lg">
+                                    <button id="job-view-btn" class="job-sub-btn btn-primary px-4 py-2 rounded-lg">
                                         <i class="fas fa-list mr-2"></i>구인정보 보기
                                     </button>
-                                    <button id="job-register-btn" class="job-sub-btn px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                                    <button id="job-register-btn" class="job-sub-btn btn-secondary px-4 py-2 rounded-lg">
                                         <i class="fas fa-plus mr-2"></i>구인정보 등록
                                     </button>
                                 </div>
@@ -984,7 +1187,7 @@ app.get('/', (c) => {
                             <div id="job-view-section" class="job-sub-content">
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="text-xl font-semibold">최신 구인 정보</h3>
-                                    <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary">
+                                    <button class="btn-primary px-4 py-2 rounded-lg">
                                         전체보기
                                     </button>
                                 </div>
@@ -1000,34 +1203,34 @@ app.get('/', (c) => {
                                     <div class="grid md:grid-cols-2 gap-6">
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">회사명 *</label>
-                                            <input type="text" id="company-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <input type="text" id="company-name" required class="input-focus w-full px-3 py-2 rounded-lg">
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">담당자명 *</label>
-                                            <input type="text" id="contact-person" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <input type="text" id="contact-person" required class="input-focus w-full px-3 py-2 rounded-lg">
                                         </div>
                                     </div>
                                     
                                     <div class="grid md:grid-cols-2 gap-6">
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">이메일 *</label>
-                                            <input type="email" id="contact-email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <input type="email" id="contact-email" required class="input-focus w-full px-3 py-2 rounded-lg">
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">전화번호</label>
-                                            <input type="tel" id="contact-phone" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <input type="tel" id="contact-phone" class="input-focus w-full px-3 py-2 rounded-lg">
                                         </div>
                                     </div>
                                     
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">직책/직종 *</label>
-                                        <input type="text" id="job-title" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="예: 제조업 생산직, IT 개발자, 서비스업 등">
+                                        <input type="text" id="job-title" required class="input-focus w-full px-3 py-2 rounded-lg" placeholder="예: 제조업 생산직, IT 개발자, 서비스업 등">
                                     </div>
                                     
                                     <div class="grid md:grid-cols-2 gap-6">
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">근무지역 *</label>
-                                            <select id="work-location" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <select id="work-location" required class="input-focus w-full px-3 py-2 rounded-lg">
                                                 <option value="">지역 선택</option>
                                                 <option value="서울">서울특별시</option>
                                                 <option value="인천">인천광역시</option>
@@ -1049,7 +1252,7 @@ app.get('/', (c) => {
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">비자 유형 *</label>
-                                            <select id="visa-type" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <select id="visa-type" required class="input-focus w-full px-3 py-2 rounded-lg">
                                                 <option value="">비자 유형 선택</option>
                                                 <option value="E-9">E-9 (비전문취업)</option>
                                                 <option value="E-7">E-7 (특정활동)</option>
@@ -1065,17 +1268,17 @@ app.get('/', (c) => {
                                     <div class="grid md:grid-cols-2 gap-6">
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">급여 (월급, 만원)</label>
-                                            <input type="number" id="salary" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="예: 250">
+                                            <input type="number" id="salary" min="0" class="input-focus w-full px-3 py-2 rounded-lg" placeholder="예: 250">
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">모집인원</label>
-                                            <input type="number" id="positions" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="예: 5">
+                                            <input type="number" id="positions" min="1" class="input-focus w-full px-3 py-2 rounded-lg" placeholder="예: 5">
                                         </div>
                                     </div>
                                     
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">한국어 수준 요구사항</label>
-                                        <select id="korean-level" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <select id="korean-level" class="input-focus w-full px-3 py-2 rounded-lg">
                                             <option value="">선택안함</option>
                                             <option value="1급">초급 (1급)</option>
                                             <option value="2급">초급 (2급)</option>
@@ -1094,7 +1297,7 @@ app.get('/', (c) => {
                                         <div class="grid md:grid-cols-2 gap-6">
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700 mb-2">협력 에이전트</label>
-                                                <select id="agent-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                                <select id="agent-select" class="input-focus w-full px-3 py-2 rounded-lg">
                                                     <option value="">직접 채용 (에이전트 없음)</option>
                                                     <!-- 에이전트 목록이 동적으로 로드됩니다 -->
                                                 </select>
@@ -1102,26 +1305,26 @@ app.get('/', (c) => {
                                             </div>
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700 mb-2">수수료율 (%)</label>
-                                                <input type="number" id="agent-fee" min="0" max="50" step="0.5" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="예: 5.0" disabled>
+                                                <input type="number" id="agent-fee" min="0" max="50" step="0.5" class="input-focus w-full px-3 py-2 rounded-lg" placeholder="예: 5.0" disabled>
                                                 <p class="text-xs text-gray-500 mt-1">성공 채용 시 지급할 수수료 비율</p>
                                             </div>
                                         </div>
                                         <div class="mt-4">
                                             <label class="block text-sm font-medium text-gray-700 mb-2">에이전트 요청사항</label>
-                                            <textarea id="agent-notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="에이전트에게 전달할 특별 요청사항이나 조건을 입력해주세요" disabled></textarea>
+                                            <textarea id="agent-notes" rows="2" class="input-focus w-full px-3 py-2 rounded-lg" placeholder="에이전트에게 전달할 특별 요청사항이나 조건을 입력해주세요" disabled></textarea>
                                         </div>
                                     </div>
                                     
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">상세 설명</label>
-                                        <textarea id="job-description" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="업무내용, 근무조건, 복리혜택 등을 자세히 입력해주세요"></textarea>
+                                        <textarea id="job-description" rows="4" class="input-focus w-full px-3 py-2 rounded-lg" placeholder="업무내용, 근무조건, 복리혜택 등을 자세히 입력해주세요"></textarea>
                                     </div>
                                     
                                     <div class="flex justify-end space-x-4">
-                                        <button type="button" onclick="resetJobForm()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                                        <button type="button" onclick="resetJobForm()" class="btn-secondary px-6 py-2 rounded-lg">
                                             초기화
                                         </button>
-                                        <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary">
+                                        <button type="submit" class="btn-primary px-6 py-2 rounded-lg">
                                             등록하기
                                         </button>
                                     </div>
@@ -1140,10 +1343,10 @@ app.get('/', (c) => {
                             <!-- 구직 서브메뉴 -->
                             <div class="bg-gray-50 p-4 rounded-lg mb-6">
                                 <div class="flex space-x-4">
-                                    <button id="jobseeker-view-btn" class="jobseeker-sub-btn px-4 py-2 bg-primary text-white rounded-lg">
+                                    <button id="jobseeker-view-btn" class="jobseeker-sub-btn btn-primary px-4 py-2 rounded-lg">
                                         <i class="fas fa-users mr-2"></i>구직자 보기
                                     </button>
-                                    <button id="jobseeker-register-btn" class="jobseeker-sub-btn px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                                    <button id="jobseeker-register-btn" class="jobseeker-sub-btn btn-secondary px-4 py-2 rounded-lg">
                                         <i class="fas fa-user-plus mr-2"></i>구직정보 등록
                                     </button>
                                 </div>
@@ -1153,7 +1356,7 @@ app.get('/', (c) => {
                             <div id="jobseeker-view-section" class="jobseeker-sub-content">
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="text-xl font-semibold">최신 구직정보</h3>
-                                    <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary">
+                                    <button class="btn-primary px-4 py-2 rounded-lg">
                                         전체보기
                                     </button>
                                 </div>
@@ -1169,22 +1372,22 @@ app.get('/', (c) => {
                                     <div class="grid md:grid-cols-2 gap-6">
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">이름 *</label>
-                                            <input type="text" id="jobseeker-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <input type="text" id="jobseeker-name" required class="input-focus w-full px-3 py-2 rounded-lg">
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">이메일 *</label>
-                                            <input type="email" id="jobseeker-email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <input type="email" id="jobseeker-email" required class="input-focus w-full px-3 py-2 rounded-lg">
                                         </div>
                                     </div>
                                     
                                     <div class="grid md:grid-cols-2 gap-6">
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">생년월일 *</label>
-                                            <input type="date" id="jobseeker-birth-date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <input type="date" id="jobseeker-birth-date" required class="input-focus w-full px-3 py-2 rounded-lg">
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">성별 *</label>
-                                            <select id="jobseeker-gender" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <select id="jobseeker-gender" required class="input-focus w-full px-3 py-2 rounded-lg">
                                                 <option value="">성별 선택</option>
                                                 <option value="male">남성</option>
                                                 <option value="female">여성</option>
@@ -1195,7 +1398,7 @@ app.get('/', (c) => {
                                     <div class="grid md:grid-cols-2 gap-6">
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">국적 *</label>
-                                            <select id="jobseeker-nationality" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <select id="jobseeker-nationality" required class="input-focus w-full px-3 py-2 rounded-lg">
                                                 <option value="">국적 선택</option>
                                                 <option value="중국">중국</option>
                                                 <option value="베트남">베트남</option>
@@ -1211,14 +1414,14 @@ app.get('/', (c) => {
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">연락처 *</label>
-                                            <input type="tel" id="jobseeker-phone" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="예: 010-1234-5678">
+                                            <input type="tel" id="jobseeker-phone" required class="input-focus w-full px-3 py-2 rounded-lg" placeholder="예: 010-1234-5678">
                                         </div>
                                     </div>
                                     
                                     <div class="grid md:grid-cols-2 gap-6">
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">현재 비자 *</label>
-                                            <select id="jobseeker-current-visa" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <select id="jobseeker-current-visa" required class="input-focus w-full px-3 py-2 rounded-lg">
                                                 <option value="">현재 비자 선택</option>
                                                 <option value="E-9">E-9 (비전문취업)</option>
                                                 <option value="E-7">E-7 (특정활동)</option>
@@ -1235,7 +1438,7 @@ app.get('/', (c) => {
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">희망 비자 *</label>
-                                            <select id="jobseeker-desired-visa" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <select id="jobseeker-desired-visa" required class="input-focus w-full px-3 py-2 rounded-lg">
                                                 <option value="">희망 비자 선택</option>
                                                 <option value="E-9">E-9 (비전문취업)</option>
                                                 <option value="E-7">E-7 (특정활동)</option>
@@ -1250,13 +1453,13 @@ app.get('/', (c) => {
                                     
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">현재 주소 *</label>
-                                        <input type="text" id="jobseeker-address" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="현재 거주지 주소를 입력해주세요">
+                                        <input type="text" id="jobseeker-address" required class="input-focus w-full px-3 py-2 rounded-lg" placeholder="현재 거주지 주소를 입력해주세요">
                                     </div>
                                     
                                     <div class="grid md:grid-cols-2 gap-6">
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">한국어 수준 *</label>
-                                            <select id="jobseeker-korean-level" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <select id="jobseeker-korean-level" required class="input-focus w-full px-3 py-2 rounded-lg">
                                                 <option value="">한국어 수준 선택</option>
                                                 <option value="1급">초급 (1급)</option>
                                                 <option value="2급">초급 (2급)</option>
@@ -1269,7 +1472,7 @@ app.get('/', (c) => {
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">학력 *</label>
-                                            <select id="jobseeker-education" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <select id="jobseeker-education" required class="input-focus w-full px-3 py-2 rounded-lg">
                                                 <option value="">학력 선택</option>
                                                 <option value="초등학교졸업">초등학교 졸업</option>
                                                 <option value="중학교졸업">중학교 졸업</option>
@@ -1283,19 +1486,19 @@ app.get('/', (c) => {
                                     
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">경력 사항</label>
-                                        <textarea id="jobseeker-experience" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="이전 직장 경험, 기술, 자격증 등을 입력해주세요 (선택사항)"></textarea>
+                                        <textarea id="jobseeker-experience" rows="4" class="input-focus w-full px-3 py-2 rounded-lg" placeholder="이전 직장 경험, 기술, 자격증 등을 입력해주세요 (선택사항)"></textarea>
                                     </div>
                                     
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">에이전트 ID</label>
-                                        <input type="number" id="jobseeker-agent-id" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="담당 에이전트 ID (선택사항)">
+                                        <input type="number" id="jobseeker-agent-id" min="1" class="input-focus w-full px-3 py-2 rounded-lg" placeholder="담당 에이전트 ID (선택사항)">
                                     </div>
                                     
                                     <div class="flex justify-end space-x-4">
-                                        <button type="button" onclick="resetJobSeekerForm()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                                        <button type="button" onclick="resetJobSeekerForm()" class="btn-secondary px-6 py-2 rounded-lg">
                                             초기화
                                         </button>
-                                        <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary">
+                                        <button type="submit" class="btn-primary px-6 py-2 rounded-lg">
                                             등록하기
                                         </button>
                                     </div>
@@ -1365,13 +1568,13 @@ app.get('/', (c) => {
                             <!-- 유학 서브메뉴 -->
                             <div class="bg-gray-50 p-4 rounded-lg mb-6">
                                 <div class="flex space-x-4">
-                                    <button id="study-language-btn" class="study-sub-btn px-4 py-2 bg-primary text-white rounded-lg">
+                                    <button id="study-language-btn" class="study-sub-btn btn-primary px-4 py-2 rounded-lg">
                                         <i class="fas fa-language mr-2"></i>어학연수
                                     </button>
-                                    <button id="study-undergraduate-btn" class="study-sub-btn px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                                    <button id="study-undergraduate-btn" class="study-sub-btn btn-secondary px-4 py-2 rounded-lg">
                                         <i class="fas fa-graduation-cap mr-2"></i>학부(학위)과정
                                     </button>
-                                    <button id="study-graduate-btn" class="study-sub-btn px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                                    <button id="study-graduate-btn" class="study-sub-btn btn-secondary px-4 py-2 rounded-lg">
                                         <i class="fas fa-university mr-2"></i>석·박사과정
                                     </button>
                                 </div>
