@@ -229,27 +229,42 @@ app.get('/api/auth/status', async (c) => {
         
         if (userType === 'employer') {
           user = await c.env.DB.prepare(
-            'SELECT id, name, email FROM employers WHERE id = ?'
+            'SELECT id, company_name as name, email, status FROM employers WHERE id = ?'
           ).bind(userId).first();
         } else if (userType === 'agent') {
           user = await c.env.DB.prepare(
-            'SELECT id, name, email FROM agents WHERE id = ?'
+            'SELECT id, company_name as name, email, status FROM agents WHERE id = ?'
           ).bind(userId).first();
         } else if (userType === 'jobseeker') {
           user = await c.env.DB.prepare(
-            'SELECT id, name, email FROM job_seekers WHERE id = ?'
+            'SELECT id, name, email, status FROM job_seekers WHERE id = ?'
           ).bind(userId).first();
         }
         
         if (user) {
+          // 승인 상태 확인
+          let isAuthorized = false;
+          if (userType === 'agent') {
+            // 에이전트는 approved 또는 active 상태만 허용
+            isAuthorized = user.status === 'approved' || user.status === 'active';
+          } else {
+            // 기업과 구직자는 approved 또는 active 상태 허용
+            isAuthorized = user.status === 'approved' || user.status === 'active';
+          }
+          
           return c.json({
-            authenticated: true,
-            user: {
+            authenticated: isAuthorized,
+            user: isAuthorized ? {
               id: user.id,
               email: user.email,
               name: user.name,
-              userType: userType
-            }
+              userType: userType,
+              status: user.status
+            } : null,
+            status: user.status,
+            message: !isAuthorized && userType === 'agent' && user.status === 'pending' 
+              ? '에이전트 계정 승인 대기 중입니다.' 
+              : undefined
           });
         }
       }
@@ -2109,11 +2124,25 @@ app.post('/api/auth/login', async (c) => {
       return c.json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' }, 401)
     }
 
-    // 상태 검증 (모든 사용자 유형에서 pending, approved, active 허용)
-    const allowedStatuses = ['pending', 'approved', 'active'];
-    
-    if (!allowedStatuses.includes(user.status)) {
-      return c.json({ error: '승인되지 않은 계정입니다.' }, 401)
+    // 상태 검증 (사용자 유형별 차별화된 승인 로직)
+    if (userType === 'agent') {
+      // 에이전트는 반드시 관리자 승인이 필요
+      if (user.status !== 'approved' && user.status !== 'active') {
+        if (user.status === 'pending') {
+          return c.json({ 
+            error: '에이전트 계정은 관리자 승인이 필요합니다. 승인 대기 중입니다.',
+            status: 'pending_approval'
+          }, 403)
+        } else {
+          return c.json({ error: '승인되지 않은 계정입니다.' }, 401)
+        }
+      }
+    } else {
+      // 기업과 구직자는 approved, active 상태에서만 접근 가능 (pending 불가)
+      const allowedStatuses = ['approved', 'active'];
+      if (!allowedStatuses.includes(user.status)) {
+        return c.json({ error: '계정 상태를 확인해주세요.' }, 401)
+      }
     }
 
     // 토큰 생성 (간단한 형식 유지)
@@ -2185,7 +2214,7 @@ app.post('/api/auth/register/employer', async (c) => {
       INSERT INTO employers (
         email, password, company_name, business_number, industry, 
         contact_person, phone, address, region, website, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
     `).bind(
       email,
       hashedPassword,
@@ -2203,14 +2232,14 @@ app.post('/api/auth/register/employer', async (c) => {
     const token = `token_${result.meta.last_row_id}_employer`
 
     return c.json({
-      message: '구인 기업 회원가입이 완료되었습니다. 관리자 승인 후 이용 가능합니다.',
+      message: '구인 기업 회원가입이 완료되었습니다. 바로 로그인하여 이용하실 수 있습니다.',
       token,
       user: {
         id: result.meta.last_row_id,
         email,
         type: 'employer',
         company_name,
-        status: 'pending'
+        status: 'approved'
       }
     }, 201)
   } catch (error) {
@@ -2268,7 +2297,7 @@ app.post('/api/auth/register/jobseeker', async (c) => {
         email, password, name, birth_date, gender, nationality, 
         current_visa, desired_visa, phone, current_address, 
         korean_level, education_level, work_experience, agent_id, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
     `).bind(
       email,
       hashedPassword,
@@ -2290,14 +2319,14 @@ app.post('/api/auth/register/jobseeker', async (c) => {
     const token = `token_${result.meta.last_row_id}_jobseeker`
 
     return c.json({
-      message: '구직자 회원가입이 완료되었습니다. 관리자 승인 후 이용 가능합니다.',
+      message: '구직자 회원가입이 완료되었습니다. 바로 로그인하여 이용하실 수 있습니다.',
       token,
       user: {
         id: result.meta.last_row_id,
         email,
         type: 'jobseeker',
         name,
-        status: 'pending'
+        status: 'approved'
       }
     }, 201)
   } catch (error) {
@@ -2351,7 +2380,7 @@ app.post('/api/auth/register/agent', async (c) => {
 
     return c.json({
       success: true,
-      message: '에이전트 회원가입이 완료되었습니다. 관리자 승인 후 이용 가능합니다.',
+      message: '에이전트 회원가입이 완료되었습니다. 관리자 승인 후 이용 가능합니다. 승인까지 1-2일 소요될 수 있습니다.',
       token,
       user: {
         id: result.meta.last_row_id,
