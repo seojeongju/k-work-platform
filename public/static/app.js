@@ -1221,7 +1221,7 @@ class JobPlatformApp {
     updateMenuLabels(userType) {
         // 구인정보 메뉴 텍스트 업데이트
         const jobViewLinks = document.querySelectorAll('[onclick*="showJobListView"]');
-        const jobRegisterLinks = document.querySelectorAll('[onclick*="showJobRegisterForm"]');
+        // jobRegisterLinks 제거 - 구인정보 등록 기능 완전 비활성화
         
         // 구직정보 메뉴 텍스트 업데이트
         const jobSeekerViewLinks = document.querySelectorAll('[onclick*="showJobSeekerListView"]');
@@ -1235,11 +1235,7 @@ class JobPlatformApp {
                     const iconClass = icon ? icon.className : 'fas fa-edit';
                     link.innerHTML = `<i class="${iconClass} mr-2"></i>내 구인정보 관리`;
                 });
-                jobRegisterLinks.forEach(link => {
-                    const icon = link.querySelector('i');
-                    const iconClass = icon ? icon.className : 'fas fa-plus';
-                    link.innerHTML = `<i class="${iconClass} mr-2"></i>구인정보 등록`;
-                });
+                // 구인정보 등록 버튼 동적 생성 제거됨
                 break;
                 
             case 'jobseeker':
@@ -1272,11 +1268,7 @@ class JobPlatformApp {
                     const iconClass = icon ? icon.className : 'fas fa-list';
                     link.innerHTML = `<i class="${iconClass} mr-2"></i>구인정보 보기`;
                 });
-                jobRegisterLinks.forEach(link => {
-                    const icon = link.querySelector('i');
-                    const iconClass = icon ? icon.className : 'fas fa-plus';
-                    link.innerHTML = `<i class="${iconClass} mr-2"></i>구인정보 등록`;
-                });
+                // 구인정보 등록 버튼 동적 생성 제거됨
                 jobSeekerViewLinks.forEach(link => {
                     const icon = link.querySelector('i');
                     const iconClass = icon ? icon.className : 'fas fa-users';

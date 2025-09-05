@@ -1167,7 +1167,14 @@ app.get('/', (c) => {
                     <!-- Tab Contents -->
                     <div class="p-6">
                         <div id="content-jobs" class="tab-content">
-
+                            <!-- 구인 서브메뉴 -->
+                            <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                                <div class="flex space-x-4">
+                                    <button id="job-view-btn" class="job-sub-btn btn-primary px-4 py-2 rounded-lg">
+                                        <i class="fas fa-list mr-2"></i>구인정보 보기
+                                    </button>
+                                </div>
+                            </div>
                             
                             <!-- 구인정보 보기 -->
                             <div id="job-view-section" class="job-sub-content">
