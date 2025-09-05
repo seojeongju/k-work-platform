@@ -1,51 +1,15 @@
-name: Auto Deploy to Cloudflare Pages
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
     - name: Build project
-      run: npm run build
-      
-    - name: Verify build artifacts
-      run: |
-        echo "Checking build directory..."
-        ls -la dist/
-        echo "Build verification complete"
+      run: node --require ./setup-polyfills.cjs ./node_modules/.bin/vite build
+      env:
+        NODE_ENV: production
         
     - name: Deploy to Cloudflare Pages
       uses: cloudflare/pages-action@v1
       with:
-        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        projectName: wow-campus
-        directory: dist
-        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Deployment Health Check
-      run: |
-        echo "🚀 Deployment completed successfully!"
-        echo "📊 Build artifacts deployed to Cloudflare Pages"
-        echo "🔗 Your site should be available shortly at your Cloudflare Pages URL"
+        projectName: w-campus-com  # 이 부분이 중요!
