@@ -109,6 +109,17 @@ app.use('/api/*', cors({
 // 정적 파일 서빙
 app.use('/static/*', serveStatic({ root: './public' }))
 
+// 명시적 HTML 페이지 라우트들
+app.get('/static/login.html', serveStatic({ path: './public/static/login.html' }))
+app.get('/static/register.html', serveStatic({ path: './public/static/register.html' }))
+app.get('/static/admin-dashboard.html', serveStatic({ path: './public/static/admin-dashboard.html' }))
+app.get('/static/employer-dashboard.html', serveStatic({ path: './public/static/employer-dashboard.html' }))
+app.get('/static/jobseeker-profile.html', serveStatic({ path: './public/static/jobseeker-profile.html' }))
+app.get('/static/agent-dashboard.html', serveStatic({ path: './public/static/agent-dashboard.html' }))
+
+// JS 파일 라우트
+app.get('/static/app.js', serveStatic({ path: './public/static/app.js' }))
+
 // 렌더러 설정
 app.use(renderer)
 
