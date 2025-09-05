@@ -1561,12 +1561,18 @@ function showJobListView() {
         if (app) {
             app.switchTab('jobs');
             app.showJobView();
+            // 더 확실한 스크롤 이동
             setTimeout(() => {
-                document.getElementById('content-jobs')?.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'start' 
-                });
-            }, 100);
+                const targetElement = document.getElementById('content-jobs');
+                if (targetElement) {
+                    targetElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                    // 추가: 브라우저 URL 업데이트 (선택사항)
+                    window.history.pushState(null, '', '#jobs-view');
+                }
+            }, 200);
         }
     } else if (user.type === 'employer') {
         // 구인기업 - 내 구인정보 관리 페이지로 이동
@@ -1576,12 +1582,18 @@ function showJobListView() {
         if (app) {
             app.switchTab('jobs');
             app.showJobView();
+            // 더 확실한 스크롤 이동
             setTimeout(() => {
-                document.getElementById('content-jobs')?.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'start' 
-                });
-            }, 100);
+                const targetElement = document.getElementById('content-jobs');
+                if (targetElement) {
+                    targetElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                    // 추가: 브라우저 URL 업데이트 (선택사항)
+                    window.history.pushState(null, '', '#jobs-view');
+                }
+            }, 200);
         }
     }
 }
@@ -1595,24 +1607,36 @@ function showJobSeekersView() {
         if (app) {
             app.switchTab('jobseekers');
             app.showJobSeekerView();
+            // 더 확실한 스크롤 이동
             setTimeout(() => {
-                document.getElementById('content-jobseekers')?.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'start' 
-                });
-            }, 100);
+                const targetElement = document.getElementById('content-jobseekers');
+                if (targetElement) {
+                    targetElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                    // 추가: 브라우저 URL 업데이트 (선택사항)
+                    window.history.pushState(null, '', '#jobseekers-view');
+                }
+            }, 200);
         }
     } else {
         // 로그인 상태 - 일반 구직정보 보기
         if (app) {
             app.switchTab('jobseekers');
             app.showJobSeekerView();
+            // 더 확실한 스크롤 이동
             setTimeout(() => {
-                document.getElementById('content-jobseekers')?.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'start' 
-                });
-            }, 100);
+                const targetElement = document.getElementById('content-jobseekers');
+                if (targetElement) {
+                    targetElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                    // 추가: 브라우저 URL 업데이트 (선택사항)
+                    window.history.pushState(null, '', '#jobseekers-view');
+                }
+            }, 200);
         }
     }
 }
@@ -1757,6 +1781,31 @@ function closeMobileMenu() {
             icon.classList.add('fa-bars');
         }
     }
+}
+
+// 개선된 네비게이션 스크롤 함수
+function smoothScrollToSection(sectionId, hashName) {
+    setTimeout(() => {
+        const targetElement = document.getElementById(sectionId);
+        if (targetElement) {
+            // 섹션으로 부드럽게 스크롤
+            targetElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+            
+            // URL 해시 업데이트 (선택사항)
+            window.history.pushState(null, '', `#${hashName}`);
+            
+            // 탭이 활성화되었는지 확인하고 추가 처리
+            setTimeout(() => {
+                const tabButton = document.querySelector(`[id*="${sectionId.replace('content-', '')}"]`);
+                if (tabButton && !tabButton.classList.contains('active')) {
+                    tabButton.click();
+                }
+            }, 100);
+        }
+    }, 250);
 }
 
 // 앱 초기화
