@@ -4,17 +4,19 @@ import adapter from '@hono/vite-dev-server/cloudflare'
 import { defineConfig } from 'vite'
 
 export default defineConfig(({ command }) => {
-  const plugins = [build()]
-  
-  // Only add dev server in development
-  if (command === 'serve') {
-    plugins.push(devServer({
-      adapter,
-      entry: 'src/index.tsx'
-    }))
-  }
-  
   return {
-    plugins
+    plugins: [
+      build(),
+      ...(command === 'serve' ? [devServer({
+        adapter,
+        entry: 'src/index.tsx'
+      })] : [])
+    ],
+    build: {
+      target: 'esnext',
+      rollupOptions: {
+        external: [],
+      },
+    },
   }
 })
