@@ -777,19 +777,12 @@ app.get('/', (c) => {
                     </a>
                     <!-- Desktop Navigation -->
                     <nav class="hidden md:flex items-center space-x-8">
-                        <div class="relative nav-dropdown">
-                            <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium py-2" onclick="toggleJobsDropdown()" id="jobs-dropdown-btn">
-                                구인정보 <i class="fas fa-chevron-down ml-1 text-xs transition-transform" id="jobs-dropdown-icon"></i>
-                            </button>
-                            <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-56 bg-white shadow-xl rounded-lg border border-gray-100 py-2 z-50 hidden" id="jobs-dropdown-menu">
-                                <a href="#jobs-view" onclick="event.preventDefault(); showJobListView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
-                                    <i class="fas fa-list mr-2"></i>구인정보 보기
-                                </a>
-                                <a href="#jobseekers-view" onclick="event.preventDefault(); showJobSeekersView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
-                                    <i class="fas fa-users mr-2"></i>구직정보 보기
-                                </a>
-                            </div>
-                        </div>
+                        <a href="#jobs-view" onclick="event.preventDefault(); showJobListView(); return false;" class="text-gray-700 hover:text-wowcampus-blue font-medium py-2 cursor-pointer">
+                            구인정보
+                        </a>
+                        <a href="#jobseekers-view" onclick="event.preventDefault(); showJobSeekersView(); return false;" class="text-gray-700 hover:text-wowcampus-blue font-medium py-2 cursor-pointer">
+                            구직정보
+                        </a>
 
                         <div class="relative nav-dropdown">
                             <button class="nav-dropdown-btn text-gray-700 hover:text-wowcampus-blue flex items-center font-medium py-2">
