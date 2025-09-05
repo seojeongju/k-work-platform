@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 테스트</title>
+</head>
+<body>
+    <h1>로그인 테스트</h1>
+    <button onclick="testLogin()">테스트 로그인 (구인기업)</button>
+    <button onclick="testLogout()">로그아웃</button>
+    <a href="/" target="_blank">메인 페이지 열기</a>
+    
+    <script>
+        function testLogin() {
+            // 테스트 사용자 정보 설정
+            const testUser = {
+                id: 1,
+                type: 'employer',
+                name: '테크코퍼레이션',
+                company_name: '테크코퍼레이션',
+                email: 'hr@techcorp.com'
+            };
+            const testToken = 'test-token-12345';
+            
+            localStorage.setItem('user', JSON.stringify(testUser));
+            localStorage.setItem('token', testToken);
+            
+            alert('로그인 정보가 localStorage에 저장되었습니다. 메인 페이지를 새로고침해보세요.');
+            
+            // 메인 페이지로 리다이렉트
+            window.location.href = '/';
+        }
+        
+        function testLogout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            alert('로그아웃되었습니다.');
+            
+            // 메인 페이지로 리다이렉트
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

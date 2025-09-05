@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>최종 인증 수정 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full">
+        <h2 class="text-2xl font-bold text-center mb-6">최종 인증 수정 테스트</h2>
+        
+        <div class="space-y-4 mb-6">
+            <button onclick="window.open('/', '_blank')" class="w-full bg-blue-500 text-white px-4 py-3 rounded-lg hover:bg-blue-600">
+                메인 페이지 새 창으로 열기
+            </button>
+            
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="font-semibold mb-2">테스트 절차:</h3>
+                <ol class="text-sm space-y-1 text-gray-700">
+                    <li>1. 위 버튼을 클릭하여 메인페이지를 새 창으로 엽니다</li>
+                    <li>2. 새 창에서 개발자도구 콘솔을 엽니다 (F12)</li>
+                    <li>3. 아래 코드를 복사하여 콘솔에 붙여넣고 실행합니다</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="bg-black rounded-lg p-4 text-green-400 font-mono text-xs overflow-x-auto">
+            <div class="mb-2 text-yellow-400">// 로그인 상태 시뮬레이션 코드:</div>
+<pre id="testCode">// 1. 테스트 사용자 데이터 설정
+const testUser = {
+    "id": 4,
+    "email": "testcorp@test.com", 
+    "type": "employer",
+    "status": "pending",
+    "company_name": "테스트코퍼레이션",
+    "contact_person": "테스트대표"
+};
+const testToken = "token_4_employer";
+
+// 2. localStorage에 저장
+localStorage.setItem('user', JSON.stringify(testUser));
+localStorage.setItem('token', testToken);
+
+// 3. 현재 상태 확인
+console.log('=== 로그인 시뮬레이션 완료 ===');
+console.log('사용자:', testUser);
+
+// 4. app.js의 setupUserNavigation 호출
+if (window.jobPlatformApp && window.jobPlatformApp.setupUserNavigation) {
+    window.jobPlatformApp.setupUserNavigation();
+    console.log('✅ setupUserNavigation 호출됨');
+} else {
+    console.log('❌ jobPlatformApp을 찾을 수 없음');
+}
+
+// 5. 결과 확인 (5초 후)
+setTimeout(() => {
+    const authButtons = document.getElementById('auth-buttons');
+    const loginBtn = document.getElementById('login-btn');
+    const userMenu = document.getElementById('user-menu');
+    
+    console.log('=== 최종 결과 ===');
+    console.log('authButtons 보임:', authButtons ? window.getComputedStyle(authButtons).display !== 'none' : 'N/A');
+    console.log('loginBtn 보임:', loginBtn ? window.getComputedStyle(loginBtn).display !== 'none' : 'N/A');
+    console.log('userMenu 보임:', userMenu ? window.getComputedStyle(userMenu).display !== 'none' : 'N/A');
+    
+    if (authButtons && window.getComputedStyle(authButtons).display !== 'none') {
+        console.error('🚨 문제 발견: 로그인/회원가입 버튼이 여전히 보임');
+    } else {
+        console.log('✅ 성공: 인증 버튼이 올바르게 숨겨짐');
+    }
+}, 5000);</pre>
+        </div>
+        
+        <div class="mt-4 flex space-x-2">
+            <button onclick="copyCode()" class="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                <i class="fas fa-copy mr-2"></i>코드 복사
+            </button>
+            <button onclick="testLogout()" class="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                <i class="fas fa-sign-out-alt mr-2"></i>로그아웃 테스트
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        function copyCode() {
+            const code = document.getElementById('testCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('코드가 클립보드에 복사되었습니다!');
+            }).catch(err => {
+                console.error('복사 실패:', err);
+                alert('복사에 실패했습니다. 수동으로 복사해주세요.');
+            });
+        }
+        
+        function testLogout() {
+            const logoutCode = `
+// 로그아웃 시뮬레이션
+localStorage.removeItem('user');
+localStorage.removeItem('token');
+
+if (window.jobPlatformApp && window.jobPlatformApp.setupUserNavigation) {
+    window.jobPlatformApp.setupUserNavigation();
+}
+
+console.log('로그아웃 완료 - 인증 버튼이 다시 나타나야 합니다');
+            `;
+            
+            navigator.clipboard.writeText(logoutCode.trim()).then(() => {
+                alert('로그아웃 테스트 코드가 클립보드에 복사되었습니다!');
+            });
+        }
+    </script>
+</body>
+</html>

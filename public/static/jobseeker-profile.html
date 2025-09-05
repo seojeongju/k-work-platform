@@ -160,6 +160,9 @@
                     <button id="tab-jobs" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
                         <i class="fas fa-briefcase mr-2"></i>추천 구인공고
                     </button>
+                    <button id="tab-viewers" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-eye mr-2"></i>조회 기업
+                    </button>
                     <button id="tab-documents" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
                         <i class="fas fa-file-alt mr-2"></i>서류 관리
                     </button>
@@ -271,6 +274,97 @@
                     </div>
                     <div id="recommended-jobs" class="space-y-4">
                         <!-- 추천 구인공고가 여기에 표시됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 프로필 조회 기업 탭 -->
+                <div id="content-viewers" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            <i class="fas fa-eye text-wowcampus-blue mr-2"></i>나의 프로필을 조회한 기업
+                        </h3>
+                        <div class="flex items-center space-x-3">
+                            <select id="viewers-filter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                <option value="all">전체 기간</option>
+                                <option value="today">오늘</option>
+                                <option value="week">최근 7일</option>
+                                <option value="month">최근 30일</option>
+                            </select>
+                            <button onclick="refreshViewers()" class="text-wowcampus-blue hover:text-wowcampus-dark">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 조회 통계 요약 -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-eye text-blue-600 text-2xl mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-blue-600 font-medium">총 조회수</p>
+                                    <p id="total-views-count" class="text-xl font-bold text-blue-800">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-building text-green-600 text-2xl mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-green-600 font-medium">조회 기업수</p>
+                                    <p id="unique-companies-count" class="text-xl font-bold text-green-800">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-calendar-day text-orange-600 text-2xl mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-orange-600 font-medium">오늘 조회</p>
+                                    <p id="today-views-count" class="text-xl font-bold text-orange-800">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-heart text-purple-600 text-2xl mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-purple-600 font-medium">관심 표시</p>
+                                    <p id="interested-companies-count" class="text-xl font-bold text-purple-800">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 필터 및 정렬 옵션 -->
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button onclick="filterViewers('all')" class="viewer-filter-btn active bg-wowcampus-blue text-white px-3 py-2 rounded-lg text-sm font-medium">
+                            전체
+                        </button>
+                        <button onclick="filterViewers('interested')" class="viewer-filter-btn bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-300">
+                            <i class="fas fa-heart mr-1"></i>관심 표시
+                        </button>
+                        <button onclick="filterViewers('contacted')" class="viewer-filter-btn bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-300">
+                            <i class="fas fa-envelope mr-1"></i>연락받음
+                        </button>
+                        <button onclick="filterViewers('recent')" class="viewer-filter-btn bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-300">
+                            <i class="fas fa-clock mr-1"></i>최근 7일
+                        </button>
+                    </div>
+
+                    <!-- 조회 기업 리스트 -->
+                    <div id="viewers-list" class="space-y-4">
+                        <!-- 조회 기업 목록이 여기에 표시됩니다 -->
+                    </div>
+
+                    <!-- 조회 기업이 없을 때 메시지 -->
+                    <div id="no-viewers" class="text-center py-12 text-gray-500 hidden">
+                        <i class="fas fa-eye-slash text-6xl mb-4 text-gray-300"></i>
+                        <h4 class="text-lg font-medium mb-2">아직 프로필을 조회한 기업이 없습니다</h4>
+                        <p class="text-sm mb-4">프로필을 완성하고 구인공고에 지원하면 더 많은 기업이 프로필을 확인할 거예요!</p>
+                        <button onclick="switchTab('profile')" class="bg-wowcampus-blue text-white px-4 py-2 rounded-lg hover:bg-wowcampus-dark">
+                            프로필 완성하기
+                        </button>
                     </div>
                 </div>
 

@@ -9,6 +9,7 @@ class JobPlatformApp {
     }
 
     init() {
+        console.log('JobPlatformApp initializing...');
         this.setupTabs();
         this.setupJobSubTabs();
         this.setupJobSeekerSubTabs();
@@ -18,10 +19,23 @@ class JobPlatformApp {
         this.loadInitialData();
         this.bindEvents();
         
+        // 즉시 한 번 실행
+        this.setupUserNavigation();
+        
+        // DOM 변경 감시 시작
+        this.startAuthObserver();
+        
         // DOM이 완전히 로드된 후 사용자 네비게이션 설정
         setTimeout(() => {
+            console.log('Running delayed setupUserNavigation...');
             this.setupUserNavigation();
         }, 200);
+        
+        // 추가로 더 지연 후에도 실행
+        setTimeout(() => {
+            console.log('Running final setupUserNavigation...');
+            this.setupUserNavigation();
+        }, 1000);
     }
 
     setupTabs() {
@@ -901,19 +915,39 @@ class JobPlatformApp {
         const token = localStorage.getItem('token');
 
         const authButtons = document.getElementById('auth-buttons');
+        const loginBtn = document.getElementById('login-btn');
+        const registerBtn = document.getElementById('register-btn');
         const agentMenu = document.getElementById('agent-menu');
         const mobileAgentMenu = document.getElementById('mobile-agent-menu');
         const userMenu = document.getElementById('user-menu');
         const userName = document.getElementById('user-name');
         const logoutBtn = document.getElementById('logout-btn');
 
-        console.log('setupUserNavigation called:', { user, token, authButtons });
+        console.log('setupUserNavigation called:', { user, token, authButtons, loginBtn, registerBtn, userMenu });
+        console.log('Current authButtons style:', authButtons ? authButtons.style.display : 'not found');
+        console.log('Current loginBtn style:', loginBtn ? loginBtn.style.display : 'not found');
+        console.log('Current registerBtn style:', registerBtn ? registerBtn.style.display : 'not found');
 
         if (user && token) {
-            // 로그인 상태
-            if (authButtons) authButtons.classList.add('hidden');
-            if (userMenu) userMenu.classList.remove('hidden');
+            // 로그인 상태 - CSS 클래스와 인라인 스타일 모두 사용
+            document.body.classList.add('auth-logged-in');
+            
+            // 🔥 CRITICAL FIX: 모든 로그인/회원가입 관련 요소를 강력하게 숨김
+            this.forceHideAuthElements();
+            
+            if (userMenu) {
+                userMenu.classList.remove('hidden');
+                userMenu.classList.add('force-show-user');
+                userMenu.style.setProperty('display', 'flex', 'important');
+                userMenu.style.setProperty('visibility', 'visible', 'important');
+                userMenu.style.setProperty('opacity', '1', 'important');
+                userMenu.style.setProperty('pointer-events', 'auto', 'important');
+            }
             if (userName) userName.textContent = user.name || user.company_name || user.email || '사용자님';
+
+            console.log('After hiding auth buttons - authButtons style:', authButtons ? authButtons.style.display : 'not found');
+            console.log('After hiding auth buttons - loginBtn style:', loginBtn ? loginBtn.style.display : 'not found');
+            console.log('After hiding auth buttons - registerBtn style:', registerBtn ? registerBtn.style.display : 'not found');
 
             // 권한별 메뉴 업데이트
             this.updateMenusByUserType(user.type, user.id);
@@ -926,14 +960,220 @@ class JobPlatformApp {
                 logoutBtn.setAttribute('data-event-bound', 'true');
             }
         } else {
-            // 로그아웃 상태
-            if (authButtons) authButtons.classList.remove('hidden');
-            if (userMenu) userMenu.classList.add('hidden');
+            // 로그아웃 상태 - CSS 클래스와 인라인 스타일 모두 사용
+            document.body.classList.remove('auth-logged-in');
+            
+            // 🔥 CRITICAL FIX: 모든 인증 요소 복원
+            this.forceShowAuthElements();
+            
+            if (userMenu) {
+                userMenu.classList.add('hidden');
+                userMenu.classList.remove('force-show-user');
+                userMenu.style.setProperty('display', 'none', 'important');
+                userMenu.style.setProperty('visibility', 'hidden', 'important');
+                userMenu.style.setProperty('opacity', '0', 'important');
+                userMenu.style.setProperty('pointer-events', 'none', 'important');
+            }
             if (agentMenu) agentMenu.classList.add('hidden');
             if (mobileAgentMenu) mobileAgentMenu.classList.add('hidden');
             
             // 기본 메뉴로 복원
             this.updateMenusByUserType('guest');
+        }
+    }
+
+    // 🔥 CRITICAL FIX: 모든 인증 관련 요소를 강력하게 숨기는 함수
+    forceHideAuthElements() {
+        console.log('🔥 강력한 인증 요소 숨김 실행');
+        
+        // 주요 ID로 찾기
+        const primaryAuthElements = [
+            'auth-buttons', 'login-btn', 'register-btn'
+        ];
+        
+        primaryAuthElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                console.log(`숨김 처리: ${id}`);
+                this.applyForceHideStyles(element);
+            }
+        });
+        
+        // 클래스명으로 찾기 (추가 안전장치)
+        const authClassSelectors = [
+            '.auth-buttons', '.login-btn', '.register-btn',
+            '[class*="login"]', '[class*="register"]', '[class*="sign-in"]', '[class*="sign-up"]'
+        ];
+        
+        authClassSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                // 사용자 메뉴나 로그아웃 버튼은 제외
+                if (!element.id.includes('user-menu') && 
+                    !element.id.includes('logout') && 
+                    !element.classList.contains('force-show-user')) {
+                    console.log(`클래스 선택자로 숨김 처리: ${selector}`, element);
+                    this.applyForceHideStyles(element);
+                }
+            });
+        });
+        
+        // 텍스트 내용으로 찾기 (최후 수단)
+        const allLinks = document.querySelectorAll('a, button');
+        allLinks.forEach(element => {
+            const text = element.textContent.trim();
+            if ((text.includes('로그인') || text.includes('회원가입') || text.includes('sign in') || text.includes('sign up')) &&
+                !text.includes('로그아웃') && !element.classList.contains('force-show-user')) {
+                console.log(`텍스트 내용으로 숨김 처리: "${text}"`, element);
+                this.applyForceHideStyles(element);
+            }
+        });
+    }
+    
+    // 요소에 강력한 숨김 스타일 적용
+    applyForceHideStyles(element) {
+        if (!element) return;
+        
+        // 모든 가능한 방법으로 완전히 숨김
+        element.style.setProperty('display', 'none', 'important');
+        element.style.setProperty('visibility', 'hidden', 'important');
+        element.style.setProperty('opacity', '0', 'important');
+        element.style.setProperty('pointer-events', 'none', 'important');
+        element.style.setProperty('width', '0', 'important');
+        element.style.setProperty('height', '0', 'important');
+        element.style.setProperty('overflow', 'hidden', 'important');
+        element.style.setProperty('position', 'absolute', 'important');
+        element.style.setProperty('left', '-9999px', 'important');
+        element.style.setProperty('top', '-9999px', 'important');
+        element.style.setProperty('z-index', '-1', 'important');
+        
+        // CSS 클래스 추가
+        element.classList.add('force-hide-auth', 'hidden');
+        element.setAttribute('data-force-hidden', 'true');
+        
+        // 부모 요소가 flex인 경우 flex-basis도 0으로
+        element.style.setProperty('flex-basis', '0', 'important');
+        element.style.setProperty('flex-grow', '0', 'important');
+        element.style.setProperty('flex-shrink', '0', 'important');
+    }
+    
+    // 🔥 CRITICAL FIX: 모든 인증 관련 요소를 강력하게 복원하는 함수
+    forceShowAuthElements() {
+        console.log('🔥 강력한 인증 요소 복원 실행');
+        
+        // data-force-hidden 속성이 있는 모든 요소 찾기
+        const hiddenElements = document.querySelectorAll('[data-force-hidden="true"]');
+        hiddenElements.forEach(element => {
+            console.log('복원 처리:', element);
+            this.removeForceHideStyles(element);
+        });
+        
+        // 주요 ID 요소들 복원
+        const primaryAuthElements = [
+            'auth-buttons', 'login-btn', 'register-btn'
+        ];
+        
+        primaryAuthElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                console.log(`복원 처리: ${id}`);
+                this.removeForceHideStyles(element);
+            }
+        });
+    }
+    
+    // 요소에서 강제 숨김 스타일 제거
+    removeForceHideStyles(element) {
+        if (!element) return;
+        
+        // 모든 강제 스타일 제거
+        const stylesToRemove = [
+            'display', 'visibility', 'opacity', 'pointer-events', 
+            'width', 'height', 'overflow', 'position', 'left', 'top', 'z-index',
+            'flex-basis', 'flex-grow', 'flex-shrink'
+        ];
+        
+        stylesToRemove.forEach(style => {
+            element.style.removeProperty(style);
+        });
+        
+        // CSS 클래스 제거
+        element.classList.remove('force-hide-auth', 'hidden');
+        element.removeAttribute('data-force-hidden');
+        
+        // 기본 스타일 복원 (필요한 경우)
+        if (element.id === 'auth-buttons') {
+            element.style.setProperty('display', 'flex', 'important');
+        } else if (element.id === 'login-btn' || element.id === 'register-btn') {
+            element.style.setProperty('display', 'inline-block', 'important');
+        }
+        
+        element.style.setProperty('visibility', 'visible', 'important');
+        element.style.setProperty('opacity', '1', 'important');
+        element.style.setProperty('pointer-events', 'auto', 'important');
+    }
+    
+    // 🔥 CRITICAL FIX: DOM 변경 감시로 인증 UI 상태 자동 수정
+    startAuthObserver() {
+        console.log('DOM 인증 상태 감시 시작');
+        
+        if (this.authObserver) {
+            this.authObserver.disconnect();
+        }
+        
+        this.authObserver = new MutationObserver((mutations) => {
+            let shouldRecheck = false;
+            
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' || mutation.type === 'attributes') {
+                    const target = mutation.target;
+                    
+                    // 인증 관련 요소 변경 감지
+                    if (target.id === 'auth-buttons' || 
+                        target.id === 'login-btn' || 
+                        target.id === 'register-btn' ||
+                        target.id === 'user-menu' ||
+                        target.classList?.contains('auth-related') ||
+                        (mutation.type === 'attributes' && mutation.attributeName === 'style')) {
+                        shouldRecheck = true;
+                    }
+                    
+                    // 새로 추가된 노드 중 인증 관련 요소 확인
+                    if (mutation.type === 'childList') {
+                        mutation.addedNodes.forEach(node => {
+                            if (node.nodeType === 1) { // Element node
+                                const text = node.textContent?.toLowerCase() || '';
+                                if (text.includes('로그인') || text.includes('회원가입') || 
+                                    text.includes('sign in') || text.includes('sign up')) {
+                                    shouldRecheck = true;
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+            
+            if (shouldRecheck) {
+                console.log('🔄 DOM 변경 감지 - 인증 UI 재확인');
+                setTimeout(() => {
+                    const user = localStorage.getItem('user');
+                    const token = localStorage.getItem('token');
+                    if (user && token) {
+                        this.forceHideAuthElements();
+                    } else {
+                        this.forceShowAuthElements();
+                    }
+                }, 100);
+            }
+        });
+        
+        if (document.body) {
+            this.authObserver.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class', 'style', 'id']
+            });
         }
     }
 
@@ -1079,6 +1319,26 @@ class JobPlatformApp {
     }
 
     bindEvents() {
+        // MutationObserver로 DOM 변경 감지 및 강제 숨기기
+        this.setupAuthButtonObserver();
+        
+        // localStorage 변경 감지
+        window.addEventListener('storage', (e) => {
+            console.log('localStorage changed:', e.key, e.newValue);
+            if (e.key === 'user' || e.key === 'token') {
+                console.log('Auth related localStorage changed, updating UI...');
+                this.checkAuthStatus();
+                this.setupUserNavigation();
+            }
+        });
+        
+        // 페이지 focus 시 상태 재확인
+        window.addEventListener('focus', () => {
+            console.log('Window focused, rechecking auth status...');
+            this.checkAuthStatus();
+            this.setupUserNavigation();
+        });
+        
         // 모바일 메뉴 토글
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileMenu = document.getElementById('mobile-menu');
@@ -1165,8 +1425,22 @@ class JobPlatformApp {
 
     // 로그인 상태 확인
     checkAuthStatus() {
-        this.isLoggedIn = !!localStorage.getItem('token');
-        this.currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('user');
+        
+        console.log('checkAuthStatus called:', { token, userStr });
+        
+        this.isLoggedIn = !!token;
+        
+        try {
+            this.currentUser = userStr ? JSON.parse(userStr) : {};
+        } catch (e) {
+            console.error('Error parsing user data:', e);
+            this.currentUser = {};
+            this.isLoggedIn = false;
+        }
+        
+        console.log('Auth status updated:', { isLoggedIn: this.isLoggedIn, currentUser: this.currentUser });
     }
 
     // 로그인 상태에 따른 UI 업데이트
@@ -1174,8 +1448,11 @@ class JobPlatformApp {
         // 로그인 상태 재확인
         this.checkAuthStatus();
         
+        // 즉시 실행
+        this.setupUserNavigation();
+        
         setTimeout(() => {
-            // 사용자 네비게이션 업데이트
+            // 사용자 네비게이션 업데이트 (추가 보장)
             this.setupUserNavigation();
             
             // 구인정보 자세히 보기 버튼 업데이트
@@ -1487,5 +1764,161 @@ function closeMobileMenu() {
 // 앱 초기화
 let app;
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded - Initializing app');
     app = new JobPlatformApp();
+    
+    // 추가 지연 후 네비게이션 강제 업데이트
+    setTimeout(() => {
+        console.log('Force updating user navigation after app init');
+        if (app && app.setupUserNavigation) {
+            app.setupUserNavigation();
+        }
+    }, 1000);
 });
+
+// 페이지 완전 로드 후 추가 실행
+window.addEventListener('load', () => {
+    console.log('Window loaded - Final navigation setup');
+    
+    setTimeout(() => {
+        console.log('Final force update of user navigation');
+        if (app && app.setupUserNavigation) {
+            app.setupUserNavigation();
+        }
+    }, 1500);
+});
+
+// 정기적으로 로그인 상태 확인 (5초마다)
+setInterval(() => {
+    if (app && app.checkAuthStatus && app.setupUserNavigation) {
+        const wasLoggedIn = app.isLoggedIn;
+        app.checkAuthStatus();
+        
+        // 로그인 상태가 변경된 경우에만 UI 업데이트
+        if (wasLoggedIn !== app.isLoggedIn) {
+            console.log('Login status changed, updating UI...');
+            app.setupUserNavigation();
+        }
+    }
+}, 5000);
+
+// 글로벌 테스트 함수들
+window.testLogin = function(userType = 'employer') {
+    const testUsers = {
+        employer: {
+            id: 1,
+            type: 'employer',
+            name: '테크코퍼레이션',
+            company_name: '테크코퍼레이션',
+            email: 'hr@techcorp.com'
+        },
+        jobseeker: {
+            id: 2,
+            type: 'jobseeker',
+            name: '응우엔 반',
+            email: 'nguyenvan@example.com'
+        },
+        agent: {
+            id: 3,
+            type: 'agent',
+            name: '글로벌인재에이전시',
+            company_name: '글로벌인재에이전시',
+            email: 'agent1@wowcampus.com'
+        },
+        admin: {
+            id: 4,
+            type: 'admin',
+            name: '관리자',
+            email: 'admin@wowcampus.com'
+        }
+    };
+    
+    const user = testUsers[userType];
+    const testToken = `test-token-${userType}-${Date.now()}`;
+    
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('token', testToken);
+    
+    console.log('Test login set:', user);
+    
+    // 강제로 UI 업데이트
+    if (app) {
+        app.checkAuthStatus();
+        app.setupUserNavigation();
+    }
+    
+    return 'Login set! Check the header.';
+};
+
+window.testLogout = function() {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    
+    console.log('Test logout completed');
+    
+    // 강제로 UI 업데이트
+    if (app) {
+        app.checkAuthStatus();
+        app.setupUserNavigation();
+    }
+    
+    return 'Logout completed! Check the header.';
+};
+
+window.checkAuthStatus = function() {
+    const user = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    
+    console.log('Current localStorage:', { user, token });
+    console.log('Current app state:', { 
+        isLoggedIn: app ? app.isLoggedIn : 'app not ready',
+        currentUser: app ? app.currentUser : 'app not ready'
+    });
+    
+    return { user, token, app: app ? { isLoggedIn: app.isLoggedIn, currentUser: app.currentUser } : null };
+};
+
+// MutationObserver 설정 함수를 JobPlatformApp 클래스에 추가
+JobPlatformApp.prototype.setupAuthButtonObserver = function() {
+    const observer = new MutationObserver((mutations) => {
+        const user = localStorage.getItem('user');
+        const token = localStorage.getItem('token');
+        
+        if (user && token) {
+            // 로그인 상태에서 auth 버튼들이 다시 나타나면 강제로 숨김
+            const authButtons = document.getElementById('auth-buttons');
+            const loginBtn = document.getElementById('login-btn');
+            const registerBtn = document.getElementById('register-btn');
+            
+            if (authButtons && authButtons.style.display !== 'none') {
+                console.log('MutationObserver: Force hiding auth buttons');
+                authButtons.style.display = 'none';
+                authButtons.style.visibility = 'hidden';
+            }
+            if (loginBtn && loginBtn.style.display !== 'none') {
+                loginBtn.style.display = 'none';
+                loginBtn.style.visibility = 'hidden';
+            }
+            if (registerBtn && registerBtn.style.display !== 'none') {
+                registerBtn.style.display = 'none';
+                registerBtn.style.visibility = 'hidden';
+            }
+            
+            // user-menu가 숨겨져 있으면 강제로 표시
+            const userMenu = document.getElementById('user-menu');
+            if (userMenu && userMenu.classList.contains('hidden')) {
+                userMenu.classList.remove('hidden');
+                userMenu.style.display = 'flex';
+                userMenu.style.visibility = 'visible';
+            }
+        }
+    });
+    
+    // 전체 body를 관찰
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class']
+    });
+};

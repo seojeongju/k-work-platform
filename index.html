@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOW-CAMPUS - 외국인 구인구직 및 유학 플랫폼</title>
+    <meta name="description" content="World-Oriented Workforce Campus - 해외 에이전트와 국내 기업을 연결하여 외국인 인재의 한국 진출을 지원하는 종합 플랫폼">
+    <meta name="keywords" content="외국인 구인구직, 유학, 한국 취업, 비자, 에이전트, 채용">
+    
+    <!-- Open Graph Meta Tags for Social Media Preview -->
+    <meta property="og:title" content="WOW-CAMPUS - 외국인 구인구직 및 유학 플랫폼">
+    <meta property="og:description" content="해외 에이전트와 국내 기업을 연결하여 외국인 인재의 한국 진출을 지원하는 종합 플랫폼">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://seojeongju.github.io/k-work-platform/">
+    <meta property="og:image" content="https://seojeongju.github.io/k-work-platform/assets/preview.png">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="WOW-CAMPUS - 외국인 구인구직 및 유학 플랫폼">
+    <meta name="twitter:description" content="해외 에이전트와 국내 기업을 연결하여 외국인 인재의 한국 진출을 지원하는 종합 플랫폼">
+    <meta name="twitter:image" content="https://seojeongju.github.io/k-work-platform/assets/preview.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wow-blue': '#1E40AF',
+                        'wow-light-blue': '#3B82F6',
+                        'wow-green': '#059669',
+                        'wow-gray': '#F8FAFC'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #059669 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
+<body class="bg-wow-gray">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <i class="fas fa-globe-americas text-wow-blue text-2xl mr-3"></i>
+                    <h1 class="text-2xl font-bold text-wow-blue">WOW-CAMPUS</h1>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#home" class="text-gray-700 hover:text-wow-blue transition">홈</a>
+                    <a href="#features" class="text-gray-700 hover:text-wow-blue transition">기능</a>
+                    <a href="#demo" class="text-gray-700 hover:text-wow-blue transition">데모</a>
+                    <a href="#about" class="text-gray-700 hover:text-wow-blue transition">소개</a>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="./public/static/login.html" class="bg-wow-blue text-white px-4 py-2 rounded hover:bg-blue-700 transition">로그인</a>
+                    <a href="./public/static/register.html" class="border border-wow-blue text-wow-blue px-4 py-2 rounded hover:bg-wow-blue hover:text-white transition">회원가입</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="gradient-bg text-white py-32 mt-16">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h2 class="text-5xl font-bold mb-6">외국인의 꿈이 현실이 되는 곳</h2>
+            <p class="text-xl mb-8 max-w-3xl mx-auto">
+                WOW-CAMPUS는 해외 에이전트와 국내 기업을 연결하여 
+                외국인 인재의 한국 진출을 지원하는 종합 플랫폼입니다.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+                <a href="#demo" class="bg-white text-wow-blue px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+                    <i class="fas fa-play mr-2"></i>플랫폼 체험하기
+                </a>
+                <a href="#features" class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-wow-blue transition">
+                    <i class="fas fa-info-circle mr-2"></i>자세히 알아보기
+                </a>
+            </div>
+            
+            <!-- 통계 섹션 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mt-16">
+                <div class="text-center">
+                    <div class="text-3xl font-bold mb-2">500+</div>
+                    <div class="text-sm opacity-80">등록된 구인공고</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold mb-2">200+</div>
+                    <div class="text-sm opacity-80">활성 에이전트</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold mb-2">1,000+</div>
+                    <div class="text-sm opacity-80">구직자 등록</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold mb-2">50+</div>
+                    <div class="text-sm opacity-80">유학 프로그램</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h3 class="text-4xl font-bold text-gray-900 mb-4">핵심 기능</h3>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    WOW-CAMPUS가 제공하는 혁신적인 기능들로 
+                    외국인 인재와 한국 기업을 효과적으로 연결합니다
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- 스마트 매칭 시스템 -->
+                <div class="bg-wow-gray p-8 rounded-lg card-hover">
+                    <div class="text-wow-blue text-4xl mb-4">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-4">AI 스마트 매칭</h4>
+                    <p class="text-gray-600 mb-4">
+                        비자 유형, 직종, 지역, 한국어 수준, 급여 조건을 
+                        종합적으로 분석하여 최적의 매칭을 제공합니다.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• 완벽매칭 (90% 이상)</li>
+                        <li>• 좋은매칭 (70-89%)</li>
+                        <li>• 보통매칭 (50-69%)</li>
+                    </ul>
+                </div>
+
+                <!-- 에이전트 관리 시스템 -->
+                <div class="bg-wow-gray p-8 rounded-lg card-hover">
+                    <div class="text-wow-blue text-4xl mb-4">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-4">에이전트 관리 시스템</h4>
+                    <p class="text-gray-600 mb-4">
+                        해외 에이전트가 구직자를 체계적으로 관리하고 
+                        지원 현황을 실시간으로 추적할 수 있습니다.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• 구직자 등록/수정/삭제</li>
+                        <li>• 지원 현황 추적</li>
+                        <li>• 성과 통계 확인</li>
+                    </ul>
+                </div>
+
+                <!-- 유학 프로그램 -->
+                <div class="bg-wow-gray p-8 rounded-lg card-hover">
+                    <div class="text-wow-blue text-4xl mb-4">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-4">유학 프로그램</h4>
+                    <p class="text-gray-600 mb-4">
+                        한국어 연수부터 학위과정까지 다양한 
+                        유학 프로그램 정보를 제공합니다.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• 한국어 연수 과정</li>
+                        <li>• 학부/대학원 과정</li>
+                        <li>• 장학금 정보</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h3 class="text-4xl font-bold text-gray-900 mb-4">플랫폼 체험하기</h3>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    WOW-CAMPUS의 실제 기능을 직접 체험해보세요
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- 메인 플랫폼 -->
+                <div class="bg-white p-6 rounded-lg shadow-lg card-hover">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-home text-wow-blue text-3xl mb-3"></i>
+                        <h4 class="text-xl font-bold">메인 플랫폼</h4>
+                    </div>
+                    <p class="text-gray-600 mb-4 text-center">
+                        구인정보 검색, 유학프로그램 탐색, 
+                        3단계 이용절차 안내
+                    </p>
+                    <a href="https://3000-iz905ai991ifyhm1e8zt5-6532622b.e2b.dev" 
+                       target="_blank" 
+                       class="block w-full bg-wow-blue text-white text-center py-3 rounded hover:bg-blue-700 transition">
+                        <i class="fas fa-external-link-alt mr-2"></i>체험하기
+                    </a>
+                </div>
+
+                <!-- 에이전트 대시보드 -->
+                <div class="bg-white p-6 rounded-lg shadow-lg card-hover">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-chart-line text-wow-blue text-3xl mb-3"></i>
+                        <h4 class="text-xl font-bold">에이전트 대시보드</h4>
+                    </div>
+                    <p class="text-gray-600 mb-4 text-center">
+                        구직자 관리, 매칭 결과 확인,
+                        지원 현황 추적 시스템
+                    </p>
+                    <a href="https://3000-iz905ai991ifyhm1e8zt5-6532622b.e2b.dev/static/agent-dashboard.html?agentId=1" 
+                       target="_blank" 
+                       class="block w-full bg-wow-blue text-white text-center py-3 rounded hover:bg-blue-700 transition">
+                        <i class="fas fa-external-link-alt mr-2"></i>체험하기
+                    </a>
+                </div>
+
+                <!-- GitHub 리포지토리 -->
+                <div class="bg-white p-6 rounded-lg shadow-lg card-hover">
+                    <div class="text-center mb-4">
+                        <i class="fab fa-github text-wow-blue text-3xl mb-3"></i>
+                        <h4 class="text-xl font-bold">소스 코드</h4>
+                    </div>
+                    <p class="text-gray-600 mb-4 text-center">
+                        Hono + TypeScript + Cloudflare D1
+                        기술 스택으로 개발된 오픈소스
+                    </p>
+                    <a href="https://github.com/seojeongju/k-work-platform" 
+                       target="_blank" 
+                       class="block w-full bg-gray-800 text-white text-center py-3 rounded hover:bg-gray-700 transition">
+                        <i class="fab fa-github mr-2"></i>GitHub 보기
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h3 class="text-4xl font-bold text-gray-900 mb-6">WOW-CAMPUS 소개</h3>
+                    <p class="text-lg text-gray-600 mb-6">
+                        <strong>World-Oriented Workforce Campus</strong>는 
+                        외국인 인재와 한국 기업을 연결하는 혁신적인 플랫폼입니다.
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-wow-green text-xl mr-4 mt-1"></i>
+                            <div>
+                                <h5 class="font-semibold mb-1">비자별/직종별/지역별 매칭</h5>
+                                <p class="text-gray-600">정확한 조건 매칭으로 성공률 극대화</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-wow-green text-xl mr-4 mt-1"></i>
+                            <div>
+                                <h5 class="font-semibold mb-1">K-work.or.kr 참조 디자인</h5>
+                                <p class="text-gray-600">정부기관 수준의 신뢰감 있는 UI/UX</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-wow-green text-xl mr-4 mt-1"></i>
+                            <div>
+                                <h5 class="font-semibold mb-1">다국어 지원</h5>
+                                <p class="text-gray-600">한국어/영어 기반 글로벌 서비스</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-wow-blue to-wow-green p-8 rounded-lg text-white">
+                    <h4 class="text-2xl font-bold mb-6">기술 스택</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white/10 p-4 rounded">
+                            <h5 class="font-semibold mb-2">백엔드</h5>
+                            <ul class="text-sm space-y-1">
+                                <li>• Hono Framework</li>
+                                <li>• TypeScript</li>
+                                <li>• Cloudflare Workers</li>
+                                <li>• Cloudflare D1</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white/10 p-4 rounded">
+                            <h5 class="font-semibold mb-2">프론트엔드</h5>
+                            <ul class="text-sm space-y-1">
+                                <li>• HTML5/CSS3</li>
+                                <li>• JavaScript ES6+</li>
+                                <li>• TailwindCSS</li>
+                                <li>• FontAwesome</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-globe-americas text-wow-blue text-2xl mr-3"></i>
+                        <h4 class="text-xl font-bold">WOW-CAMPUS</h4>
+                    </div>
+                    <p class="text-gray-400">
+                        외국인의 꿈이 현실이 되는 곳
+                    </p>
+                </div>
+                
+                <div>
+                    <h5 class="font-semibold mb-4">주요 기능</h5>
+                    <ul class="text-gray-400 space-y-2">
+                        <li><a href="#" class="hover:text-white transition">구인구직 매칭</a></li>
+                        <li><a href="#" class="hover:text-white transition">유학 프로그램</a></li>
+                        <li><a href="#" class="hover:text-white transition">에이전트 관리</a></li>
+                        <li><a href="#" class="hover:text-white transition">AI 매칭</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h5 class="font-semibold mb-4">사용자</h5>
+                    <ul class="text-gray-400 space-y-2">
+                        <li><a href="#" class="hover:text-white transition">구직자</a></li>
+                        <li><a href="#" class="hover:text-white transition">에이전트</a></li>
+                        <li><a href="#" class="hover:text-white transition">기업</a></li>
+                        <li><a href="#" class="hover:text-white transition">학생</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h5 class="font-semibold mb-4">개발 정보</h5>
+                    <ul class="text-gray-400 space-y-2">
+                        <li><a href="https://github.com/seojeongju/k-work-platform" target="_blank" class="hover:text-white transition">
+                            <i class="fab fa-github mr-2"></i>GitHub
+                        </a></li>
+                        <li><span class="text-gray-500">라이센스: MIT</span></li>
+                        <li><span class="text-gray-500">개발: GenSpark AI</span></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 WOW-CAMPUS. All rights reserved. | World-Oriented Workforce Campus for International Professionals & Students</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Smooth Scrolling -->
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add scroll effect to navigation
+        window.addEventListener('scroll', function() {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 100) {
+                nav.classList.add('bg-white/95', 'backdrop-blur-sm');
+            } else {
+                nav.classList.remove('bg-white/95', 'backdrop-blur-sm');
+            }
+        });
+    </script>
+</body>
+</html>
