@@ -1770,11 +1770,21 @@ app.get('/', (c) => {
                         for (let el of allTexts) {
                             const text = el.textContent?.trim() || '';
                             if (text.includes('admin@wowcampus.com') || 
+                                text.includes('로그아웃') ||
                                 (text.includes('환영합니다') && text.includes('@'))) {
                                 isLoggedIn = true;
                                 console.log('🔍 메인 페이지 DOM에서 로그인 상태 감지:', text);
                                 break;
                             }
+                        }
+                    }
+                    
+                    // 추가 로그인 상태 확인 - user menu가 보이는지 체크
+                    if (!isLoggedIn) {
+                        const userMenu = document.getElementById('user-menu');
+                        if (userMenu && !userMenu.classList.contains('hidden')) {
+                            isLoggedIn = true;
+                            console.log('🔍 user-menu 표시 상태로 로그인 확인');
                         }
                     }
                     
@@ -1843,15 +1853,21 @@ app.get('/', (c) => {
                             }
                         });
                         
-                        // 메인 페이지 텍스트 기반 완전 제거 (가장 확실한 방법)
+                        // 메인 페이지 텍스트 기반 완전 제거 (가장 확실한 방법) - 강화버전
                         let processedCount = 0;
                         document.querySelectorAll('a, button').forEach(el => {
                             const text = el.textContent?.trim() || '';
                             const href = el.getAttribute('href') || '';
                             
+                            // 로그아웃 버튼은 제외
+                            if (text.includes('로그아웃') || href.includes('logout')) {
+                                return;
+                            }
+                            
                             if (text === '로그인' || text === '회원가입' || text === 'Login' || 
                                 text === 'Sign Up' || text === 'Register' || text === '회원 가입' ||
-                                href.includes('login') || href.includes('register')) {
+                                href.includes('login') || href.includes('register') || 
+                                href.includes('signin') || href.includes('signup')) {
                                 
                                 mainPageDestructiveStyles.forEach(([prop, value]) => {
                                     el.style.setProperty(prop, value, 'important');
@@ -1909,6 +1925,7 @@ app.get('/', (c) => {
                 }
                 
                 // 다중 시점에서 재실행 (메인 페이지용 더 많은 안전장치)
+                setTimeout(mainPageSuperAuthFix, 10);
                 setTimeout(mainPageSuperAuthFix, 25);
                 setTimeout(mainPageSuperAuthFix, 50);
                 setTimeout(mainPageSuperAuthFix, 100);
@@ -1916,6 +1933,7 @@ app.get('/', (c) => {
                 setTimeout(mainPageSuperAuthFix, 500);
                 setTimeout(mainPageSuperAuthFix, 1000);
                 setTimeout(mainPageSuperAuthFix, 2000);
+                setTimeout(mainPageSuperAuthFix, 3000);
                 
                 // 페이지 포커스 시 재실행
                 window.addEventListener('focus', () => {
