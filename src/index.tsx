@@ -193,6 +193,112 @@ app.get('/api/auth/verify', async (c) => {
   }
 });
 
+// 인증 상태 확인 API (쿠키 기반)
+app.get('/api/auth/status', async (c) => {
+  try {
+    // 쿠키에서 인증 정보 확인
+    const authCookie = c.req.header('Cookie');
+    
+    if (!authCookie) {
+      return c.json({ authenticated: false });
+    }
+    
+    // auth_token 쿠키 추출
+    const cookies = authCookie.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, string>);
+    
+    const authToken = cookies.auth_token;
+    
+    if (!authToken) {
+      return c.json({ authenticated: false });
+    }
+    
+    // 토큰 유효성 검사
+    if (authToken.startsWith('token_')) {
+      // 간단한 토큰 형식 검증
+      const tokenParts = authToken.split('_');
+      if (tokenParts.length >= 3) {
+        const userId = tokenParts[1];
+        const userType = tokenParts[2];
+        
+        // 데이터베이스에서 사용자 정보 확인
+        let user = null;
+        
+        if (userType === 'employer') {
+          user = await c.env.DB.prepare(
+            'SELECT id, name, email FROM employers WHERE id = ?'
+          ).bind(userId).first();
+        } else if (userType === 'agent') {
+          user = await c.env.DB.prepare(
+            'SELECT id, name, email FROM agents WHERE id = ?'
+          ).bind(userId).first();
+        } else if (userType === 'jobseeker') {
+          user = await c.env.DB.prepare(
+            'SELECT id, name, email FROM job_seekers WHERE id = ?'
+          ).bind(userId).first();
+        }
+        
+        if (user) {
+          return c.json({
+            authenticated: true,
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              userType: userType
+            }
+          });
+        }
+      }
+    } else {
+      // JWT 토큰 검증
+      try {
+        const JWT_SECRET = c.env.JWT_SECRET || 'your-secret-key';
+        const decoded = await verify(authToken, JWT_SECRET);
+        
+        return c.json({
+          authenticated: true,
+          user: {
+            id: decoded.id,
+            email: decoded.email,
+            name: decoded.name,
+            userType: decoded.userType
+          }
+        });
+      } catch (jwtError) {
+        console.error('JWT 검증 실패:', jwtError);
+      }
+    }
+    
+    return c.json({ authenticated: false });
+    
+  } catch (error) {
+    console.error('인증 상태 확인 중 오류:', error);
+    return c.json({ authenticated: false });
+  }
+});
+
+// 로그아웃 API
+app.post('/api/auth/logout', async (c) => {
+  try {
+    // 쿠키 삭제
+    c.header('Set-Cookie', 'auth_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
+    
+    return c.json({ 
+      success: true, 
+      message: '로그아웃되었습니다.' 
+    });
+  } catch (error) {
+    console.error('로그아웃 중 오류:', error);
+    return c.json({ 
+      error: '로그아웃 중 오류가 발생했습니다.' 
+    }, 500);
+  }
+});
+
 // 유틸리티 함수
 function convertKoreanLevel(level: string): string {
   if (!level) return 'none'

@@ -71,9 +71,17 @@
                     <a href="#demo" class="text-gray-700 hover:text-wow-blue transition">데모</a>
                     <a href="#about" class="text-gray-700 hover:text-wow-blue transition">소개</a>
                 </div>
-                <div class="flex space-x-4">
-                    <a href="./public/static/login.html" class="bg-wow-blue text-white px-4 py-2 rounded hover:bg-blue-700 transition">로그인</a>
-                    <a href="./public/static/register.html" class="border border-wow-blue text-wow-blue px-4 py-2 rounded hover:bg-wow-blue hover:text-white transition">회원가입</a>
+                <div id="auth-buttons" class="flex space-x-4">
+                    <!-- 로그아웃 상태 - 로그인/회원가입 버튼 -->
+                    <div id="logged-out-buttons" class="flex space-x-4">
+                        <a href="./public/static/login.html" class="bg-wow-blue text-white px-4 py-2 rounded hover:bg-blue-700 transition">로그인</a>
+                        <a href="./public/static/register.html" class="border border-wow-blue text-wow-blue px-4 py-2 rounded hover:bg-wow-blue hover:text-white transition">회원가입</a>
+                    </div>
+                    <!-- 로그인 상태 - 사용자 정보 및 로그아웃 버튼 -->
+                    <div id="logged-in-buttons" class="hidden flex space-x-4 items-center">
+                        <span id="user-welcome" class="text-gray-700">환영합니다, <span id="user-email" class="font-semibold"></span></span>
+                        <button id="logout-button" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">로그아웃</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -363,8 +371,85 @@
         </div>
     </footer>
 
-    <!-- Smooth Scrolling -->
+    <!-- Scripts -->
     <script>
+        // 인증 상태 확인 및 UI 업데이트
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/auth/status', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.authenticated && data.user) {
+                        // 로그인 상태 - 로그인 버튼 숨기고 사용자 정보 표시
+                        document.getElementById('logged-out-buttons').classList.add('hidden');
+                        document.getElementById('logged-in-buttons').classList.remove('hidden');
+                        document.getElementById('logged-in-buttons').classList.add('flex');
+                        document.getElementById('user-email').textContent = data.user.email || data.user.username || '사용자';
+                    } else {
+                        // 로그아웃 상태 - 로그인/회원가입 버튼 표시
+                        showLoggedOutState();
+                    }
+                } else {
+                    // 인증 실패 - 로그아웃 상태 표시
+                    showLoggedOutState();
+                }
+            } catch (error) {
+                console.error('인증 상태 확인 중 오류:', error);
+                // 오류 시 로그아웃 상태 표시
+                showLoggedOutState();
+            }
+        }
+
+        function showLoggedOutState() {
+            document.getElementById('logged-out-buttons').classList.remove('hidden');
+            document.getElementById('logged-in-buttons').classList.add('hidden');
+            document.getElementById('logged-in-buttons').classList.remove('flex');
+        }
+
+        // 로그아웃 기능
+        async function logout() {
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    // 로그아웃 성공 - UI 업데이트
+                    showLoggedOutState();
+                    
+                    // 성공 메시지 표시
+                    alert('로그아웃되었습니다.');
+                    
+                    // 페이지 새로고침 (선택적)
+                    // location.reload();
+                } else {
+                    throw new Error('로그아웃 실패');
+                }
+            } catch (error) {
+                console.error('로그아웃 중 오류:', error);
+                alert('로그아웃 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 페이지 로드 시 인증 상태 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+            
+            // 로그아웃 버튼 이벤트 리스너 추가
+            const logoutButton = document.getElementById('logout-button');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', logout);
+            }
+        });
+
+        // 주기적으로 인증 상태 확인 (5분마다)
+        setInterval(checkAuthStatus, 5 * 60 * 1000);
+
         // Smooth scrolling for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
