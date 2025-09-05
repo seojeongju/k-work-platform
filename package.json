@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "vite",
     "dev:sandbox": "wrangler pages dev dist --d1=w-campus-production --local --ip 0.0.0.0 --port 3000",
-    "build": "vite build",
+    "build": "node --require ./setup-polyfills.cjs ./node_modules/.bin/vite build",
     "preview": "wrangler pages dev dist",
     "deploy": "npm run build && wrangler pages deploy dist",
     "deploy:prod": "npm run build && wrangler pages deploy dist --project-name w-campus-com",
