@@ -394,9 +394,25 @@ app.get('/', (c) => {
           .auth-logged-in #login-btn,
           .auth-logged-in #register-btn {
             display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
           }
           .auth-logged-in #user-menu {
             display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+          }
+          /* 로그아웃 상태에서 user-menu 강제 숨기기 */
+          #user-menu {
+            display: none;
+            visibility: hidden;
+            opacity: 0;
+          }
+          /* 기본적으로 auth-buttons 보이기 */
+          #auth-buttons {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
           }
         </style>
     </head>
@@ -468,8 +484,8 @@ app.get('/', (c) => {
                             <i class="fas fa-bars text-xl"></i>
                         </button>
                         
-                        <!-- Auth Buttons (Only show when not logged in) -->
-                        <div id="auth-buttons" class="flex items-center space-x-3" style="display: none;">
+                        <!-- Auth Buttons (Show by default, hide when logged in) -->
+                        <div id="auth-buttons" class="flex items-center space-x-3">
                             <a href="/static/login.html" id="login-btn" class="bg-wowcampus-blue text-white px-4 md:px-6 py-2 rounded-full font-medium hover:bg-wowcampus-dark transition-colors text-sm md:text-base">
                                 <i class="fas fa-sign-in-alt mr-1 md:mr-2"></i>로그인
                             </a>
@@ -1563,15 +1579,21 @@ app.get('/', (c) => {
                     const authButtons = document.getElementById('auth-buttons');
                     const userMenu = document.getElementById('user-menu');
                     const userName = document.getElementById('user-name');
+                    const logoutBtn = document.getElementById('logout-btn');
                     
-                    console.log('Immediate auth check:', { user: !!user, token: !!token });
+                    console.log('Auth check:', { 
+                        hasUser: !!user, 
+                        hasToken: !!token, 
+                        authButtonsFound: !!authButtons,
+                        userMenuFound: !!userMenu 
+                    });
                     
                     if (user && token) {
                         // 로그인 상태
                         console.log('User is logged in, hiding auth buttons');
                         if (authButtons) {
-                            authButtons.style.display = 'none';
-                            authButtons.style.visibility = 'hidden';
+                            authButtons.style.display = 'none !important';
+                            authButtons.classList.add('hidden');
                         }
                         if (userMenu) {
                             userMenu.style.display = 'flex';
@@ -1580,18 +1602,29 @@ app.get('/', (c) => {
                         if (userName) {
                             try {
                                 const userObj = JSON.parse(user);
-                                userName.textContent = userObj.name || userObj.company_name || userObj.email || '사용자님';
+                                userName.textContent = userObj.name || userObj.company_name || userObj.contact_person || userObj.email || '사용자님';
                             } catch (e) {
                                 userName.textContent = '사용자님';
                             }
                         }
+                        
+                        // 로그아웃 버튼 이벤트 설정
+                        if (logoutBtn && !logoutBtn.dataset.listenerAdded) {
+                            logoutBtn.addEventListener('click', function() {
+                                localStorage.removeItem('user');
+                                localStorage.removeItem('token');
+                                window.location.reload();
+                            });
+                            logoutBtn.dataset.listenerAdded = 'true';
+                        }
+                        
                         document.body.classList.add('auth-logged-in');
                     } else {
                         // 로그아웃 상태
                         console.log('User is not logged in, showing auth buttons');
                         if (authButtons) {
                             authButtons.style.display = 'flex';
-                            authButtons.style.visibility = 'visible';
+                            authButtons.classList.remove('hidden');
                         }
                         if (userMenu) {
                             userMenu.style.display = 'none';
@@ -1601,18 +1634,24 @@ app.get('/', (c) => {
                     }
                 }
                 
-                // DOM 준비되면 즉시 실행
+                // DOM이 로드되면 즉시 실행
                 if (document.readyState === 'loading') {
                     document.addEventListener('DOMContentLoaded', updateAuthUI);
                 } else {
                     updateAuthUI();
                 }
                 
+                // 100ms 후 다시 실행 (DOM 완전 로드 대기)
+                setTimeout(updateAuthUI, 100);
+                
+                // 500ms 후 다시 실행 (안전장치)
+                setTimeout(updateAuthUI, 500);
+                
                 // localStorage 변경 감지
                 window.addEventListener('storage', updateAuthUI);
                 
-                // 정기적으로 체크 (1초마다)
-                setInterval(updateAuthUI, 1000);
+                // 주기적으로 체크 (2초마다)
+                setInterval(updateAuthUI, 2000);
             })();
         </script>
         <script src="/static/app.js"></script>
