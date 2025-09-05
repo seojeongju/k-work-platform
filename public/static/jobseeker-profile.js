@@ -326,30 +326,32 @@ class JobSeekerProfile {
                 return;
             }
             
-            // 통계 데이터 로드
-            const [applicationsResponse, matchesResponse] = await Promise.all([
-                axios.get(`/api/job-seekers/${this.jobSeekerId}/applications`, {
+            // 통계 데이터 로드 - 새로운 stats API 사용
+            try {
+                const statsResponse = await axios.get(`/api/job-seekers/${this.jobSeekerId}/stats`, {
                     headers: { 'Authorization': `Bearer ${token}` }
-                }).catch(() => ({ data: { applications: [] } })),
+                });
                 
-                axios.get(`/api/job-seekers/${this.jobSeekerId}/matches`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }).catch(() => ({ data: { matches: [] } }))
-            ]);
-
-            const applications = applicationsResponse.data.applications || [];
-            const matches = matchesResponse.data.matches || [];
-
-            // 통계 업데이트
-            document.getElementById('stat-applications').textContent = applications.length;
-            document.getElementById('stat-matches').textContent = matches.length;
-            document.getElementById('stat-views').textContent = Math.floor(Math.random() * 50) + 10; // 임시
-            
-            // 평균 매칭 점수 계산
-            if (matches.length > 0) {
-                const avgScore = matches.reduce((sum, match) => sum + (match.match_score || 0), 0) / matches.length;
-                document.getElementById('stat-score').textContent = `${Math.round(avgScore * 100)}점`;
-            } else {
+                const stats = statsResponse.data;
+                
+                // 통계 업데이트 (신규 사용자는 모두 0부터 시작)
+                document.getElementById('stat-applications').textContent = stats.applicationsCount || 0;
+                document.getElementById('stat-matches').textContent = stats.matchesCount || 0;
+                document.getElementById('stat-views').textContent = stats.viewCount || 0;
+                
+                // 평균 매칭 점수
+                if (stats.averageMatchScore && stats.averageMatchScore > 0) {
+                    document.getElementById('stat-score').textContent = `${Math.round(stats.averageMatchScore * 100)}점`;
+                } else {
+                    document.getElementById('stat-score').textContent = '-';
+                }
+                
+            } catch (statsError) {
+                console.error('통계 데이터 로드 실패:', statsError);
+                // 오류 시 기본값 사용 (신규 사용자는 모두 0)
+                document.getElementById('stat-applications').textContent = '0';
+                document.getElementById('stat-matches').textContent = '0';
+                document.getElementById('stat-views').textContent = '0';
                 document.getElementById('stat-score').textContent = '-';
             }
 
@@ -384,8 +386,8 @@ class JobSeekerProfile {
         }
         
         if (statViews) {
-            statViews.textContent = '52';
-            console.log('프로필 조회 업데이트: 52');
+            statViews.textContent = '0';
+            console.log('프로필 조회 업데이트: 0 (신규 사용자)');
         } else {
             console.error('stat-views 요소를 찾을 수 없습니다');
         }
