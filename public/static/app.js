@@ -601,12 +601,11 @@ class JobPlatformApp {
 
     setupJobSubTabs() {
         const jobViewBtn = document.getElementById('job-view-btn');
-        const jobRegisterBtn = document.getElementById('job-register-btn');
         
-        if (jobViewBtn && jobRegisterBtn) {
+        if (jobViewBtn) {
             jobViewBtn.addEventListener('click', () => this.showJobView());
-            jobRegisterBtn.addEventListener('click', () => this.showJobRegister());
         }
+        // 구인정보 등록 버튼 제거 - 더 이상 사용하지 않음
     }
     
     showJobView() {
@@ -628,25 +627,7 @@ class JobPlatformApp {
         this.loadJobListings();
     }
     
-    showJobRegister() {
-        // 버튼 상태 변경
-        document.querySelectorAll('.job-sub-btn').forEach(btn => {
-            btn.classList.remove('bg-primary', 'text-white');
-            btn.classList.add('bg-gray-300', 'text-gray-700');
-        });
-        
-        const registerBtn = document.getElementById('job-register-btn');
-        registerBtn.classList.remove('bg-gray-300', 'text-gray-700');
-        registerBtn.classList.add('bg-primary', 'text-white');
-        
-        // 컨텐츠 표시/숨김
-        document.getElementById('job-view-section').classList.add('hidden');
-        document.getElementById('job-register-section').classList.remove('hidden');
-        
-        // 에이전트 목록 로드
-        this.loadAgentsForSelection();
-        this.setupAgentSelection();
-    }
+    // showJobRegister() 메소드 제거 - 구인정보 등록 기능 비활성화
     
     setupJobRegistration() {
         const form = document.getElementById('job-register-form');
@@ -1590,39 +1571,9 @@ function showJobListView() {
 }
 
 function showJobRegisterForm() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-        // 비로그인 상태 - 로그인 요구
-        if (confirm('구인정보 등록은 로그인이 필요합니다.\n로그인하시겠습니까?')) {
-            window.location.href = '/static/login.html';
-        }
-        return;
-    }
-    
-    if (user.type === 'employer') {
-        // 구인기업 - 구인정보 등록 페이지로 이동
-        window.location.href = `/static/job-register.html?employerId=${user.id}`;
-    } else if (user.type === 'agent' || user.type === 'admin') {
-        // 에이전트/관리자 - 기본 등록 폼
-        if (app) {
-            app.switchTab('jobs');
-            app.showJobRegister();
-            setTimeout(() => {
-                document.getElementById('content-jobs')?.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'start' 
-                });
-            }, 100);
-        }
-    } else {
-        // 구직자 등 - 권한 없음 알림
-        alert('구인정보 등록은 기업 회원만 가능합니다.\n기업 회원으로 회원가입하시겠습니까?');
-        if (confirm('기업 회원가입 페이지로 이동하시겠습니까?')) {
-            window.location.href = '/static/register.html?type=employer';
-        }
-    }
+    // 구인정보 등록 기능 비활성화
+    alert('구인정보 등록 기능은 현재 비활성화되어 있습니다.');
+    return;
 }
 
 function resetJobForm() {
