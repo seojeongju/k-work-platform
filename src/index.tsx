@@ -787,7 +787,9 @@ app.get('/', (c) => {
                                 <a href="#jobs-view" onclick="event.preventDefault(); showJobListView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
                                     <i class="fas fa-list mr-2"></i>구인정보 보기
                                 </a>
-        
+                                <a href="#jobseekers-view" onclick="event.preventDefault(); showJobSeekersView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
+                                    <i class="fas fa-users mr-2"></i>구직정보 보기
+                                </a>
                             </div>
                         </div>
 
@@ -989,6 +991,9 @@ app.get('/', (c) => {
                             <button id="tab-jobs" class="tab-button active px-6 py-4 whitespace-nowrap font-medium">
                                 <i class="fas fa-briefcase mr-2"></i>구인 정보
                             </button>
+                            <button id="tab-jobseekers" class="tab-button px-6 py-4 whitespace-nowrap font-medium">
+                                <i class="fas fa-users mr-2"></i>구직 정보
+                            </button>
                             <button id="tab-matching" class="tab-button px-6 py-4 whitespace-nowrap font-medium">
                                 <i class="fas fa-handshake mr-2"></i>매칭 서비스
                             </button>
@@ -1029,7 +1034,29 @@ app.get('/', (c) => {
 
                         </div>
 
-
+                        <div id="content-jobseekers" class="tab-content hidden">
+                            <!-- 구직 서브메뉴 -->
+                            <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                                <div class="flex space-x-4">
+                                    <button id="jobseeker-view-btn" class="jobseeker-sub-btn btn-primary px-4 py-2 rounded-lg">
+                                        <i class="fas fa-list mr-2"></i>구직정보 보기
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 구직정보 보기 -->
+                            <div id="jobseeker-view-section" class="jobseeker-sub-content">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-xl font-semibold">최신 구직 정보</h3>
+                                    <button class="btn-primary px-4 py-2 rounded-lg">
+                                        전체보기
+                                    </button>
+                                </div>
+                                <div id="jobseekers-list" class="space-y-4">
+                                    <!-- Job seeker listings will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
 
                         <div id="content-matching" class="tab-content hidden">
                             <div class="mb-6">
