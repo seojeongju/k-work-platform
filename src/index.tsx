@@ -389,30 +389,67 @@ app.get('/', (c) => {
               display: none;
             }
           }
-          /* 로그인 상태에서 auth-buttons 강제 숨기기 */
-          .auth-logged-in #auth-buttons,
-          .auth-logged-in #login-btn,
-          .auth-logged-in #register-btn {
+          /* 매우 높은 우선순위로 인증 상태별 UI 컨트롤 */
+          html body.auth-logged-in header div.container div.flex div#auth-buttons,
+          html body.auth-logged-in header div.container div.flex div#auth-buttons a#login-btn,
+          html body.auth-logged-in header div.container div.flex div#auth-buttons a#register-btn,
+          html body.auth-logged-in div#auth-buttons,
+          html body.auth-logged-in a#login-btn,
+          html body.auth-logged-in a#register-btn {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
           }
-          .auth-logged-in #user-menu {
+          
+          html body.auth-logged-in header div.container div.flex div#user-menu,
+          html body.auth-logged-in div#user-menu {
             display: flex !important;
             visibility: visible !important;
             opacity: 1 !important;
+            pointer-events: auto !important;
           }
-          /* 로그아웃 상태에서 user-menu 강제 숨기기 */
-          #user-menu {
-            display: none;
-            visibility: hidden;
-            opacity: 0;
+          
+          /* 로그아웃 상태에서는 user-menu 완전히 숨기기 */
+          html body:not(.auth-logged-in) header div.container div.flex div#user-menu,
+          html body:not(.auth-logged-in) div#user-menu {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
           }
-          /* 기본적으로 auth-buttons 보이기 */
-          #auth-buttons {
+          
+          /* 로그아웃 상태에서는 auth-buttons 확실히 보이기 */
+          html body:not(.auth-logged-in) header div.container div.flex div#auth-buttons,
+          html body:not(.auth-logged-in) div#auth-buttons {
             display: flex !important;
             visibility: visible !important;
             opacity: 1 !important;
+            pointer-events: auto !important;
+          }
+          
+          /* 추가 안전장치: 클래스 기반 숨김 */
+          .force-hide-auth {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }
+          
+          .force-show-user {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
           }
         </style>
     </head>
@@ -1571,34 +1608,36 @@ app.get('/', (c) => {
         </script>
         
         <script>
-            // 즉시 실행되는 로그인 상태 확인 및 UI 업데이트
+            // 강력한 인증 상태 관리 (CSS + JavaScript 조합)
             (function() {
-                function updateAuthUI() {
+                function forceUpdateAuthUI() {
                     const user = localStorage.getItem('user');
                     const token = localStorage.getItem('token');
+                    const isLoggedIn = !!(user && token);
+                    
+                    console.log('🔒 Force Auth Update:', { isLoggedIn, hasUser: !!user, hasToken: !!token });
+                    
                     const authButtons = document.getElementById('auth-buttons');
                     const userMenu = document.getElementById('user-menu');
                     const userName = document.getElementById('user-name');
-                    const logoutBtn = document.getElementById('logout-btn');
                     
-                    console.log('Auth check:', { 
-                        hasUser: !!user, 
-                        hasToken: !!token, 
-                        authButtonsFound: !!authButtons,
-                        userMenuFound: !!userMenu 
-                    });
-                    
-                    if (user && token) {
-                        // 로그인 상태
-                        console.log('User is logged in, hiding auth buttons');
+                    if (isLoggedIn) {
+                        // 로그인 상태: 인증 버튼 숨기고 사용자 메뉴 표시
+                        document.body.classList.add('auth-logged-in');
+                        
+                        // CSS와 함께 JavaScript로도 강제 숨김
                         if (authButtons) {
-                            authButtons.style.display = 'none !important';
-                            authButtons.classList.add('hidden');
+                            authButtons.classList.add('force-hide-auth');
+                            authButtons.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
                         }
+                        
                         if (userMenu) {
-                            userMenu.style.display = 'flex';
+                            userMenu.classList.add('force-show-user');
                             userMenu.classList.remove('hidden');
+                            userMenu.style.cssText = 'display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;';
                         }
+                        
+                        // 사용자 이름 업데이트
                         if (userName) {
                             try {
                                 const userObj = JSON.parse(user);
@@ -1609,49 +1648,70 @@ app.get('/', (c) => {
                         }
                         
                         // 로그아웃 버튼 이벤트 설정
+                        const logoutBtn = document.getElementById('logout-btn');
                         if (logoutBtn && !logoutBtn.dataset.listenerAdded) {
                             logoutBtn.addEventListener('click', function() {
+                                console.log('🔓 Logging out...');
                                 localStorage.removeItem('user');
                                 localStorage.removeItem('token');
-                                window.location.reload();
+                                document.body.classList.remove('auth-logged-in');
+                                setTimeout(() => window.location.reload(), 100);
                             });
                             logoutBtn.dataset.listenerAdded = 'true';
                         }
                         
-                        document.body.classList.add('auth-logged-in');
+                        console.log('✅ Logged in state applied');
                     } else {
-                        // 로그아웃 상태
-                        console.log('User is not logged in, showing auth buttons');
-                        if (authButtons) {
-                            authButtons.style.display = 'flex';
-                            authButtons.classList.remove('hidden');
-                        }
-                        if (userMenu) {
-                            userMenu.style.display = 'none';
-                            userMenu.classList.add('hidden');
-                        }
+                        // 로그아웃 상태: 인증 버튼 표시하고 사용자 메뉴 숨김
                         document.body.classList.remove('auth-logged-in');
+                        
+                        if (authButtons) {
+                            authButtons.classList.remove('force-hide-auth');
+                            authButtons.style.cssText = 'display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;';
+                        }
+                        
+                        if (userMenu) {
+                            userMenu.classList.remove('force-show-user');
+                            userMenu.classList.add('hidden');
+                            userMenu.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                        }
+                        
+                        console.log('✅ Logged out state applied');
                     }
+                    
+                    // 현재 상태 로깅
+                    console.log('📊 Current state:', {
+                        bodyClass: document.body.className,
+                        authButtonsVisible: authButtons ? window.getComputedStyle(authButtons).display : 'not found',
+                        userMenuVisible: userMenu ? window.getComputedStyle(userMenu).display : 'not found'
+                    });
                 }
                 
-                // DOM이 로드되면 즉시 실행
+                // 즉시 실행
+                forceUpdateAuthUI();
+                
+                // DOM 완전 로드 후 실행
                 if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', updateAuthUI);
+                    document.addEventListener('DOMContentLoaded', forceUpdateAuthUI);
                 } else {
-                    updateAuthUI();
+                    // 이미 로드된 경우 약간의 지연 후 실행
+                    setTimeout(forceUpdateAuthUI, 10);
                 }
                 
-                // 100ms 후 다시 실행 (DOM 완전 로드 대기)
-                setTimeout(updateAuthUI, 100);
-                
-                // 500ms 후 다시 실행 (안전장치)
-                setTimeout(updateAuthUI, 500);
+                // 안전장치로 여러 시점에서 실행
+                setTimeout(forceUpdateAuthUI, 100);
+                setTimeout(forceUpdateAuthUI, 300);
+                setTimeout(forceUpdateAuthUI, 500);
+                setTimeout(forceUpdateAuthUI, 1000);
                 
                 // localStorage 변경 감지
-                window.addEventListener('storage', updateAuthUI);
+                window.addEventListener('storage', forceUpdateAuthUI);
                 
-                // 주기적으로 체크 (2초마다)
-                setInterval(updateAuthUI, 2000);
+                // 주기적 체크 (더 자주)
+                setInterval(forceUpdateAuthUI, 2000);
+                
+                // 페이지 포커스 시에도 체크
+                window.addEventListener('focus', forceUpdateAuthUI);
             })();
         </script>
         <script src="/static/app.js"></script>

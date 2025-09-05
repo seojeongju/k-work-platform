@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Test</title>
+</head>
+<body>
+    <h1>Testing Auth State</h1>
+    <button onclick="setLoggedIn()">Set Logged In</button>
+    <button onclick="setLoggedOut()">Set Logged Out</button>
+    <button onclick="goToMain()">Go to Main Page</button>
+    
+    <script>
+        function setLoggedIn() {
+            const user = {
+                id: 1,
+                email: 'admin@wowcampus.com',
+                type: 'admin',
+                name: 'Admin User',
+                status: 'active'
+            };
+            const token = 'token_1_admin';
+            
+            localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('token', token);
+            
+            alert('Logged in state set');
+        }
+        
+        function setLoggedOut() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            alert('Logged out state set');
+        }
+        
+        function goToMain() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
