@@ -47,12 +47,169 @@
         .gradient-bg {
             background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #059669 100%);
         }
-        .card-hover {
-            transition: all 0.3s ease;
+        
+        /* 부드러운 호버 전환 효과 */
+        .smooth-transition {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .card-hover:hover {
-            transform: translateY(-5px);
+        
+        .smooth-transition-fast {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .smooth-transition-slow {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* 내비게이션 링크 호버 효과 */
+        .nav-link {
+            position: relative;
+            color: #374151;
+            transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #1E40AF;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .nav-link:hover {
+            color: #1E40AF;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        /* 버튼 호버 효과 */
+        .btn-primary {
+            background-color: #1E40AF;
+            color: white;
+            transform: translateY(0);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .btn-primary:hover {
+            background-color: #1D4ED8;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn-secondary {
+            border: 2px solid #1E40AF;
+            color: #1E40AF;
+            background-color: transparent;
+            transform: translateY(0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #1E40AF;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(30, 64, 175, 0.2), 0 4px 6px -2px rgba(30, 64, 175, 0.1);
+        }
+        
+        .btn-hero-primary {
+            background-color: white;
+            color: #1E40AF;
+            transform: translateY(0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .btn-hero-primary:hover {
+            background-color: #F3F4F6;
+            transform: translateY(-2px);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .btn-hero-secondary {
+            border: 2px solid white;
+            color: white;
+            background-color: transparent;
+            transform: translateY(0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .btn-hero-secondary:hover {
+            background-color: white;
+            color: #1E40AF;
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* 카드 호버 효과 개선 */
+        .card-hover {
+            transform: translateY(0);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 로그아웃 버튼 */
+        .btn-logout {
+            background-color: #EF4444;
+            color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .btn-logout:hover {
+            background-color: #DC2626;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.2);
+        }
+        
+        /* GitHub 버튼 */
+        .btn-github {
+            background-color: #1F2937;
+            color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+        }
+        
+        .btn-github:hover {
+            background-color: #111827;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 푸터 링크 */
+        .footer-link {
+            color: #9CA3AF;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .footer-link:hover {
+            color: white;
+            transform: translateX(4px);
+        }
+        
+        .footer-link::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 2px;
+            background-color: #1E40AF;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .footer-link:hover::before {
+            width: 4px;
         }
     </style>
 </head>
@@ -66,21 +223,21 @@
                     <h1 class="text-2xl font-bold text-wow-blue">WOW-CAMPUS</h1>
                 </div>
                 <div class="hidden md:flex space-x-8">
-                    <a href="#home" class="text-gray-700 hover:text-wow-blue transition">홈</a>
-                    <a href="#features" class="text-gray-700 hover:text-wow-blue transition">기능</a>
-                    <a href="#demo" class="text-gray-700 hover:text-wow-blue transition">데모</a>
-                    <a href="#about" class="text-gray-700 hover:text-wow-blue transition">소개</a>
+                    <a href="#home" class="nav-link">홈</a>
+                    <a href="#features" class="nav-link">기능</a>
+                    <a href="#demo" class="nav-link">데모</a>
+                    <a href="#about" class="nav-link">소개</a>
                 </div>
                 <div id="auth-buttons" class="flex space-x-4">
                     <!-- 로그아웃 상태 - 로그인/회원가입 버튼 -->
                     <div id="logged-out-buttons" class="flex space-x-4">
-                        <a href="./public/static/login.html" class="bg-wow-blue text-white px-4 py-2 rounded hover:bg-blue-700 transition">로그인</a>
-                        <a href="./public/static/register.html" class="border border-wow-blue text-wow-blue px-4 py-2 rounded hover:bg-wow-blue hover:text-white transition">회원가입</a>
+                        <a href="./public/static/login.html" class="btn-primary px-4 py-2 rounded font-medium">로그인</a>
+                        <a href="./public/static/register.html" class="btn-secondary px-4 py-2 rounded font-medium">회원가입</a>
                     </div>
                     <!-- 로그인 상태 - 사용자 정보 및 로그아웃 버튼 -->
                     <div id="logged-in-buttons" class="hidden flex space-x-4 items-center">
-                        <span id="user-welcome" class="text-gray-700">환영합니다, <span id="user-email" class="font-semibold"></span></span>
-                        <button id="logout-button" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">로그아웃</button>
+                        <span id="user-welcome" class="text-gray-700 smooth-transition-fast">환영합니다, <span id="user-email" class="font-semibold text-wow-blue"></span></span>
+                        <button id="logout-button" class="btn-logout px-4 py-2 rounded font-medium">로그아웃</button>
                     </div>
                 </div>
             </div>
@@ -96,29 +253,29 @@
                 외국인 인재의 한국 진출을 지원하는 종합 플랫폼입니다.
             </p>
             <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
-                <a href="#demo" class="bg-white text-wow-blue px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+                <a href="#demo" class="btn-hero-primary px-8 py-3 rounded-lg font-semibold">
                     <i class="fas fa-play mr-2"></i>플랫폼 체험하기
                 </a>
-                <a href="#features" class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-wow-blue transition">
+                <a href="#features" class="btn-hero-secondary px-8 py-3 rounded-lg font-semibold">
                     <i class="fas fa-info-circle mr-2"></i>자세히 알아보기
                 </a>
             </div>
             
             <!-- 통계 섹션 -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mt-16">
-                <div class="text-center">
+                <div class="text-center smooth-transition hover:scale-105 cursor-pointer">
                     <div class="text-3xl font-bold mb-2">500+</div>
                     <div class="text-sm opacity-80">등록된 구인공고</div>
                 </div>
-                <div class="text-center">
+                <div class="text-center smooth-transition hover:scale-105 cursor-pointer">
                     <div class="text-3xl font-bold mb-2">200+</div>
                     <div class="text-sm opacity-80">활성 에이전트</div>
                 </div>
-                <div class="text-center">
+                <div class="text-center smooth-transition hover:scale-105 cursor-pointer">
                     <div class="text-3xl font-bold mb-2">1,000+</div>
                     <div class="text-sm opacity-80">구직자 등록</div>
                 </div>
-                <div class="text-center">
+                <div class="text-center smooth-transition hover:scale-105 cursor-pointer">
                     <div class="text-3xl font-bold mb-2">50+</div>
                     <div class="text-sm opacity-80">유학 프로그램</div>
                 </div>
@@ -215,7 +372,7 @@
                     </p>
                     <a href="https://3000-iz905ai991ifyhm1e8zt5-6532622b.e2b.dev" 
                        target="_blank" 
-                       class="block w-full bg-wow-blue text-white text-center py-3 rounded hover:bg-blue-700 transition">
+                       class="block w-full btn-primary text-center py-3 rounded font-medium">
                         <i class="fas fa-external-link-alt mr-2"></i>체험하기
                     </a>
                 </div>
@@ -232,7 +389,7 @@
                     </p>
                     <a href="https://3000-iz905ai991ifyhm1e8zt5-6532622b.e2b.dev/static/agent-dashboard.html?agentId=1" 
                        target="_blank" 
-                       class="block w-full bg-wow-blue text-white text-center py-3 rounded hover:bg-blue-700 transition">
+                       class="block w-full btn-primary text-center py-3 rounded font-medium">
                         <i class="fas fa-external-link-alt mr-2"></i>체험하기
                     </a>
                 </div>
@@ -249,7 +406,7 @@
                     </p>
                     <a href="https://github.com/seojeongju/k-work-platform" 
                        target="_blank" 
-                       class="block w-full bg-gray-800 text-white text-center py-3 rounded hover:bg-gray-700 transition">
+                       class="block w-full btn-github text-center py-3 rounded font-medium">
                         <i class="fab fa-github mr-2"></i>GitHub 보기
                     </a>
                 </div>
@@ -336,27 +493,27 @@
                 <div>
                     <h5 class="font-semibold mb-4">주요 기능</h5>
                     <ul class="text-gray-400 space-y-2">
-                        <li><a href="#" class="hover:text-white transition">구인구직 매칭</a></li>
-                        <li><a href="#" class="hover:text-white transition">유학 프로그램</a></li>
-                        <li><a href="#" class="hover:text-white transition">에이전트 관리</a></li>
-                        <li><a href="#" class="hover:text-white transition">AI 매칭</a></li>
+                        <li><a href="#" class="footer-link">구인구직 매칭</a></li>
+                        <li><a href="#" class="footer-link">유학 프로그램</a></li>
+                        <li><a href="#" class="footer-link">에이전트 관리</a></li>
+                        <li><a href="#" class="footer-link">AI 매칭</a></li>
                     </ul>
                 </div>
                 
                 <div>
                     <h5 class="font-semibold mb-4">사용자</h5>
                     <ul class="text-gray-400 space-y-2">
-                        <li><a href="#" class="hover:text-white transition">구직자</a></li>
-                        <li><a href="#" class="hover:text-white transition">에이전트</a></li>
-                        <li><a href="#" class="hover:text-white transition">기업</a></li>
-                        <li><a href="#" class="hover:text-white transition">학생</a></li>
+                        <li><a href="#" class="footer-link">구직자</a></li>
+                        <li><a href="#" class="footer-link">에이전트</a></li>
+                        <li><a href="#" class="footer-link">기업</a></li>
+                        <li><a href="#" class="footer-link">학생</a></li>
                     </ul>
                 </div>
                 
                 <div>
                     <h5 class="font-semibold mb-4">개발 정보</h5>
                     <ul class="text-gray-400 space-y-2">
-                        <li><a href="https://github.com/seojeongju/k-work-platform" target="_blank" class="hover:text-white transition">
+                        <li><a href="https://github.com/seojeongju/k-work-platform" target="_blank" class="footer-link">
                             <i class="fab fa-github mr-2"></i>GitHub
                         </a></li>
                         <li><span class="text-gray-500">라이센스: MIT</span></li>
