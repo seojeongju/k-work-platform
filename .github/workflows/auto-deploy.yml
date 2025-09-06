@@ -26,8 +26,25 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Build project
-      run: node --require ./setup-polyfills.cjs ./node_modules/.bin/vite build
+    - name: Create polyfills and build
+      run: |
+        echo "Creating File API polyfills..."
+        cat > setup-polyfills.cjs << 'EOF'
+        const { Blob: NodeBlob } = require('node:buffer');
+        if (typeof globalThis.File === 'undefined') {
+          class File extends NodeBlob {
+            constructor(fileBits, fileName, options = {}) {
+              super(fileBits, { type: options.type || '' });
+              this.name = fileName;
+              this.lastModified = options.lastModified || Date.now();
+            }
+          }
+          globalThis.File = File;
+        }
+        console.log('✅ File API polyfill loaded successfully');
+        EOF
+        echo "Building project..."
+        node --require ./setup-polyfills.cjs ./node_modules/.bin/vite build
       env:
         NODE_ENV: production
       
@@ -37,17 +54,15 @@ jobs:
         ls -la dist/
         echo "Build verification complete"
         
-    - name: Deploy to Cloudflare Pages
-      uses: cloudflare/pages-action@v1
-      with:
-        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        projectName: w-campus
-        directory: dist
-        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+    - name: Deploy with Wrangler
+      run: |
+        npx wrangler pages deploy dist --project-name w-campus --compatibility-date 2025-08-25
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         
     - name: Deployment Health Check
       run: |
         echo "🚀 Deployment completed successfully!"
         echo "📊 Build artifacts deployed to Cloudflare Pages"
-        echo "🔗 Your site should be available shortly at your Cloudflare Pages URL"
+        echo "🔗 Site available at https://w-campus.com"
