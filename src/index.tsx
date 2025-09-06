@@ -1464,11 +1464,11 @@ app.get('/', async (c) => {
                     </a>
                     <!-- Desktop Navigation -->
                     <nav class="hidden md:flex items-center space-x-8">
-                        <a href="#jobs-view" onclick="event.preventDefault(); showJobListView(); return false;" class="text-gray-700 hover:text-wowcampus-blue font-medium py-2 cursor-pointer">
-                            구인정보
+                        <a href="/static/job-listings.html" class="text-gray-700 hover:text-wowcampus-blue font-medium py-2 transition-colors">
+                            <i class="fas fa-briefcase mr-1"></i>구인정보
                         </a>
-                        <a href="#jobseekers-view" onclick="event.preventDefault(); showJobSeekersView(); return false;" class="text-gray-700 hover:text-wowcampus-blue font-medium py-2 cursor-pointer">
-                            구직정보
+                        <a href="/static/jobseeker-listings.html" class="text-gray-700 hover:text-wowcampus-blue font-medium py-2 transition-colors">
+                            <i class="fas fa-users mr-1"></i>구직정보
                         </a>
 
                         <div class="relative nav-dropdown">
@@ -1574,12 +1574,12 @@ app.get('/', async (c) => {
                         
                         <!-- 주요 서비스 CTA 버튼 -->
                         <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-                            <button onclick="showJobListView()" class="btn-primary px-8 py-4 rounded-full font-semibold">
+                            <a href="/static/job-listings.html" class="btn-primary px-8 py-4 rounded-full font-semibold inline-block text-center hover:bg-blue-700 transition-colors">
                                 <i class="fas fa-briefcase mr-2"></i>구인정보 보기
-                            </button>
-                            <button onclick="showJobSeekersView()" class="btn-secondary px-8 py-4 rounded-full font-semibold">
+                            </a>
+                            <a href="/static/jobseeker-listings.html" class="btn-secondary px-8 py-4 rounded-full font-semibold inline-block text-center hover:bg-green-700 transition-colors">
                                 <i class="fas fa-users mr-2"></i>구직정보 보기
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -1602,7 +1602,10 @@ app.get('/', async (c) => {
                             </div>
                             <h3 class="text-2xl font-semibold text-gray-800 mb-4">구인구직 매칭</h3>
                             <p class="text-gray-600 leading-relaxed mb-6">비자별, 직종별, 지역별 맞춤 매칭 서비스로 최적의 일자리를 찾아드립니다</p>
-                            <a href="#" class="text-wowcampus-blue font-semibold hover:underline">자세히 보기 →</a>
+                            <div class="space-y-2">
+                                <a href="/static/job-listings.html" class="block text-wowcampus-blue font-semibold hover:underline">구인정보 보기 →</a>
+                                <a href="/static/jobseeker-listings.html" class="block text-accent font-semibold hover:underline">구직정보 보기 →</a>
+                            </div>
                         </div>
                         
                         <div class="text-center card-shadow bg-white p-8 rounded-xl">
@@ -2499,7 +2502,117 @@ app.get('/admin-dashboard', async (c) => {
   }
 })
 
-// 2. 구인 공고 관련 API
+// 2. 공개 구인 공고 API (인증 불필요)
+app.get('/api/jobs/public', async (c) => {
+  try {
+    const { category, visa, region, search, page = 1, limit = 20 } = c.req.query()
+    
+    let query = `
+      SELECT jp.id, jp.title, jp.company_name, jp.work_location, jp.salary_range, 
+             jp.required_visa, jp.job_category, jp.employment_type, jp.description,
+             jp.created_at, jp.deadline_date, jp.status
+      FROM job_postings jp
+      WHERE jp.status = 'active'
+    `
+    const params = []
+
+    // Search functionality
+    if (search && search.trim()) {
+      query += ` AND (
+        jp.title LIKE '%' || ? || '%' OR 
+        jp.company_name LIKE '%' || ? || '%' OR
+        jp.work_location LIKE '%' || ? || '%' OR
+        jp.description LIKE '%' || ? || '%'
+      )`
+      const searchTerm = search.trim()
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm)
+    }
+
+    if (category && category !== '' && category !== 'all') {
+      query += ' AND jp.job_category = ?'
+      params.push(category)
+    }
+    if (visa && visa !== '' && visa !== 'all') {
+      query += ' AND jp.required_visa = ?'
+      params.push(visa)
+    }
+    if (region && region !== '' && region !== 'all') {
+      query += ' AND jp.work_location LIKE \'%\' || ? || \'%\''
+      params.push(region)
+    }
+
+    query += ' ORDER BY jp.created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit))
+
+    const jobs = await c.env.DB.prepare(query).bind(...params).all()
+    
+    return c.json(jobs.results || [])
+  } catch (error) {
+    console.error('Public jobs API error:', error)
+    return c.json([])
+  }
+})
+
+// 공개 구직자 API (인증 불필요)
+app.get('/api/jobseekers/public', async (c) => {
+  try {
+    const { category, visa, korean_level, nationality, search, page = 1, limit = 20 } = c.req.query()
+    
+    let query = `
+      SELECT js.id, js.name, js.email, js.nationality, js.age, js.gender,
+             js.current_visa, js.desired_visa, js.korean_level, js.english_level,
+             js.desired_job_category, js.desired_position, js.experience_years,
+             js.education_level, js.university, js.skills, js.certifications,
+             js.desired_salary, js.desired_location, js.available_start_date,
+             js.introduction, js.created_at, js.status
+      FROM job_seekers js
+      WHERE js.status = 'approved'
+    `
+    const params = []
+
+    // Search functionality
+    if (search && search.trim()) {
+      query += ` AND (
+        js.name LIKE '%' || ? || '%' OR 
+        js.nationality LIKE '%' || ? || '%' OR
+        js.desired_position LIKE '%' || ? || '%' OR
+        js.skills LIKE '%' || ? || '%' OR
+        js.introduction LIKE '%' || ? || '%'
+      )`
+      const searchTerm = search.trim()
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm)
+    }
+
+    if (category && category !== '' && category !== 'all') {
+      query += ' AND js.desired_job_category = ?'
+      params.push(category)
+    }
+    if (visa && visa !== '' && visa !== 'all') {
+      query += ' AND js.current_visa = ?'
+      params.push(visa)
+    }
+    if (korean_level && korean_level !== '' && korean_level !== 'all') {
+      query += ' AND js.korean_level = ?'
+      params.push(korean_level)
+    }
+    if (nationality && nationality !== '' && nationality !== 'all') {
+      query += ' AND js.nationality = ?'
+      params.push(nationality)
+    }
+
+    query += ' ORDER BY js.created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit))
+
+    const jobseekers = await c.env.DB.prepare(query).bind(...params).all()
+    
+    return c.json(jobseekers.results || [])
+  } catch (error) {
+    console.error('Public jobseekers API error:', error)
+    return c.json([])
+  }
+})
+
+// 기존 인증이 필요한 API
 app.get('/api/jobs', async (c) => {
   try {
     const { category, visa, region, search, page = 1, limit = 10 } = c.req.query()
@@ -2543,7 +2656,7 @@ app.get('/api/jobs', async (c) => {
     const jobs = await c.env.DB.prepare(query).bind(...params).all()
     
     return c.json({
-      jobs: jobs.results,
+      jobs: jobs.results || [],
       page: parseInt(page),
       limit: parseInt(limit)
     })
