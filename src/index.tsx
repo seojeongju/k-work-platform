@@ -1637,64 +1637,7 @@ app.get('/', async (c) => {
                         </p>
                     </div>
 
-                    <!-- Job Search and Filter Section -->
-                    <div class="mb-8 bg-white rounded-lg shadow-md p-6">
-                        <h5 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                            <i class="fas fa-briefcase text-blue-600 mr-2"></i>구인정보 검색 및 필터
-                        </h5>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <!-- Search Input -->
-                            <div class="lg:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">검색</label>
-                                <div class="relative">
-                                    <input type="text" id="job-search-input" placeholder="회사명, 직종, 지역으로 검색..." 
-                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10">
-                                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                                </div>
-                            </div>
-                            
-                            <!-- Visa Filter -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">필요 비자</label>
-                                <select id="job-visa-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <option value="">전체</option>
-                                    <option value="E-7">E-7 (특정기능)</option>
-                                    <option value="E-9">E-9 (비전문취업)</option>
-                                    <option value="H-2">H-2 (방문취업)</option>
-                                    <option value="F-4">F-4 (재외동포)</option>
-                                    <option value="D-4">D-4 (일반연수)</option>
-                                    <option value="D-2">D-2 (유학)</option>
-                                    <option value="F-2">F-2 (거주)</option>
-                                    <option value="F-5">F-5 (영주)</option>
-                                </select>
-                            </div>
-                            
-                            <!-- Category Filter -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">직종</label>
-                                <select id="job-category-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <option value="">전체</option>
-                                    <option value="IT001">IT 소프트웨어</option>
-                                    <option value="MFG001">제조업</option>
-                                    <option value="MFG002">전자제품 조립</option>
-                                    <option value="SVC001">서비스업</option>
-                                    <option value="SVC002">매장 판매직</option>
-                                    <option value="CON001">건설업</option>
-                                    <option value="AGR001">농업</option>
-                                    <option value="FSH001">어업</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-4 flex justify-between items-center">
-                            <button onclick="applyJobFilters()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                <i class="fas fa-filter mr-2"></i>필터 적용
-                            </button>
-                            <button onclick="clearJobFilters()" class="text-gray-600 hover:text-gray-800 transition-colors">
-                                <i class="fas fa-times mr-2"></i>필터 초기화
-                            </button>
-                        </div>
-                    </div>
+
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
                         <!-- 구인 정보 섹션 -->
@@ -1708,6 +1651,62 @@ app.get('/', async (c) => {
                                 <button onclick="toggleJobsExpanded()" id="jobs-toggle-btn" class="text-wow-blue hover:text-wow-light-blue font-medium">
                                     더보기 <i class="fas fa-chevron-down ml-1"></i>
                                 </button>
+                            </div>
+                            
+                            <!-- Job Search and Filter Section -->
+                            <div class="mb-6 bg-blue-50 rounded-lg shadow-sm p-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    <!-- Job Search Input -->
+                                    <div class="lg:col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">구인정보 검색</label>
+                                        <div class="relative">
+                                            <input type="text" id="job-search-input" placeholder="회사명, 직종, 지역으로 검색..." 
+                                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-8">
+                                            <i class="fas fa-search absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Job Visa Filter -->
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">필요 비자</label>
+                                        <select id="job-visa-filter" class="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="">전체</option>
+                                            <option value="E-7">E-7 (특정기능)</option>
+                                            <option value="E-9">E-9 (비전문취업)</option>
+                                            <option value="H-2">H-2 (방문취업)</option>
+                                            <option value="F-4">F-4 (재외동포)</option>
+                                            <option value="D-4">D-4 (일반연수)</option>
+                                            <option value="D-2">D-2 (유학)</option>
+                                            <option value="F-2">F-2 (거주)</option>
+                                            <option value="F-5">F-5 (영주)</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Job Category Filter -->
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">직종</label>
+                                        <select id="job-category-filter" class="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="">전체</option>
+                                            <option value="IT001">IT 소프트웨어</option>
+                                            <option value="MFG001">제조업</option>
+                                            <option value="MFG002">전자제품 조립</option>
+                                            <option value="SVC001">서비스업</option>
+                                            <option value="SVC002">매장 판매직</option>
+                                            <option value="CON001">건설업</option>
+                                            <option value="AGR001">농업</option>
+                                            <option value="FSH001">어업</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3 flex justify-between items-center">
+                                    <button onclick="applyJobFilters()" class="bg-blue-600 text-white px-4 py-2 text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-filter mr-1"></i>필터 적용
+                                    </button>
+                                    <button onclick="clearJobFilters()" class="text-gray-600 hover:text-gray-800 text-sm transition-colors">
+                                        <i class="fas fa-times mr-1"></i>필터 초기화
+                                    </button>
+                                </div>
                             </div>
                             <div id="job-list-preview" class="space-y-4 max-h-96 overflow-y-auto">
                                 <!-- 구인공고 리스트가 여기에 로드됨 -->
