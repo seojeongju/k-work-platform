@@ -1822,85 +1822,165 @@ ${contentType}의 상세 내용을 보시려면 먼저 로그인해주세요.
     
     // 검색 및 필터 기능 설정
     setupSearchAndFilters() {
-        // 검색 입력 이벤트
-        const searchInput = document.getElementById('search-input');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
+        // === 구인정보 필터 이벤트 ===
+        // 구인정보 검색 입력
+        const jobSearchInput = document.getElementById('job-search-input');
+        if (jobSearchInput) {
+            let jobSearchTimeout;
+            jobSearchInput.addEventListener('input', (e) => {
+                clearTimeout(jobSearchTimeout);
+                jobSearchTimeout = setTimeout(() => {
                     this.currentFilters.jobs.search = e.target.value;
-                    this.loadJobListings(true); // 리셋하고 새로 로드
-                }, 300); // 300ms debounce
+                    this.loadJobListings(true);
+                }, 300);
             });
         }
         
-        // 비자 필터
-        const visaFilter = document.getElementById('visa-filter');
-        if (visaFilter) {
-            visaFilter.addEventListener('change', (e) => {
-                this.currentFilters.jobs.visa = e.target.value;
+        // 구인정보 비자 필터
+        const jobVisaFilter = document.getElementById('job-visa-filter');
+        if (jobVisaFilter) {
+            jobVisaFilter.addEventListener('change', (e) => {
+                this.currentFilters.jobs.required_visa = e.target.value;
                 this.loadJobListings(true);
             });
         }
         
-        // 카테고리 필터
-        const categoryFilter = document.getElementById('category-filter');
-        if (categoryFilter) {
-            categoryFilter.addEventListener('change', (e) => {
-                this.currentFilters.jobs.category = e.target.value;
+        // 구인정보 카테고리 필터
+        const jobCategoryFilter = document.getElementById('job-category-filter');
+        if (jobCategoryFilter) {
+            jobCategoryFilter.addEventListener('change', (e) => {
+                this.currentFilters.jobs.job_category = e.target.value;
                 this.loadJobListings(true);
             });
         }
         
-        // 필터 버튼
-        const applyFiltersBtn = document.querySelector('button[onclick="applyFilters()"]');
-        if (applyFiltersBtn) {
-            applyFiltersBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.applyFilters();
+        // === 구직자정보 필터 이벤트 ===
+        // 구직자 검색 입력
+        const jobseekerSearchInput = document.getElementById('jobseeker-search-input');
+        if (jobseekerSearchInput) {
+            let jobseekerSearchTimeout;
+            jobseekerSearchInput.addEventListener('input', (e) => {
+                clearTimeout(jobseekerSearchTimeout);
+                jobseekerSearchTimeout = setTimeout(() => {
+                    this.currentFilters.jobseekers.search = e.target.value;
+                    this.loadJobSeekers(true);
+                }, 300);
             });
         }
         
-        // 필터 초기화 버튼
-        const clearFiltersBtn = document.querySelector('button[onclick="clearFilters()"]');
-        if (clearFiltersBtn) {
-            clearFiltersBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.clearFilters();
+        // 구직자 비자 필터
+        const jobseekerVisaFilter = document.getElementById('jobseeker-visa-filter');
+        if (jobseekerVisaFilter) {
+            jobseekerVisaFilter.addEventListener('change', (e) => {
+                this.currentFilters.jobseekers.desired_visa = e.target.value;
+                this.loadJobSeekers(true);
+            });
+        }
+        
+        // 구직자 카테고리 필터
+        const jobseekerCategoryFilter = document.getElementById('jobseeker-category-filter');
+        if (jobseekerCategoryFilter) {
+            jobseekerCategoryFilter.addEventListener('change', (e) => {
+                this.currentFilters.jobseekers.desired_job_category = e.target.value;
+                this.loadJobSeekers(true);
             });
         }
     }
     
-    // 필터 적용
-    applyFilters() {
-        console.log('필터 적용:', this.currentFilters);
+    // 구인정보 필터 적용
+    applyJobFilters() {
+        console.log('구인정보 필터 적용:', this.currentFilters.jobs);
+        
+        // UI 입력값에서 필터 상태 업데이트
+        const jobSearchInput = document.getElementById('job-search-input');
+        const jobVisaFilter = document.getElementById('job-visa-filter');
+        const jobCategoryFilter = document.getElementById('job-category-filter');
+        
+        if (jobSearchInput) {
+            this.currentFilters.jobs.search = jobSearchInput.value;
+        }
+        if (jobVisaFilter) {
+            this.currentFilters.jobs.required_visa = jobVisaFilter.value;
+        }
+        if (jobCategoryFilter) {
+            this.currentFilters.jobs.job_category = jobCategoryFilter.value;
+        }
+        
         this.loadJobListings(true);
+    }
+    
+    // 구직자정보 필터 적용
+    applyJobSeekerFilters() {
+        console.log('구직자정보 필터 적용:', this.currentFilters.jobseekers);
+        
+        // UI 입력값에서 필터 상태 업데이트
+        const jobseekerSearchInput = document.getElementById('jobseeker-search-input');
+        const jobseekerVisaFilter = document.getElementById('jobseeker-visa-filter');
+        const jobseekerCategoryFilter = document.getElementById('jobseeker-category-filter');
+        
+        if (jobseekerSearchInput) {
+            this.currentFilters.jobseekers.search = jobseekerSearchInput.value;
+        }
+        if (jobseekerVisaFilter) {
+            this.currentFilters.jobseekers.desired_visa = jobseekerVisaFilter.value;
+        }
+        if (jobseekerCategoryFilter) {
+            this.currentFilters.jobseekers.desired_job_category = jobseekerCategoryFilter.value;
+        }
+        
         this.loadJobSeekers(true);
     }
     
-    // 필터 초기화
-    clearFilters() {
-        console.log('필터 초기화');
+    // 구인정보 필터 초기화
+    clearJobFilters() {
+        console.log('구인정보 필터 초기화');
         
-        // 입력 필드 초기화
-        const searchInput = document.getElementById('search-input');
-        const visaFilter = document.getElementById('visa-filter');
-        const categoryFilter = document.getElementById('category-filter');
+        // 구인정보 입력 필드 초기화
+        const jobSearchInput = document.getElementById('job-search-input');
+        const jobVisaFilter = document.getElementById('job-visa-filter');
+        const jobCategoryFilter = document.getElementById('job-category-filter');
         
-        if (searchInput) searchInput.value = '';
-        if (visaFilter) visaFilter.value = 'all';
-        if (categoryFilter) categoryFilter.value = 'all';
+        if (jobSearchInput) jobSearchInput.value = '';
+        if (jobVisaFilter) jobVisaFilter.value = '';
+        if (jobCategoryFilter) jobCategoryFilter.value = '';
         
-        // 필터 상태 초기화
-        this.currentFilters = {
-            jobs: {},
-            jobseekers: {}
-        };
+        // 구인정보 필터 상태 초기화
+        this.currentFilters.jobs = {};
         
         // 데이터 재로드
         this.loadJobListings(true);
+    }
+    
+    // 구직자정보 필터 초기화
+    clearJobSeekerFilters() {
+        console.log('구직자정보 필터 초기화');
+        
+        // 구직자정보 입력 필드 초기화
+        const jobseekerSearchInput = document.getElementById('jobseeker-search-input');
+        const jobseekerVisaFilter = document.getElementById('jobseeker-visa-filter');
+        const jobseekerCategoryFilter = document.getElementById('jobseeker-category-filter');
+        
+        if (jobseekerSearchInput) jobseekerSearchInput.value = '';
+        if (jobseekerVisaFilter) jobseekerVisaFilter.value = '';
+        if (jobseekerCategoryFilter) jobseekerCategoryFilter.value = '';
+        
+        // 구직자정보 필터 상태 초기화
+        this.currentFilters.jobseekers = {};
+        
+        // 데이터 재로드
         this.loadJobSeekers(true);
+    }
+    
+    // 전체 필터 적용 (레거시 지원)
+    applyFilters() {
+        this.applyJobFilters();
+        this.applyJobSeekerFilters();
+    }
+    
+    // 전체 필터 초기화 (레거시 지원)
+    clearFilters() {
+        this.clearJobFilters();
+        this.clearJobSeekerFilters();
     }
     
     // 향상된 구인 상세 모달
@@ -2557,14 +2637,42 @@ function showJobSeekerDetail(jobSeekerId) {
     }
 }
 
-// 필터 적용 (전역 함수)
+// 구인정보 필터 적용 (전역 함수)
+function applyJobFilters() {
+    if (app) {
+        app.applyJobFilters();
+    }
+}
+
+// 구직자정보 필터 적용 (전역 함수)
+function applyJobSeekerFilters() {
+    if (app) {
+        app.applyJobSeekerFilters();
+    }
+}
+
+// 구인정보 필터 초기화 (전역 함수)
+function clearJobFilters() {
+    if (app) {
+        app.clearJobFilters();
+    }
+}
+
+// 구직자정보 필터 초기화 (전역 함수)
+function clearJobSeekerFilters() {
+    if (app) {
+        app.clearJobSeekerFilters();
+    }
+}
+
+// 레거시 전체 필터 적용 (전역 함수)
 function applyFilters() {
     if (app) {
         app.applyFilters();
     }
 }
 
-// 필터 초기화 (전역 함수)
+// 레거시 전체 필터 초기화 (전역 함수)
 function clearFilters() {
     if (app) {
         app.clearFilters();
