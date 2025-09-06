@@ -1626,216 +1626,7 @@ app.get('/', async (c) => {
                 </div>
             </section>
             
-            <!-- Job Lists Section -->
-            <section class="py-20 bg-gray-50">
-                <div class="max-w-7xl mx-auto px-4">
-                    <!-- Section Header -->
-                    <div class="text-center mb-16">
-                        <h3 class="text-4xl font-bold text-gray-900 mb-4">최신 정보</h3>
-                        <p class="text-xl text-gray-600 max-w-2xl mx-auto">
-                            실시간으로 업데이트되는 구인공고와 구직자 정보를 확인하세요
-                        </p>
-                    </div>
 
-
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                        <!-- 구인 정보 섹션 -->
-                        <div class="bg-white rounded-lg shadow-lg p-6">
-                            <div class="flex justify-between items-center mb-6">
-                                <h4 class="text-2xl font-bold text-gray-900 flex items-center">
-                                    <i class="fas fa-briefcase text-wow-blue mr-3"></i>
-                                    최신 구인 정보
-                                    <span id="jobs-count" class="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">0</span>
-                                </h4>
-                                <button onclick="toggleJobsExpanded()" id="jobs-toggle-btn" class="text-wow-blue hover:text-wow-light-blue font-medium">
-                                    더보기 <i class="fas fa-chevron-down ml-1"></i>
-                                </button>
-                            </div>
-                            
-                            <!-- Job Search and Filter Section -->
-                            <div class="mb-6 bg-blue-50 rounded-lg shadow-sm p-4">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                                    <!-- Job Search Input -->
-                                    <div class="lg:col-span-2">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">구인정보 검색</label>
-                                        <div class="relative">
-                                            <input type="text" id="job-search-input" placeholder="회사명, 직종, 지역으로 검색..." 
-                                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-8">
-                                            <i class="fas fa-search absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Job Visa Filter -->
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">필요 비자</label>
-                                        <select id="job-visa-filter" class="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                            <option value="">전체</option>
-                                            <option value="E-7">E-7 (특정기능)</option>
-                                            <option value="E-9">E-9 (비전문취업)</option>
-                                            <option value="H-2">H-2 (방문취업)</option>
-                                            <option value="F-4">F-4 (재외동포)</option>
-                                            <option value="D-4">D-4 (일반연수)</option>
-                                            <option value="D-2">D-2 (유학)</option>
-                                            <option value="F-2">F-2 (거주)</option>
-                                            <option value="F-5">F-5 (영주)</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <!-- Job Category Filter -->
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">직종</label>
-                                        <select id="job-category-filter" class="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                            <option value="">전체</option>
-                                            <option value="IT001">IT 소프트웨어</option>
-                                            <option value="MFG001">제조업</option>
-                                            <option value="MFG002">전자제품 조립</option>
-                                            <option value="SVC001">서비스업</option>
-                                            <option value="SVC002">매장 판매직</option>
-                                            <option value="CON001">건설업</option>
-                                            <option value="AGR001">농업</option>
-                                            <option value="FSH001">어업</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <div class="mt-3 flex justify-between items-center">
-                                    <button onclick="applyJobFilters()" class="bg-blue-600 text-white px-4 py-2 text-sm rounded-lg hover:bg-blue-700 transition-colors">
-                                        <i class="fas fa-filter mr-1"></i>필터 적용
-                                    </button>
-                                    <button onclick="clearJobFilters()" class="text-gray-600 hover:text-gray-800 text-sm transition-colors">
-                                        <i class="fas fa-times mr-1"></i>필터 초기화
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="job-list-preview" class="space-y-4 max-h-96 overflow-y-auto">
-                                <!-- 구인공고 리스트가 여기에 로드됨 -->
-                                <div class="animate-pulse">
-                                    <div class="h-24 bg-gray-200 rounded"></div>
-                                </div>
-                                <div class="animate-pulse">
-                                    <div class="h-24 bg-gray-200 rounded"></div>
-                                </div>
-                                <div class="animate-pulse">
-                                    <div class="h-24 bg-gray-200 rounded"></div>
-                                </div>
-                                <div class="animate-pulse">
-                                    <div class="h-24 bg-gray-200 rounded"></div>
-                                </div>
-                                <div class="animate-pulse">
-                                    <div class="h-24 bg-gray-200 rounded"></div>
-                                </div>
-                            </div>
-                            <div id="jobs-load-more" class="hidden mt-4 text-center">
-                                <button onclick="loadMoreJobs()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                    <i class="fas fa-plus mr-2"></i>더 많은 구인정보 보기
-                                </button>
-                            </div>
-                            <div id="jobs-loading" class="hidden mt-4 text-center">
-                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                                <p class="text-gray-600 mt-2">로딩 중...</p>
-                            </div>
-                        </div>
-
-                        <!-- 구직 정보 섹션 -->
-                        <div class="bg-white rounded-lg shadow-lg p-6">
-                            <div class="flex justify-between items-center mb-6">
-                                <h4 class="text-2xl font-bold text-gray-900 flex items-center">
-                                    <i class="fas fa-users text-wow-green mr-3"></i>
-                                    최신 구직 정보
-                                    <span id="jobseekers-count" class="ml-2 text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">0</span>
-                                </h4>
-                                <button onclick="toggleJobSeekersExpanded()" id="jobseekers-toggle-btn" class="text-wow-green hover:text-green-600 font-medium">
-                                    더보기 <i class="fas fa-chevron-down ml-1"></i>
-                                </button>
-                            </div>
-                            
-                            <!-- Job Seeker Search and Filter Section -->
-                            <div class="mb-6 bg-gray-50 rounded-lg shadow-sm p-4">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                                    <!-- Job Seeker Search Input -->
-                                    <div class="lg:col-span-2">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">구직자 검색</label>
-                                        <div class="relative">
-                                            <input type="text" id="jobseeker-search-input" placeholder="이름, 국적, 희망직종으로 검색..." 
-                                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent pl-8">
-                                            <i class="fas fa-search absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Job Seeker Visa Filter -->
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">희망 비자</label>
-                                        <select id="jobseeker-visa-filter" class="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                                            <option value="">전체</option>
-                                            <option value="E-7">E-7 (특정기능)</option>
-                                            <option value="E-9">E-9 (비전문취업)</option>
-                                            <option value="H-2">H-2 (방문취업)</option>
-                                            <option value="F-4">F-4 (재외동포)</option>
-                                            <option value="D-4">D-4 (일반연수)</option>
-                                            <option value="D-2">D-2 (유학)</option>
-                                            <option value="F-2">F-2 (거주)</option>
-                                            <option value="F-5">F-5 (영주)</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <!-- Job Seeker Category Filter -->
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">희망 직종</label>
-                                        <select id="jobseeker-category-filter" class="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                                            <option value="">전체</option>
-                                            <option value="IT001">IT 소프트웨어</option>
-                                            <option value="MFG001">제조업</option>
-                                            <option value="MFG002">전자제품 조립</option>
-                                            <option value="SVC001">서비스업</option>
-                                            <option value="SVC002">매장 판매직</option>
-                                            <option value="CON001">건설업</option>
-                                            <option value="AGR001">농업</option>
-                                            <option value="FSH001">어업</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <div class="mt-3 flex justify-between items-center">
-                                    <button onclick="applyJobSeekerFilters()" class="bg-green-600 text-white px-4 py-2 text-sm rounded-lg hover:bg-green-700 transition-colors">
-                                        <i class="fas fa-filter mr-1"></i>필터 적용
-                                    </button>
-                                    <button onclick="clearJobSeekerFilters()" class="text-gray-600 hover:text-gray-800 text-sm transition-colors">
-                                        <i class="fas fa-times mr-1"></i>필터 초기화
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="jobseeker-list-preview" class="space-y-4 max-h-96 overflow-y-auto">
-                                <!-- 구직자 리스트가 여기에 로드됨 -->
-                                <div class="animate-pulse">
-                                    <div class="h-24 bg-gray-200 rounded"></div>
-                                </div>
-                                <div class="animate-pulse">
-                                    <div class="h-24 bg-gray-200 rounded"></div>
-                                </div>
-                                <div class="animate-pulse">
-                                    <div class="h-24 bg-gray-200 rounded"></div>
-                                </div>
-                                <div class="animate-pulse">
-                                    <div class="h-24 bg-gray-200 rounded"></div>
-                                </div>
-                                <div class="animate-pulse">
-                                    <div class="h-24 bg-gray-200 rounded"></div>
-                                </div>
-                            </div>
-                            <div id="jobseekers-load-more" class="hidden mt-4 text-center">
-                                <button onclick="loadMoreJobSeekers()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                                    <i class="fas fa-plus mr-2"></i>더 많은 구직자 보기
-                                </button>
-                            </div>
-                            <div id="jobseekers-loading" class="hidden mt-4 text-center">
-                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-                                <p class="text-gray-600 mt-2">로딩 중...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             <!-- Job Details Modal -->
             <div id="job-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
@@ -1887,6 +1678,164 @@ app.get('/', async (c) => {
                 </div>
             </div>
             
+            <!-- 서비스 메뉴 -->
+            <section class="py-16 bg-white">
+                <div class="container mx-auto px-6">
+                    <div class="text-center mb-12">
+                        <h2 class="text-4xl font-bold text-gray-800 mb-4">서비스 메뉴</h2>
+                        <p class="text-xl text-gray-600">필요한 서비스를 선택하세요</p>
+                    </div>
+                    
+                    <!-- Service Menu Tabs -->
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden card-shadow mb-12">
+                        <div class="border-b border-gray-100">
+                            <div class="flex overflow-x-auto justify-center">
+                                <button id="tab-matching" class="tab-button active px-8 py-6 whitespace-nowrap font-medium">
+                                    <i class="fas fa-handshake mr-2"></i>매칭 서비스
+                                </button>
+                                <button id="tab-study" class="tab-button px-8 py-6 whitespace-nowrap font-medium">
+                                    <i class="fas fa-graduation-cap mr-2"></i>유학 프로그램
+                                </button>
+                                <button id="tab-stats" class="tab-button px-8 py-6 whitespace-nowrap font-medium">
+                                    <i class="fas fa-chart-bar mr-2"></i>통계 대시보드
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tab Contents -->
+                        <div class="p-8">
+                            <div id="content-matching" class="tab-content">
+                                <div class="mb-6">
+                                    <h3 class="text-2xl font-semibold mb-4">스마트 매칭 시스템</h3>
+                                    <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                                        <p class="text-blue-800 text-sm">
+                                            <i class="fas fa-info-circle mr-2"></i>
+                                            AI 기반으로 구직자의 조건과 구인공고를 자동 매칭합니다
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <!-- 매칭 통계 -->
+                                <div class="grid md:grid-cols-3 gap-6 mb-8">
+                                    <div class="bg-green-50 p-6 rounded-lg">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-check-circle text-green-500 text-3xl mr-4"></i>
+                                            <div>
+                                                <div class="text-3xl font-bold text-green-600" id="perfect-matches">127</div>
+                                                <div class="text-sm text-gray-600">완벽 매칭</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-yellow-50 p-6 rounded-lg">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-star text-yellow-500 text-3xl mr-4"></i>
+                                            <div>
+                                                <div class="text-3xl font-bold text-yellow-600" id="good-matches">284</div>
+                                                <div class="text-sm text-gray-600">좋은 매칭</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-blue-50 p-6 rounded-lg">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-clock text-blue-500 text-3xl mr-4"></i>
+                                            <div>
+                                                <div class="text-3xl font-bold text-blue-600" id="pending-matches">56</div>
+                                                <div class="text-sm text-gray-600">매칭 대기</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-center">
+                                    <button onclick="showJobSeekersView()" class="btn-primary px-8 py-3 rounded-full font-semibold mr-4">
+                                        <i class="fas fa-users mr-2"></i>구직자 매칭
+                                    </button>
+                                    <button onclick="showJobListView()" class="btn-secondary px-8 py-3 rounded-full font-semibold">
+                                        <i class="fas fa-briefcase mr-2"></i>구인정보 매칭
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="content-study" class="tab-content hidden">
+                                <div class="mb-6">
+                                    <h3 class="text-2xl font-semibold mb-4">유학 프로그램</h3>
+                                    <div class="bg-green-50 p-4 rounded-lg mb-6">
+                                        <p class="text-green-800 text-sm">
+                                            <i class="fas fa-graduation-cap mr-2"></i>
+                                            한국어 연수부터 학위과정까지 체계적인 유학 지원
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <!-- 유학 프로그램 유형 -->
+                                <div class="grid md:grid-cols-3 gap-6 mb-8">
+                                    <div class="bg-blue-50 p-6 rounded-lg text-center">
+                                        <i class="fas fa-language text-blue-500 text-4xl mb-4"></i>
+                                        <h4 class="text-lg font-semibold mb-2">어학연수</h4>
+                                        <p class="text-gray-600 text-sm mb-4">한국어 집중 과정</p>
+                                        <button onclick="showLanguageStudyView()" class="btn-primary px-4 py-2 rounded-lg">
+                                            자세히 보기
+                                        </button>
+                                    </div>
+                                    <div class="bg-purple-50 p-6 rounded-lg text-center">
+                                        <i class="fas fa-university text-purple-500 text-4xl mb-4"></i>
+                                        <h4 class="text-lg font-semibold mb-2">학부 과정</h4>
+                                        <p class="text-gray-600 text-sm mb-4">학사 학위 취득</p>
+                                        <button onclick="showUndergraduateView()" class="btn-primary px-4 py-2 rounded-lg">
+                                            자세히 보기
+                                        </button>
+                                    </div>
+                                    <div class="bg-orange-50 p-6 rounded-lg text-center">
+                                        <i class="fas fa-graduation-cap text-orange-500 text-4xl mb-4"></i>
+                                        <h4 class="text-lg font-semibold mb-2">대학원 과정</h4>
+                                        <p class="text-gray-600 text-sm mb-4">석·박사 학위</p>
+                                        <button onclick="showGraduateView()" class="btn-primary px-4 py-2 rounded-lg">
+                                            자세히 보기
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="content-stats" class="tab-content hidden">
+                                <div class="mb-6">
+                                    <h3 class="text-2xl font-semibold mb-4">통계 대시보드</h3>
+                                    <div class="bg-purple-50 p-4 rounded-lg mb-6">
+                                        <p class="text-purple-800 text-sm">
+                                            <i class="fas fa-chart-line mr-2"></i>
+                                            실시간 플랫폼 운영 현황과 성과를 확인하세요
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <!-- 통계 카드들 -->
+                                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                    <div class="bg-blue-50 p-6 rounded-lg text-center">
+                                        <i class="fas fa-users text-blue-500 text-3xl mb-3"></i>
+                                        <div class="text-2xl font-bold text-blue-600 mb-1" id="total-jobseekers">1,284</div>
+                                        <div class="text-sm text-gray-600">등록 구직자</div>
+                                    </div>
+                                    <div class="bg-green-50 p-6 rounded-lg text-center">
+                                        <i class="fas fa-briefcase text-green-500 text-3xl mb-3"></i>
+                                        <div class="text-2xl font-bold text-green-600 mb-1" id="total-jobs">567</div>
+                                        <div class="text-sm text-gray-600">구인공고</div>
+                                    </div>
+                                    <div class="bg-purple-50 p-6 rounded-lg text-center">
+                                        <i class="fas fa-handshake text-purple-500 text-3xl mb-3"></i>
+                                        <div class="text-2xl font-bold text-purple-600 mb-1" id="successful-matches">892</div>
+                                        <div class="text-sm text-gray-600">성공 매칭</div>
+                                    </div>
+                                    <div class="bg-orange-50 p-6 rounded-lg text-center">
+                                        <i class="fas fa-graduation-cap text-orange-500 text-3xl mb-3"></i>
+                                        <div class="text-2xl font-bold text-orange-600 mb-1" id="study-programs">156</div>
+                                        <div class="text-sm text-gray-600">유학 프로그램</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
             <!-- 이용 절차 안내 -->
             <section class="py-20 bg-wowcampus-light">
                 <div class="container mx-auto px-6">
@@ -1924,511 +1873,7 @@ app.get('/', async (c) => {
                     </div>
                 </div>
             </section>
-            
-            <div class="container mx-auto px-6 py-12">
 
-            <!-- Dashboard Tabs -->
-            <section class="mb-12">
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden card-shadow">
-                    <div class="border-b border-gray-100">
-                        <div class="flex overflow-x-auto">
-                            <button id="tab-jobs" class="tab-button active px-6 py-4 whitespace-nowrap font-medium">
-                                <i class="fas fa-briefcase mr-2"></i>구인 정보
-                            </button>
-                            <button id="tab-jobseekers" class="tab-button px-6 py-4 whitespace-nowrap font-medium">
-                                <i class="fas fa-users mr-2"></i>구직 정보
-                            </button>
-                            <button id="tab-matching" class="tab-button px-6 py-4 whitespace-nowrap font-medium">
-                                <i class="fas fa-handshake mr-2"></i>매칭 서비스
-                            </button>
-                            <button id="tab-study" class="tab-button px-6 py-4 whitespace-nowrap font-medium">
-                                <i class="fas fa-graduation-cap mr-2"></i>유학 프로그램
-                            </button>
-                            <button id="tab-stats" class="tab-button px-6 py-4 whitespace-nowrap font-medium">
-                                <i class="fas fa-chart-bar mr-2"></i>통계 대시보드
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Tab Contents -->
-                    <div class="p-6">
-                        <div id="content-jobs" class="tab-content">
-                            <!-- 구인 서브메뉴 -->
-                            <div class="bg-gray-50 p-4 rounded-lg mb-6">
-                                <div class="flex space-x-4">
-                                    <button id="job-view-btn" class="job-sub-btn btn-primary px-4 py-2 rounded-lg">
-                                        <i class="fas fa-list mr-2"></i>구인정보 보기
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- 구인정보 보기 -->
-                            <div id="job-view-section" class="job-sub-content">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h3 class="text-xl font-semibold">최신 구인 정보</h3>
-                                    <button class="btn-primary px-4 py-2 rounded-lg">
-                                        전체보기
-                                    </button>
-                                </div>
-                                <div id="jobs-list" class="space-y-4">
-                                    <!-- Job listings will be loaded here -->
-                                </div>
-                            </div>
-                            
-
-                        </div>
-
-                        <div id="content-jobseekers" class="tab-content hidden">
-                            <!-- 구직 서브메뉴 -->
-                            <div class="bg-gray-50 p-4 rounded-lg mb-6">
-                                <div class="flex space-x-4">
-                                    <button id="jobseeker-view-btn" class="jobseeker-sub-btn btn-primary px-4 py-2 rounded-lg">
-                                        <i class="fas fa-list mr-2"></i>구직정보 보기
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- 구직정보 보기 -->
-                            <div id="jobseeker-view-section" class="jobseeker-sub-content">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h3 class="text-xl font-semibold">최신 구직 정보</h3>
-                                    <button class="btn-primary px-4 py-2 rounded-lg">
-                                        전체보기
-                                    </button>
-                                </div>
-                                <div id="jobseekers-list" class="space-y-4">
-                                    <!-- Job seeker listings will be loaded here -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="content-matching" class="tab-content hidden">
-                            <div class="mb-6">
-                                <h3 class="text-xl font-semibold mb-4">스마트 매칭 시스템</h3>
-                                <div class="bg-blue-50 p-4 rounded-lg mb-4">
-                                    <p class="text-blue-800 text-sm">
-                                        <i class="fas fa-info-circle mr-2"></i>
-                                        AI 기반으로 구직자의 조건과 구인공고를 자동 매칭합니다
-                                    </p>
-                                </div>
-                            </div>
-                            
-                            <!-- 매칭 통계 -->
-                            <div class="grid md:grid-cols-3 gap-4 mb-6">
-                                <div class="bg-green-50 p-4 rounded-lg">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-check-circle text-green-500 text-2xl mr-3"></i>
-                                        <div>
-                                            <div class="text-2xl font-bold text-green-600" id="perfect-matches">0</div>
-                                            <div class="text-sm text-gray-600">완벽 매칭</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-yellow-50 p-4 rounded-lg">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-star text-yellow-500 text-2xl mr-3"></i>
-                                        <div>
-                                            <div class="text-2xl font-bold text-yellow-600" id="good-matches">0</div>
-                                            <div class="text-sm text-gray-600">좋은 매칭</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-blue-50 p-4 rounded-lg">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-clock text-blue-500 text-2xl mr-3"></i>
-                                        <div>
-                                            <div class="text-2xl font-bold text-blue-600" id="pending-matches">0</div>
-                                            <div class="text-sm text-gray-600">검토 중</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 최신 매칭 결과 -->
-                            <div class="bg-white border rounded-lg p-4">
-                                <h4 class="font-semibold mb-4">최신 매칭 결과</h4>
-                                <div id="matching-results" class="space-y-3">
-                                    <!-- Matching results will be loaded here -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="content-study" class="tab-content hidden">
-                            <!-- 유학 서브메뉴 -->
-                            <div class="bg-gray-50 p-4 rounded-lg mb-6">
-                                <div class="flex space-x-4">
-                                    <button id="study-language-btn" class="study-sub-btn btn-primary px-4 py-2 rounded-lg">
-                                        <i class="fas fa-language mr-2"></i>어학연수
-                                    </button>
-                                    <button id="study-undergraduate-btn" class="study-sub-btn btn-secondary px-4 py-2 rounded-lg">
-                                        <i class="fas fa-graduation-cap mr-2"></i>학부(학위)과정
-                                    </button>
-                                    <button id="study-graduate-btn" class="study-sub-btn btn-secondary px-4 py-2 rounded-lg">
-                                        <i class="fas fa-university mr-2"></i>석·박사과정
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- 어학연수 -->
-                            <div id="study-language-section" class="study-sub-content">
-                                <div class="mb-6">
-                                    <h3 class="text-2xl font-bold text-gray-800 mb-4">한국어학연수 프로그램</h3>
-                                    <div class="bg-blue-50 p-4 rounded-lg mb-6">
-                                        <p class="text-blue-800 text-sm">
-                                            <i class="fas fa-info-circle mr-2"></i>
-                                            한국어 실력 향상을 위한 체계적인 어학연수 프로그램 정보를 제공합니다
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <!-- 어학연수 개요 -->
-                                <div class="grid md:grid-cols-2 gap-6 mb-8">
-                                    <div class="bg-white p-6 rounded-lg shadow-md">
-                                        <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                            <i class="fas fa-clock text-blue-500 mr-2"></i>프로그램 기간
-                                        </h4>
-                                        <ul class="space-y-2 text-gray-600">
-                                            <li><strong>단기과정:</strong> 3개월 ~ 6개월</li>
-                                            <li><strong>장기과정:</strong> 1년 ~ 2년</li>
-                                            <li><strong>집중과정:</strong> 주 20시간 이상</li>
-                                            <li><strong>일반과정:</strong> 주 15시간</li>
-                                        </ul>
-                                    </div>
-                                    
-                                    <div class="bg-white p-6 rounded-lg shadow-md">
-                                        <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                            <i class="fas fa-won-sign text-green-500 mr-2"></i>예상 비용
-                                        </h4>
-                                        <ul class="space-y-2 text-gray-600">
-                                            <li><strong>수업료:</strong> 학기당 150만원 ~ 200만원</li>
-                                            <li><strong>기숙사:</strong> 월 30만원 ~ 50만원</li>
-                                            <li><strong>생활비:</strong> 월 40만원 ~ 60만원</li>
-                                            <li><strong>교재비:</strong> 학기당 10만원 ~ 15만원</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                
-                                <!-- 필요 서류 및 절차 -->
-                                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-                                    <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                        <i class="fas fa-file-alt text-purple-500 mr-2"></i>필요 서류 및 절차
-                                    </h4>
-                                    <div class="grid md:grid-cols-2 gap-6">
-                                        <div>
-                                            <h5 class="font-medium text-gray-700 mb-3">필수 서류</h5>
-                                            <ul class="space-y-1 text-gray-600 text-sm">
-                                                <li>• 입학원서</li>
-                                                <li>• 여권 사본</li>
-                                                <li>• 최종 학력 증명서</li>
-                                                <li>• 성적 증명서</li>
-                                                <li>• 은행 잔고 증명서 ($10,000 이상)</li>
-                                                <li>• 건강진단서</li>
-                                                <li>• 범죄경력증명서</li>
-                                            </ul>
-                                        </div>
-                                        <div>
-                                            <h5 class="font-medium text-gray-700 mb-3">지원 절차</h5>
-                                            <ol class="space-y-1 text-gray-600 text-sm">
-                                                <li>1. 학교 선택 및 정보 수집</li>
-                                                <li>2. 서류 준비 및 제출</li>
-                                                <li>3. 입학 허가서 수령</li>
-                                                <li>4. D-4 비자 신청</li>
-                                                <li>5. 항공권 예약 및 출국 준비</li>
-                                                <li>6. 입국 후 외국인등록</li>
-                                            </ol>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- 추천 대학교 -->
-                                <div class="bg-white p-6 rounded-lg shadow-md">
-                                    <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                        <i class="fas fa-star text-yellow-500 mr-2"></i>추천 어학원
-                                    </h4>
-                                    <div class="grid md:grid-cols-3 gap-4">
-                                        <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                                            <h5 class="font-medium text-gray-800">서울대학교 언어교육원</h5>
-                                            <p class="text-sm text-gray-600 mt-2">체계적인 커리큘럼과 우수한 강사진</p>
-                                            <div class="text-xs text-blue-600 mt-2">학기당 180만원</div>
-                                        </div>
-                                        <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                                            <h5 class="font-medium text-gray-800">연세대학교 한국어학당</h5>
-                                            <p class="text-sm text-gray-600 mt-2">60년 전통의 한국어 교육 기관</p>
-                                            <div class="text-xs text-blue-600 mt-2">학기당 170만원</div>
-                                        </div>
-                                        <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                                            <h5 class="font-medium text-gray-800">고려대학교 한국어센터</h5>
-                                            <p class="text-sm text-gray-600 mt-2">실용적인 한국어 교육 프로그램</p>
-                                            <div class="text-xs text-blue-600 mt-2">학기당 165만원</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- 학부(학위)과정 -->
-                            <div id="study-undergraduate-section" class="study-sub-content hidden">
-                                <div class="mb-6">
-                                    <h3 class="text-2xl font-bold text-gray-800 mb-4">학부(학위)과정 프로그램</h3>
-                                    <div class="bg-green-50 p-4 rounded-lg mb-6">
-                                        <p class="text-green-800 text-sm">
-                                            <i class="fas fa-info-circle mr-2"></i>
-                                            한국 대학교 학부과정 진학을 위한 종합 정보를 제공합니다
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <!-- 학부과정 개요 -->
-                                <div class="grid md:grid-cols-2 gap-6 mb-8">
-                                    <div class="bg-white p-6 rounded-lg shadow-md">
-                                        <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                            <i class="fas fa-calendar text-blue-500 mr-2"></i>프로그램 정보
-                                        </h4>
-                                        <ul class="space-y-2 text-gray-600">
-                                            <li><strong>학위:</strong> 학사 (Bachelor's Degree)</li>
-                                            <li><strong>기간:</strong> 4년 (8학기)</li>
-                                            <li><strong>입학 시기:</strong> 3월, 9월</li>
-                                            <li><strong>수업 언어:</strong> 한국어 (일부 영어 과정)</li>
-                                        </ul>
-                                    </div>
-                                    
-                                    <div class="bg-white p-6 rounded-lg shadow-md">
-                                        <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                            <i class="fas fa-won-sign text-green-500 mr-2"></i>학비 및 생활비
-                                        </h4>
-                                        <ul class="space-y-2 text-gray-600">
-                                            <li><strong>국립대 학비:</strong> 연 300만원 ~ 500만원</li>
-                                            <li><strong>사립대 학비:</strong> 연 800만원 ~ 1,200만원</li>
-                                            <li><strong>기숙사비:</strong> 월 30만원 ~ 80만원</li>
-                                            <li><strong>생활비:</strong> 월 60만원 ~ 100만원</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                
-                                <!-- 입학 요건 -->
-                                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-                                    <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                        <i class="fas fa-clipboard-check text-purple-500 mr-2"></i>입학 요건 및 지원 절차
-                                    </h4>
-                                    <div class="grid md:grid-cols-2 gap-6">
-                                        <div>
-                                            <h5 class="font-medium text-gray-700 mb-3">입학 요건</h5>
-                                            <ul class="space-y-1 text-gray-600 text-sm">
-                                                <li>• 고등학교 졸업 또는 동등 학력</li>
-                                                <li>• TOPIK 3급 이상 (권장 4급 이상)</li>
-                                                <li>• 영어: TOEFL 80+ 또는 IELTS 6.0+</li>
-                                                <li>• 고교 성적 평균 70점 이상</li>
-                                                <li>• 학업 계획서 및 자기소개서</li>
-                                                <li>• 추천서 (교사 또는 교수)</li>
-                                            </ul>
-                                        </div>
-                                        <div>
-                                            <h5 class="font-medium text-gray-700 mb-3">지원 절차</h5>
-                                            <ol class="space-y-1 text-gray-600 text-sm">
-                                                <li>1. 대학 및 학과 선택</li>
-                                                <li>2. 어학 성적 준비</li>
-                                                <li>3. 지원 서류 준비</li>
-                                                <li>4. 온라인 지원서 제출</li>
-                                                <li>5. 면접 (필요시)</li>
-                                                <li>6. 합격 발표 및 등록</li>
-                                                <li>7. D-2 비자 신청</li>
-                                            </ol>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- 인기 학과 -->
-                                <div class="bg-white p-6 rounded-lg shadow-md">
-                                    <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                        <i class="fas fa-chart-line text-orange-500 mr-2"></i>외국인 학생 인기 학과
-                                    </h4>
-                                    <div class="grid md:grid-cols-4 gap-4">
-                                        <div class="text-center p-4 border rounded-lg hover:shadow-md transition-shadow">
-                                            <div class="text-2xl mb-2">💻</div>
-                                            <h5 class="font-medium text-gray-800">컴퓨터공학</h5>
-                                            <p class="text-xs text-gray-600 mt-1">IT 강국 한국의 핵심 분야</p>
-                                        </div>
-                                        <div class="text-center p-4 border rounded-lg hover:shadow-md transition-shadow">
-                                            <div class="text-2xl mb-2">🏢</div>
-                                            <h5 class="font-medium text-gray-800">경영학</h5>
-                                            <p class="text-xs text-gray-600 mt-1">글로벌 비즈니스 역량</p>
-                                        </div>
-                                        <div class="text-center p-4 border rounded-lg hover:shadow-md transition-shadow">
-                                            <div class="text-2xl mb-2">🎨</div>
-                                            <h5 class="font-medium text-gray-800">디자인</h5>
-                                            <p class="text-xs text-gray-600 mt-1">K-컬처의 창조적 산업</p>
-                                        </div>
-                                        <div class="text-center p-4 border rounded-lg hover:shadow-md transition-shadow">
-                                            <div class="text-2xl mb-2">🌐</div>
-                                            <h5 class="font-medium text-gray-800">국제학</h5>
-                                            <p class="text-xs text-gray-600 mt-1">국제 관계 및 외교</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- 석·박사과정 -->
-                            <div id="study-graduate-section" class="study-sub-content hidden">
-                                <div class="mb-6">
-                                    <h3 class="text-2xl font-bold text-gray-800 mb-4">석·박사과정 프로그램</h3>
-                                    <div class="bg-purple-50 p-4 rounded-lg mb-6">
-                                        <p class="text-purple-800 text-sm">
-                                            <i class="fas fa-info-circle mr-2"></i>
-                                            한국 대학원 석사 및 박사과정 진학을 위한 상세 정보를 제공합니다
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <!-- 대학원 과정 개요 -->
-                                <div class="grid md:grid-cols-2 gap-6 mb-8">
-                                    <div class="bg-white p-6 rounded-lg shadow-md">
-                                        <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                            <i class="fas fa-graduation-cap text-blue-500 mr-2"></i>석사과정 (Master's)
-                                        </h4>
-                                        <ul class="space-y-2 text-gray-600">
-                                            <li><strong>기간:</strong> 2년 (4학기)</li>
-                                            <li><strong>학점:</strong> 24학점 + 논문</li>
-                                            <li><strong>입학 시기:</strong> 3월, 9월</li>
-                                            <li><strong>학비:</strong> 연 500만원 ~ 1,500만원</li>
-                                            <li><strong>장학금:</strong> 다양한 정부/교내 장학금</li>
-                                        </ul>
-                                    </div>
-                                    
-                                    <div class="bg-white p-6 rounded-lg shadow-md">
-                                        <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                            <i class="fas fa-user-graduate text-purple-500 mr-2"></i>박사과정 (Doctorate)
-                                        </h4>
-                                        <ul class="space-y-2 text-gray-600">
-                                            <li><strong>기간:</strong> 3년 이상 (6학기+)</li>
-                                            <li><strong>학점:</strong> 36학점 + 박사논문</li>
-                                            <li><strong>입학 시기:</strong> 3월, 9월</li>
-                                            <li><strong>학비:</strong> 연 600만원 ~ 1,800만원</li>
-                                            <li><strong>연구비 지원:</strong> BK21, NRF 등</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                
-                                <!-- 입학 요건 및 절차 -->
-                                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-                                    <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                        <i class="fas fa-tasks text-green-500 mr-2"></i>입학 요건 및 지원 절차
-                                    </h4>
-                                    <div class="grid md:grid-cols-2 gap-6">
-                                        <div>
-                                            <h5 class="font-medium text-gray-700 mb-3">공통 입학 요건</h5>
-                                            <ul class="space-y-1 text-gray-600 text-sm">
-                                                <li>• 학사/석사 학위 (해당 과정)</li>
-                                                <li>• TOPIK 4급 이상 (이공계 3급 가능)</li>
-                                                <li>• 영어: TOEFL 80+ 또는 IELTS 6.5+</li>
-                                                <li>• 학부/석사 성적 3.0/4.5 이상</li>
-                                                <li>• 연구계획서 (매우 중요)</li>
-                                                <li>• 추천서 2부 (교수 추천)</li>
-                                                <li>• 포트폴리오 (분야별)</li>
-                                            </ul>
-                                        </div>
-                                        <div>
-                                            <h5 class="font-medium text-gray-700 mb-3">지원 및 선발 과정</h5>
-                                            <ol class="space-y-1 text-gray-600 text-sm">
-                                                <li>1. 연구 분야 및 지도교수 선정</li>
-                                                <li>2. 사전 컨택 (이메일 교류)</li>
-                                                <li>3. 지원서류 준비 및 제출</li>
-                                                <li>4. 서류 심사</li>
-                                                <li>5. 면접 또는 구술시험</li>
-                                                <li>6. 최종 합격 발표</li>
-                                                <li>7. 등록 및 D-2 비자 신청</li>
-                                            </ol>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- 연구 분야 및 장학금 -->
-                                <div class="grid md:grid-cols-2 gap-6">
-                                    <div class="bg-white p-6 rounded-lg shadow-md">
-                                        <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                            <i class="fas fa-flask text-blue-500 mr-2"></i>주요 연구 분야
-                                        </h4>
-                                        <div class="space-y-3">
-                                            <div class="border-l-4 border-blue-500 pl-4">
-                                                <h5 class="font-medium text-gray-800">이공계열</h5>
-                                                <p class="text-sm text-gray-600">AI, 바이오, 반도체, 신재생에너지</p>
-                                            </div>
-                                            <div class="border-l-4 border-green-500 pl-4">
-                                                <h5 class="font-medium text-gray-800">인문사회</h5>
-                                                <p class="text-sm text-gray-600">한국학, 국제관계, 경영학, 교육학</p>
-                                            </div>
-                                            <div class="border-l-4 border-purple-500 pl-4">
-                                                <h5 class="font-medium text-gray-800">예술체육</h5>
-                                                <p class="text-sm text-gray-600">K-컬처, 디자인, 음악, 체육학</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="bg-white p-6 rounded-lg shadow-md">
-                                        <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                                            <i class="fas fa-medal text-yellow-500 mr-2"></i>장학금 정보
-                                        </h4>
-                                        <div class="space-y-3 text-sm">
-                                            <div class="bg-yellow-50 p-3 rounded">
-                                                <h5 class="font-medium text-yellow-800">정부 장학금</h5>
-                                                <p class="text-yellow-700">GKS, KGSP (전액 + 생활비)</p>
-                                            </div>
-                                            <div class="bg-blue-50 p-3 rounded">
-                                                <h5 class="font-medium text-blue-800">교내 장학금</h5>
-                                                <p class="text-blue-700">성적우수, 연구조교, 교육조교</p>
-                                            </div>
-                                            <div class="bg-green-50 p-3 rounded">
-                                                <h5 class="font-medium text-green-800">외부 장학금</h5>
-                                                <p class="text-green-700">기업 후원, 재단 장학금</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="content-stats" class="tab-content hidden">
-                            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div class="bg-blue-50 p-4 rounded-lg">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-users text-blue-500 text-2xl mr-3"></i>
-                                        <div>
-                                            <div class="text-2xl font-bold text-blue-600" id="stat-jobseekers">-</div>
-                                            <div class="text-sm text-gray-600">구직자</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-green-50 p-4 rounded-lg">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-building text-green-500 text-2xl mr-3"></i>
-                                        <div>
-                                            <div class="text-2xl font-bold text-green-600" id="stat-employers">-</div>
-                                            <div class="text-sm text-gray-600">기업</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-purple-50 p-4 rounded-lg">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-briefcase text-purple-500 text-2xl mr-3"></i>
-                                        <div>
-                                            <div class="text-2xl font-bold text-purple-600" id="stat-jobs">-</div>
-                                            <div class="text-sm text-gray-600">구인공고</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-orange-50 p-4 rounded-lg">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-handshake text-orange-500 text-2xl mr-3"></i>
-                                        <div>
-                                            <div class="text-2xl font-bold text-orange-600" id="stat-matches">-</div>
-                                            <div class="text-sm text-gray-600">매칭 성공</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            </div>
         </main>
 
         <!-- Footer -->
