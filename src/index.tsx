@@ -1058,10 +1058,16 @@ app.get('/api/system/status', async (c) => {
 })
 
 // 메인 페이지
-app.get('/', (c) => {
-  // 쿠키에서 토큰 확인 (실제 구현에서는 JWT 검증 필요)
-  const token = c.req.header('Authorization') || c.req.query('token') || '';
-  const isLoggedIn = token && token.length > 0;
+app.get('/', async (c) => {
+  // 정적 파일 서빙으로 변경
+  try {
+    const response = await fetch(c.req.url.replace(c.req.url, new URL('/index.html', c.req.url).toString()))
+    if (response.ok) {
+      return c.html(await response.text())
+    }
+  } catch (error) {
+    console.log('Static file serving failed, using fallback')
+  }
   
   return c.html(`
     <!DOCTYPE html>
@@ -6200,5 +6206,8 @@ app.put('/api/applications/batch-update', async (c) => {
     return c.json({ error: '지원서 일괄 처리에 실패했습니다.' }, 500);
   }
 });
+
+// 정적 파일 서빙 (마지막에 추가하여 API 라우트보다 낮은 우선순위)
+app.get('*', serveStatic({ root: './' }))
 
 export default app
