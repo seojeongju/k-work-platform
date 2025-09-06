@@ -1476,13 +1476,13 @@ app.get('/', async (c) => {
                                 유학지원 <i class="fas fa-chevron-down ml-1 text-xs transition-transform"></i>
                             </button>
                             <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-52 bg-white shadow-xl rounded-lg border border-gray-100 py-2 z-50">
-                                <a href="#study-language" onclick="event.preventDefault(); showLanguageStudyView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
+                                <a href="/static/study-programs.html?program=language" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">
                                     <i class="fas fa-language mr-2"></i>어학연수 과정
                                 </a>
-                                <a href="#study-undergraduate" onclick="event.preventDefault(); showUndergraduateView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
+                                <a href="/static/study-programs.html?program=undergraduate" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">
                                     <i class="fas fa-graduation-cap mr-2"></i>학부(학위) 과정
                                 </a>
-                                <a href="#study-graduate" onclick="event.preventDefault(); showGraduateView(); return false;" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors cursor-pointer">
+                                <a href="/static/study-programs.html?program=graduate" class="block px-4 py-3 text-gray-700 hover:bg-wowcampus-light hover:text-wowcampus-blue transition-colors">
                                     <i class="fas fa-university mr-2"></i>석·박사 과정
                                 </a>
                             </div>
@@ -1535,15 +1535,15 @@ app.get('/', async (c) => {
 
                     
                     <div class="border-b border-gray-200 pb-4">
-                        <button onclick="showLanguageStudyView(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
+                        <a href="/static/study-programs.html?program=language" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
                             <i class="fas fa-language mr-3"></i>어학연수 과정
-                        </button>
-                        <button onclick="showUndergraduateView(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
+                        </a>
+                        <a href="/static/study-programs.html?program=undergraduate" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
                             <i class="fas fa-graduation-cap mr-3"></i>학부(학위) 과정
-                        </button>
-                        <button onclick="showGraduateView(); closeMobileMenu();" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
+                        </a>
+                        <a href="/static/study-programs.html?program=graduate" class="block w-full text-left py-3 text-gray-700 hover:text-wowcampus-blue hover:bg-wowcampus-light font-medium rounded-lg transition-colors">
                             <i class="fas fa-university mr-3"></i>석·박사 과정
-                        </button>
+                        </a>
                     </div>
                     
                     <div id="mobile-agent-menu" class="hidden">
@@ -1614,7 +1614,7 @@ app.get('/', async (c) => {
                             </div>
                             <h3 class="text-2xl font-semibold text-gray-800 mb-4">유학 지원</h3>
                             <p class="text-gray-600 leading-relaxed mb-6">한국어 연수부터 학위과정까지 전 과정에 대한 체계적 지원을 제공합니다</p>
-                            <a href="#" class="text-accent font-semibold hover:underline">자세히 보기 →</a>
+                            <a href="/static/study-programs.html" class="text-accent font-semibold hover:underline">자세히 보기 →</a>
                         </div>
                         
                         <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer" onclick="handleAgentManagementClick()">
@@ -1776,25 +1776,25 @@ app.get('/', async (c) => {
                                         <i class="fas fa-language text-blue-500 text-4xl mb-4"></i>
                                         <h4 class="text-lg font-semibold mb-2">어학연수</h4>
                                         <p class="text-gray-600 text-sm mb-4">한국어 집중 과정</p>
-                                        <button onclick="showLanguageStudyView()" class="btn-primary px-4 py-2 rounded-lg">
+                                        <a href="/static/study-programs.html?program=language" class="btn-primary px-4 py-2 rounded-lg inline-block text-center">
                                             자세히 보기
-                                        </button>
+                                        </a>
                                     </div>
                                     <div class="bg-purple-50 p-6 rounded-lg text-center">
                                         <i class="fas fa-university text-purple-500 text-4xl mb-4"></i>
                                         <h4 class="text-lg font-semibold mb-2">학부 과정</h4>
                                         <p class="text-gray-600 text-sm mb-4">학사 학위 취득</p>
-                                        <button onclick="showUndergraduateView()" class="btn-primary px-4 py-2 rounded-lg">
+                                        <a href="/static/study-programs.html?program=undergraduate" class="btn-primary px-4 py-2 rounded-lg inline-block text-center">
                                             자세히 보기
-                                        </button>
+                                        </a>
                                     </div>
                                     <div class="bg-orange-50 p-6 rounded-lg text-center">
                                         <i class="fas fa-graduation-cap text-orange-500 text-4xl mb-4"></i>
                                         <h4 class="text-lg font-semibold mb-2">대학원 과정</h4>
                                         <p class="text-gray-600 text-sm mb-4">석·박사 학위</p>
-                                        <button onclick="showGraduateView()" class="btn-primary px-4 py-2 rounded-lg">
+                                        <a href="/static/study-programs.html?program=graduate" class="btn-primary px-4 py-2 rounded-lg inline-block text-center">
                                             자세히 보기
-                                        </button>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
