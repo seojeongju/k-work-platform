@@ -3057,7 +3057,7 @@ app.get('/admin-dashboard', async (c) => {
 // 2. 구인 공고 관련 API
 app.get('/api/jobs', async (c) => {
   try {
-    const { category, visa, region, page = 1, limit = 10 } = c.req.query()
+    const { category, visa, region, search, page = 1, limit = 10 } = c.req.query()
     
     let query = `
       SELECT jp.*, e.company_name, e.region as company_region
@@ -3067,15 +3067,27 @@ app.get('/api/jobs', async (c) => {
     `
     const params = []
 
-    if (category) {
+    // Search functionality
+    if (search && search.trim()) {
+      query += ` AND (
+        jp.title LIKE '%' || ? || '%' OR 
+        e.company_name LIKE '%' || ? || '%' OR
+        jp.work_location LIKE '%' || ? || '%' OR
+        jp.description LIKE '%' || ? || '%'
+      )`
+      const searchTerm = search.trim()
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm)
+    }
+
+    if (category && category !== '' && category !== 'all') {
       query += ' AND jp.job_category = ?'
       params.push(category)
     }
-    if (visa) {
+    if (visa && visa !== '' && visa !== 'all') {
       query += ' AND jp.required_visa = ?'
       params.push(visa)
     }
-    if (region) {
+    if (region && region !== '' && region !== 'all') {
       query += ' AND jp.region = ?'
       params.push(region)
     }
@@ -3091,6 +3103,7 @@ app.get('/api/jobs', async (c) => {
       limit: parseInt(limit)
     })
   } catch (error) {
+    console.error('구인 정보 조회 오류:', error)
     return c.json({ error: '구인 정보 조회 중 오류가 발생했습니다.' }, 500)
   }
 })
@@ -3098,7 +3111,7 @@ app.get('/api/jobs', async (c) => {
 // 구직자 정보 조회 API
 app.get('/api/jobseekers', async (c) => {
   try {
-    const { category, visa, region, page = 1, limit = 10 } = c.req.query()
+    const { category, visa, region, search, page = 1, limit = 10 } = c.req.query()
     
     let query = `
       SELECT js.*, a.company_name as agent_company
@@ -3108,15 +3121,27 @@ app.get('/api/jobseekers', async (c) => {
     `
     const params = []
 
-    if (category) {
+    // Search functionality
+    if (search && search.trim()) {
+      query += ` AND (
+        js.name LIKE '%' || ? || '%' OR 
+        js.nationality LIKE '%' || ? || '%' OR
+        js.desired_job_category LIKE '%' || ? || '%' OR
+        js.education_level LIKE '%' || ? || '%'
+      )`
+      const searchTerm = search.trim()
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm)
+    }
+
+    if (category && category !== '' && category !== 'all') {
       query += ' AND js.desired_job_category = ?'
       params.push(category)
     }
-    if (visa) {
+    if (visa && visa !== '' && visa !== 'all') {
       query += ' AND js.desired_visa = ?'
       params.push(visa)
     }
-    if (region) {
+    if (region && region !== '' && region !== 'all') {
       query += ' AND js.preferred_region = ?'
       params.push(region)
     }
@@ -3132,6 +3157,7 @@ app.get('/api/jobseekers', async (c) => {
       limit: parseInt(limit)
     })
   } catch (error) {
+    console.error('구직자 정보 조회 오류:', error)
     return c.json({ error: '구직자 정보 조회 중 오류가 발생했습니다.' }, 500)
   }
 })

@@ -160,17 +160,22 @@ class JobPlatformApp {
             filterParams.append('page', this.jobsData.page);
             filterParams.append('limit', '10'); // 더 많은 데이터 로딩
             
-            // 필터링 적용
+            // 필터링 적용 - 백엔드 API 파라미터 이름에 맞춤
             Object.entries(this.currentFilters.jobs).forEach(([key, value]) => {
-                if (value && value !== '' && value !== 'all') {
+                if (value && value !== '' && value !== 'all' && value !== null && value !== undefined) {
+                    console.log(`구인정보 필터 파라미터 추가: ${key} = ${value}`);
                     filterParams.append(key, value);
                 }
             });
             
-            const response = await axios.get(`/api/jobs?${filterParams.toString()}`);
+            const apiUrl = `/api/jobs?${filterParams.toString()}`;
+            console.log('구인정보 API 호출:', apiUrl);
+            
+            const response = await axios.get(apiUrl);
             const jobs = response.data.jobs || [];
             
             console.log(`Jobs data received: ${jobs.length} items, Page: ${this.jobsData.page}`);
+            console.log('받은 구인정보 데이터:', jobs.slice(0, 2)); // 처음 2개만 로그
             
             // 데이터 추가
             if (reset) {
@@ -364,17 +369,22 @@ class JobPlatformApp {
             filterParams.append('page', this.jobSeekersData.page);
             filterParams.append('limit', '10'); // 더 많은 데이터 로딩
             
-            // 필터링 적용
+            // 필터링 적용 - 백엔드 API 파라미터 이름에 맞춤
             Object.entries(this.currentFilters.jobseekers).forEach(([key, value]) => {
-                if (value && value !== '' && value !== 'all') {
+                if (value && value !== '' && value !== 'all' && value !== null && value !== undefined) {
+                    console.log(`구직자 필터 파라미터 추가: ${key} = ${value}`);
                     filterParams.append(key, value);
                 }
             });
             
-            const response = await axios.get(`/api/jobseekers?${filterParams.toString()}`);
+            const apiUrl = `/api/jobseekers?${filterParams.toString()}`;
+            console.log('구직자 API 호출:', apiUrl);
+            
+            const response = await axios.get(apiUrl);
             const jobseekers = response.data.jobseekers || [];
             
             console.log(`JobSeekers data received: ${jobseekers.length} items, Page: ${this.jobSeekersData.page}`);
+            console.log('받은 구직자 데이터:', jobseekers.slice(0, 2)); // 처음 2개만 로그
             
             // 데이터 추가
             if (reset) {
@@ -1543,8 +1553,10 @@ class JobPlatformApp {
         // MutationObserver로 DOM 변경 감지 및 강제 숨기기
         this.setupAuthButtonObserver();
         
-        // 검색 및 필터링 이벤트 설정
-        this.setupSearchAndFilters();
+        // 검색 및 필터링 이벤트 설정 (지연 실행)
+        setTimeout(() => {
+            this.setupSearchAndFilters();
+        }, 1000);
         
         // localStorage 변경 감지
         window.addEventListener('storage', (e) => {
@@ -1822,112 +1834,156 @@ ${contentType}의 상세 내용을 보시려면 먼저 로그인해주세요.
     
     // 검색 및 필터 기능 설정
     setupSearchAndFilters() {
+        console.log('필터 이벤트 설정 시작');
+        
         // === 구인정보 필터 이벤트 ===
         // 구인정보 검색 입력
         const jobSearchInput = document.getElementById('job-search-input');
         if (jobSearchInput) {
+            console.log('구인정보 검색 입력 이벤트 설정');
             let jobSearchTimeout;
             jobSearchInput.addEventListener('input', (e) => {
+                console.log('구인정보 검색 입력 변경:', e.target.value);
                 clearTimeout(jobSearchTimeout);
                 jobSearchTimeout = setTimeout(() => {
-                    this.currentFilters.jobs.search = e.target.value;
+                    this.currentFilters.jobs.search = e.target.value.trim();
+                    console.log('구인정보 검색 필터 적용:', this.currentFilters.jobs);
                     this.loadJobListings(true);
                 }, 300);
             });
+        } else {
+            console.warn('구인정보 검색 입력 요소를 찾을 수 없습니다');
         }
         
         // 구인정보 비자 필터
         const jobVisaFilter = document.getElementById('job-visa-filter');
         if (jobVisaFilter) {
+            console.log('구인정보 비자 필터 이벤트 설정');
             jobVisaFilter.addEventListener('change', (e) => {
-                this.currentFilters.jobs.required_visa = e.target.value;
+                console.log('구인정보 비자 필터 변경:', e.target.value);
+                this.currentFilters.jobs.visa = e.target.value;
+                console.log('구인정보 비자 필터 적용:', this.currentFilters.jobs);
                 this.loadJobListings(true);
             });
+        } else {
+            console.warn('구인정보 비자 필터 요소를 찾을 수 없습니다');
         }
         
         // 구인정보 카테고리 필터
         const jobCategoryFilter = document.getElementById('job-category-filter');
         if (jobCategoryFilter) {
+            console.log('구인정보 카테고리 필터 이벤트 설정');
             jobCategoryFilter.addEventListener('change', (e) => {
-                this.currentFilters.jobs.job_category = e.target.value;
+                console.log('구인정보 카테고리 필터 변경:', e.target.value);
+                this.currentFilters.jobs.category = e.target.value;
+                console.log('구인정보 카테고리 필터 적용:', this.currentFilters.jobs);
                 this.loadJobListings(true);
             });
+        } else {
+            console.warn('구인정보 카테고리 필터 요소를 찾을 수 없습니다');
         }
         
         // === 구직자정보 필터 이벤트 ===
         // 구직자 검색 입력
         const jobseekerSearchInput = document.getElementById('jobseeker-search-input');
         if (jobseekerSearchInput) {
+            console.log('구직자 검색 입력 이벤트 설정');
             let jobseekerSearchTimeout;
             jobseekerSearchInput.addEventListener('input', (e) => {
+                console.log('구직자 검색 입력 변경:', e.target.value);
                 clearTimeout(jobseekerSearchTimeout);
                 jobseekerSearchTimeout = setTimeout(() => {
-                    this.currentFilters.jobseekers.search = e.target.value;
+                    this.currentFilters.jobseekers.search = e.target.value.trim();
+                    console.log('구직자 검색 필터 적용:', this.currentFilters.jobseekers);
                     this.loadJobSeekers(true);
                 }, 300);
             });
+        } else {
+            console.warn('구직자 검색 입력 요소를 찾을 수 없습니다');
         }
         
         // 구직자 비자 필터
         const jobseekerVisaFilter = document.getElementById('jobseeker-visa-filter');
         if (jobseekerVisaFilter) {
+            console.log('구직자 비자 필터 이벤트 설정');
             jobseekerVisaFilter.addEventListener('change', (e) => {
-                this.currentFilters.jobseekers.desired_visa = e.target.value;
+                console.log('구직자 비자 필터 변경:', e.target.value);
+                this.currentFilters.jobseekers.visa = e.target.value;
+                console.log('구직자 비자 필터 적용:', this.currentFilters.jobseekers);
                 this.loadJobSeekers(true);
             });
+        } else {
+            console.warn('구직자 비자 필터 요소를 찾을 수 없습니다');
         }
         
         // 구직자 카테고리 필터
         const jobseekerCategoryFilter = document.getElementById('jobseeker-category-filter');
         if (jobseekerCategoryFilter) {
+            console.log('구직자 카테고리 필터 이벤트 설정');
             jobseekerCategoryFilter.addEventListener('change', (e) => {
-                this.currentFilters.jobseekers.desired_job_category = e.target.value;
+                console.log('구직자 카테고리 필터 변경:', e.target.value);
+                this.currentFilters.jobseekers.category = e.target.value;
+                console.log('구직자 카테고리 필터 적용:', this.currentFilters.jobseekers);
                 this.loadJobSeekers(true);
             });
+        } else {
+            console.warn('구직자 카테고리 필터 요소를 찾을 수 없습니다');
         }
+        
+        console.log('필터 이벤트 설정 완료');
     }
     
     // 구인정보 필터 적용
     applyJobFilters() {
-        console.log('구인정보 필터 적용:', this.currentFilters.jobs);
+        console.log('구인정보 필터 적용 시작');
         
         // UI 입력값에서 필터 상태 업데이트
         const jobSearchInput = document.getElementById('job-search-input');
         const jobVisaFilter = document.getElementById('job-visa-filter');
         const jobCategoryFilter = document.getElementById('job-category-filter');
         
+        // 필터 값 동기화 - 백엔드 API 파라미터 이름에 맞춤
         if (jobSearchInput) {
-            this.currentFilters.jobs.search = jobSearchInput.value;
+            this.currentFilters.jobs.search = jobSearchInput.value.trim();
+            console.log('검색어 업데이트:', this.currentFilters.jobs.search);
         }
         if (jobVisaFilter) {
-            this.currentFilters.jobs.required_visa = jobVisaFilter.value;
+            this.currentFilters.jobs.visa = jobVisaFilter.value;
+            console.log('비자 필터 업데이트:', this.currentFilters.jobs.visa);
         }
         if (jobCategoryFilter) {
-            this.currentFilters.jobs.job_category = jobCategoryFilter.value;
+            this.currentFilters.jobs.category = jobCategoryFilter.value;
+            console.log('카테고리 필터 업데이트:', this.currentFilters.jobs.category);
         }
         
+        console.log('최종 구인정보 필터:', this.currentFilters.jobs);
         this.loadJobListings(true);
     }
     
     // 구직자정보 필터 적용
     applyJobSeekerFilters() {
-        console.log('구직자정보 필터 적용:', this.currentFilters.jobseekers);
+        console.log('구직자정보 필터 적용 시작');
         
         // UI 입력값에서 필터 상태 업데이트
         const jobseekerSearchInput = document.getElementById('jobseeker-search-input');
         const jobseekerVisaFilter = document.getElementById('jobseeker-visa-filter');
         const jobseekerCategoryFilter = document.getElementById('jobseeker-category-filter');
         
+        // 필터 값 동기화 - 백엔드 API 파라미터 이름에 맞춤
         if (jobseekerSearchInput) {
-            this.currentFilters.jobseekers.search = jobseekerSearchInput.value;
+            this.currentFilters.jobseekers.search = jobseekerSearchInput.value.trim();
+            console.log('구직자 검색어 업데이트:', this.currentFilters.jobseekers.search);
         }
         if (jobseekerVisaFilter) {
-            this.currentFilters.jobseekers.desired_visa = jobseekerVisaFilter.value;
+            this.currentFilters.jobseekers.visa = jobseekerVisaFilter.value;
+            console.log('구직자 비자 필터 업데이트:', this.currentFilters.jobseekers.visa);
         }
         if (jobseekerCategoryFilter) {
-            this.currentFilters.jobseekers.desired_job_category = jobseekerCategoryFilter.value;
+            this.currentFilters.jobseekers.category = jobseekerCategoryFilter.value;
+            console.log('구직자 카테고리 필터 업데이트:', this.currentFilters.jobseekers.category);
         }
         
+        console.log('최종 구직자 필터:', this.currentFilters.jobseekers);
         this.loadJobSeekers(true);
     }
     
