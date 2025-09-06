@@ -88,6 +88,7 @@ class JobPlatformApp {
         this.checkAuthStatus();
         
         await this.loadJobListings();
+        await this.loadJobSeekers();
         await this.loadStatistics();
         
         // 로그인 상태에 따른 UI 업데이트 (약간 지연)
@@ -118,22 +119,108 @@ class JobPlatformApp {
 
     async loadJobListings() {
         try {
+            console.log('Loading job listings...');
             const response = await axios.get('/api/jobs?limit=5');
             const jobs = response.data.jobs;
+            console.log('Jobs data received:', jobs);
             
+            // Update main dashboard jobs list
             const jobsContainer = document.getElementById('jobs-list');
-            jobsContainer.innerHTML = '';
-
-            if (jobs && jobs.length > 0) {
-                jobs.forEach(job => {
-                    jobsContainer.appendChild(this.createJobCard(job));
-                });
-            } else {
-                jobsContainer.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 구인 정보가 없습니다.</p>';
+            if (jobsContainer) {
+                jobsContainer.innerHTML = '';
+                if (jobs && jobs.length > 0) {
+                    jobs.forEach(job => {
+                        jobsContainer.appendChild(this.createJobCard(job));
+                    });
+                } else {
+                    jobsContainer.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 구인 정보가 없습니다.</p>';
+                }
+            }
+            
+            // Update main page preview
+            const previewContainer = document.getElementById('job-list-preview');
+            if (previewContainer && jobs && jobs.length > 0) {
+                console.log('Updating job preview container...');
+                previewContainer.innerHTML = jobs.map(job => `
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                         onclick="showJobDetail(${job.id})">
+                        <div class="flex justify-between items-start mb-2">
+                            <h5 class="font-bold text-gray-900 truncate flex-1">${job.title}</h5>
+                            <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded ml-2">${this.getVisaDisplayName(job.required_visa)}</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-2">
+                            <i class="fas fa-building mr-1"></i>${job.company_name || '회사명 미제공'}
+                        </div>
+                        <div class="text-sm text-gray-600 mb-2">
+                            <i class="fas fa-map-marker-alt mr-1"></i>${job.work_location || '위치 미제공'}
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-green-600">
+                                월 ${this.formatSalary(job.salary_min)} - ${this.formatSalary(job.salary_max)}
+                            </span>
+                            <span class="text-xs text-gray-500">
+                                ${this.formatDate(job.created_at)}
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
             }
         } catch (error) {
             console.error('구인 정보 로드 실패:', error);
-            document.getElementById('jobs-list').innerHTML = '<p class="text-red-500 text-center py-8">구인 정보를 불러오는데 실패했습니다.</p>';
+            const jobsContainer = document.getElementById('jobs-list');
+            if (jobsContainer) {
+                jobsContainer.innerHTML = '<p class="text-red-500 text-center py-8">구인 정보를 불러오는데 실패했습니다.</p>';
+            }
+            const previewContainer = document.getElementById('job-list-preview');
+            if (previewContainer) {
+                previewContainer.innerHTML = '<p class="text-red-500 text-center py-8">구인 정보를 불러오는데 실패했습니다.</p>';
+            }
+        }
+    }
+
+    async loadJobSeekers() {
+        try {
+            console.log('Loading job seekers...');
+            const response = await axios.get('/api/jobseekers?limit=5');
+            const jobseekers = response.data.jobseekers;
+            console.log('JobSeekers data received:', jobseekers);
+            
+            // Update main page preview
+            const previewContainer = document.getElementById('jobseeker-list-preview');
+            if (previewContainer && jobseekers && jobseekers.length > 0) {
+                console.log('Updating jobseeker preview container...');
+                previewContainer.innerHTML = jobseekers.map(jobseeker => `
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                         onclick="showJobSeekerDetail(${jobseeker.id})">
+                        <div class="flex justify-between items-start mb-2">
+                            <h5 class="font-bold text-gray-900 truncate flex-1">${jobseeker.name}</h5>
+                            <span class="text-xs bg-green-600 text-white px-2 py-1 rounded ml-2">${this.getVisaDisplayName(jobseeker.desired_visa)}</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-2">
+                            <i class="fas fa-flag mr-1"></i>${jobseeker.nationality || '국적 미제공'}
+                        </div>
+                        <div class="text-sm text-gray-600 mb-2">
+                            <i class="fas fa-briefcase mr-1"></i>${this.getJobCategoryDisplay(jobseeker.desired_job_category)}
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-blue-600">
+                                희망 급여: 월 ${this.formatSalary(jobseeker.desired_salary_min)} - ${this.formatSalary(jobseeker.desired_salary_max)}
+                            </span>
+                            <span class="text-xs text-gray-500">
+                                ${this.formatDate(jobseeker.created_at)}
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+            } else if (previewContainer) {
+                previewContainer.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 구직자 정보가 없습니다.</p>';
+            }
+        } catch (error) {
+            console.error('구직자 정보 로드 실패:', error);
+            const previewContainer = document.getElementById('jobseeker-list-preview');
+            if (previewContainer) {
+                previewContainer.innerHTML = '<p class="text-red-500 text-center py-8">구직자 정보를 불러오는데 실패했습니다.</p>';
+            }
         }
     }
 
@@ -443,31 +530,7 @@ class JobPlatformApp {
         return `${this.formatNumber(amount)}원`;
     }
 
-    async loadJobSeekers() {
-        try {
-            const response = await axios.get('/api/job-seekers?limit=5');
-            const jobSeekers = response.data.jobSeekers;
-            
-            const jobSeekersContainer = document.getElementById('jobseekers-list');
-            if (jobSeekersContainer) {
-                jobSeekersContainer.innerHTML = '';
 
-                if (jobSeekers && jobSeekers.length > 0) {
-                    jobSeekers.forEach(jobSeeker => {
-                        jobSeekersContainer.appendChild(this.createJobSeekerCard(jobSeeker));
-                    });
-                } else {
-                    jobSeekersContainer.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 구직자가 없습니다.</p>';
-                }
-            }
-        } catch (error) {
-            console.error('구직자 정보 로드 실패:', error);
-            const container = document.getElementById('jobseekers-list');
-            if (container) {
-                container.innerHTML = '<p class="text-red-500 text-center py-8">구직자 정보를 불러오는데 실패했습니다.</p>';
-            }
-        }
-    }
 
     async loadMatchingData() {
         try {
@@ -1549,6 +1612,49 @@ ${contentType}의 상세 내용을 보시려면 먼저 로그인해주세요.
             });
         }
     }
+
+    getVisaDisplayName(visa) {
+        const visaMap = {
+            'H-2': 'H-2 (방문취업)',
+            'E-9': 'E-9 (비전문취업)', 
+            'F-4': 'F-4 (재외동포)',
+            'D-4': 'D-4 (일반연수)',
+            'D-2': 'D-2 (유학)',
+            'F-2': 'F-2 (거주)',
+            'F-5': 'F-5 (영주)',
+            'E-7': 'E-7 (특정기능)'
+        };
+        return visaMap[visa] || visa || '미분류';
+    }
+
+    getJobCategoryDisplay(category) {
+        const categoryMap = {
+            'MFG001': '제조업',
+            'MFG002': '전자제품 조립',
+            'IT001': 'IT 소프트웨어',
+            'SVC001': '서비스업',
+            'SVC002': '매장 판매직',
+            'CON001': '건설업',
+            'AGR001': '농업',
+            'FSH001': '어업'
+        };
+        return categoryMap[category] || category || '일반';
+    }
+
+    formatDate(dateString) {
+        if (!dateString) return '날짜 없음';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        
+        if (days === 0) return '오늘';
+        if (days === 1) return '어제';
+        if (days < 7) return `${days}일 전`;
+        if (days < 30) return `${Math.floor(days/7)}주 전`;
+        
+        return date.toLocaleDateString('ko-KR');
+    }
 }
 
 // 네비게이션 드롭다운 함수들 - 권한별 라우팅
@@ -2073,3 +2179,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Global functions for job listing functionality
+function showAllJobs() {
+    alert('전체 구인정보 페이지로 이동합니다.');
+    // TODO: 추후 별도 페이지나 확장된 리스트 구현
+}
+
+function showAllJobSeekers() {
+    alert('전체 구직자 정보 페이지로 이동합니다.');
+    // TODO: 추후 별도 페이지나 확장된 리스트 구현
+}
+
+function showJobDetail(jobId) {
+    // Simple alert for now - TODO: implement modal with detailed job info
+    alert(`구인공고 ID ${jobId}의 상세 정보를 표시합니다.`);
+    // TODO: API call to /api/jobs/${jobId} and show modal
+}
+
+function showJobSeekerDetail(jobSeekerId) {
+    // Simple alert for now - TODO: implement modal with detailed jobseeker info
+    alert(`구직자 ID ${jobSeekerId}의 상세 정보를 표시합니다.`);
+    // TODO: API call to /api/jobseekers/${jobSeekerId} and show modal
+}
+
+function closeJobDetailModal() {
+    const modal = document.getElementById('job-detail-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+function closeJobSeekerDetailModal() {
+    const modal = document.getElementById('jobseeker-detail-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}

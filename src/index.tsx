@@ -1626,6 +1626,113 @@ app.get('/', async (c) => {
                 </div>
             </section>
             
+            <!-- Job Lists Section -->
+            <section class="py-20 bg-gray-50">
+                <div class="max-w-7xl mx-auto px-4">
+                    <!-- Section Header -->
+                    <div class="text-center mb-16">
+                        <h3 class="text-4xl font-bold text-gray-900 mb-4">최신 정보</h3>
+                        <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                            실시간으로 업데이트되는 구인공고와 구직자 정보를 확인하세요
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        <!-- 구인 정보 섹션 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h4 class="text-2xl font-bold text-gray-900 flex items-center">
+                                    <i class="fas fa-briefcase text-wow-blue mr-3"></i>
+                                    최신 구인 정보
+                                </h4>
+                                <button onclick="showAllJobs()" class="text-wow-blue hover:text-wow-light-blue font-medium">
+                                    전체보기 <i class="fas fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+                            <div id="job-list-preview" class="space-y-4">
+                                <!-- 구인공고 리스트가 여기에 로드됨 -->
+                                <div class="animate-pulse">
+                                    <div class="h-24 bg-gray-200 rounded"></div>
+                                </div>
+                                <div class="animate-pulse">
+                                    <div class="h-24 bg-gray-200 rounded"></div>
+                                </div>
+                                <div class="animate-pulse">
+                                    <div class="h-24 bg-gray-200 rounded"></div>
+                                </div>
+                                <div class="animate-pulse">
+                                    <div class="h-24 bg-gray-200 rounded"></div>
+                                </div>
+                                <div class="animate-pulse">
+                                    <div class="h-24 bg-gray-200 rounded"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 구직 정보 섹션 -->
+                        <div class="bg-white rounded-lg shadow-lg p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h4 class="text-2xl font-bold text-gray-900 flex items-center">
+                                    <i class="fas fa-users text-wow-green mr-3"></i>
+                                    최신 구직 정보
+                                </h4>
+                                <button onclick="showAllJobSeekers()" class="text-wow-green hover:text-green-600 font-medium">
+                                    전체보기 <i class="fas fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+                            <div id="jobseeker-list-preview" class="space-y-4">
+                                <!-- 구직자 리스트가 여기에 로드됨 -->
+                                <div class="animate-pulse">
+                                    <div class="h-24 bg-gray-200 rounded"></div>
+                                </div>
+                                <div class="animate-pulse">
+                                    <div class="h-24 bg-gray-200 rounded"></div>
+                                </div>
+                                <div class="animate-pulse">
+                                    <div class="h-24 bg-gray-200 rounded"></div>
+                                </div>
+                                <div class="animate-pulse">
+                                    <div class="h-24 bg-gray-200 rounded"></div>
+                                </div>
+                                <div class="animate-pulse">
+                                    <div class="h-24 bg-gray-200 rounded"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Job Details Modal -->
+            <div id="job-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900">구인공고 상세</h3>
+                        <button onclick="closeJobDetailModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div id="job-detail-content">
+                        <!-- 상세 정보가 여기에 로드됨 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- JobSeeker Details Modal -->
+            <div id="jobseeker-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900">구직자 상세</h3>
+                        <button onclick="closeJobSeekerDetailModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div id="jobseeker-detail-content">
+                        <!-- 상세 정보가 여기에 로드됨 -->
+                    </div>
+                </div>
+            </div>
+            
             <!-- 이용 절차 안내 -->
             <section class="py-20 bg-wowcampus-light">
                 <div class="container mx-auto px-6">
@@ -2831,6 +2938,47 @@ app.get('/api/jobs', async (c) => {
     })
   } catch (error) {
     return c.json({ error: '구인 정보 조회 중 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// 구직자 정보 조회 API
+app.get('/api/jobseekers', async (c) => {
+  try {
+    const { category, visa, region, page = 1, limit = 10 } = c.req.query()
+    
+    let query = `
+      SELECT js.*, a.company_name as agent_company
+      FROM job_seekers js
+      LEFT JOIN agents a ON js.agent_id = a.id
+      WHERE js.status = 'active'
+    `
+    const params = []
+
+    if (category) {
+      query += ' AND js.desired_job_category = ?'
+      params.push(category)
+    }
+    if (visa) {
+      query += ' AND js.desired_visa = ?'
+      params.push(visa)
+    }
+    if (region) {
+      query += ' AND js.preferred_region = ?'
+      params.push(region)
+    }
+
+    query += ' ORDER BY js.created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit))
+
+    const jobSeekers = await c.env.DB.prepare(query).bind(...params).all()
+    
+    return c.json({
+      jobseekers: jobSeekers.results,
+      page: parseInt(page),
+      limit: parseInt(limit)
+    })
+  } catch (error) {
+    return c.json({ error: '구직자 정보 조회 중 오류가 발생했습니다.' }, 500)
   }
 })
 
