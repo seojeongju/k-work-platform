@@ -373,6 +373,417 @@ app.get('/static/login.html', async (c) => {
   }
 })
 
+// 회원가입 페이지
+app.get('/static/register.html', async (c) => {
+  try {
+    // 회원가입 페이지 HTML을 직접 반환
+    return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 - WOW-CAMPUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1E40AF',
+                        secondary: '#3B82F6',
+                        accent: '#059669',
+                        wowcampus: {
+                            blue: '#1E40AF',
+                            light: '#E0F2FE',
+                            dark: '#0F172A'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-wowcampus-light to-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md border-b-2 border-wowcampus-blue">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer">
+                    <div class="w-10 h-10 bg-gradient-to-br from-wowcampus-blue to-accent rounded-lg flex items-center justify-center">
+                        <i class="fas fa-graduation-cap text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-wowcampus-blue tracking-tight">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">외국인 구인구직 및 유학 플랫폼</span>
+                    </div>
+                </a>
+                <nav class="flex space-x-6">
+                    <a href="/" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-home mr-2"></i>홈
+                    </a>
+                    <a href="/static/login.html" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-sign-in-alt mr-2"></i>로그인
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex items-center justify-center px-6 py-12">
+        <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <!-- 페이지 제목 -->
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-wowcampus-blue to-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user-plus text-white text-2xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">회원가입</h2>
+                <p class="text-gray-600">계정을 생성하여 서비스를 이용해보세요</p>
+            </div>
+
+            <!-- 회원 유형 선택 -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-3">회원 유형 선택</label>
+                <div class="grid grid-cols-1 gap-3">
+                    <button type="button" class="user-type-btn" data-type="jobseeker">
+                        <i class="fas fa-user mr-2"></i>
+                        <div class="text-left">
+                            <div class="font-medium">구직자</div>
+                            <div class="text-xs text-gray-500">일자리를 찾고 있어요</div>
+                        </div>
+                    </button>
+                    <button type="button" class="user-type-btn" data-type="employer">
+                        <i class="fas fa-building mr-2"></i>
+                        <div class="text-left">
+                            <div class="font-medium">구인 기업</div>
+                            <div class="text-xs text-gray-500">직원을 채용하려고 해요</div>
+                        </div>
+                    </button>
+                    <button type="button" class="user-type-btn" data-type="agent">
+                        <i class="fas fa-handshake mr-2"></i>
+                        <div class="text-left">
+                            <div class="font-medium">에이전트</div>
+                            <div class="text-xs text-gray-500">구직자와 기업을 연결해요</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 회원가입 폼 -->
+            <form id="registerForm" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">이름</label>
+                        <input type="text" id="firstName" name="firstName" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
+                               placeholder="이름">
+                    </div>
+                    <div>
+                        <label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">성</label>
+                        <input type="text" id="lastName" name="lastName" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
+                               placeholder="성">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+                    <input type="email" id="email" name="email" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
+                           placeholder="이메일을 입력하세요">
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
+                    <div class="relative">
+                        <input type="password" id="password" name="password" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent pr-10 text-sm"
+                               placeholder="8자 이상, 영문+숫자 조합">
+                        <button type="button" id="togglePassword" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-eye text-sm"></i>
+                        </button>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">최소 8자, 영문자와 숫자를 포함해야 합니다</div>
+                </div>
+                
+                <div>
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">비밀번호 확인</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
+                           placeholder="비밀번호를 다시 입력하세요">
+                </div>
+                
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">전화번호</label>
+                    <input type="tel" id="phone" name="phone" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
+                           placeholder="010-1234-5678">
+                </div>
+
+                <!-- 구직자 전용 필드 -->
+                <div id="jobseekerFields" class="hidden space-y-4">
+                    <div>
+                        <label for="nationality" class="block text-sm font-medium text-gray-700 mb-1">국적</label>
+                        <select id="nationality" name="nationality" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm">
+                            <option value="">국적을 선택하세요</option>
+                            <option value="중국">중국</option>
+                            <option value="베트남">베트남</option>
+                            <option value="필리핀">필리핀</option>
+                            <option value="태국">태국</option>
+                            <option value="캄보디아">캄보디아</option>
+                            <option value="몽골">몽골</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="visaType" class="block text-sm font-medium text-gray-700 mb-1">비자 유형</label>
+                        <select id="visaType" name="visaType" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm">
+                            <option value="">비자 유형을 선택하세요</option>
+                            <option value="H-2">H-2 (방문취업)</option>
+                            <option value="E-9">E-9 (비전문취업)</option>
+                            <option value="F-4">F-4 (재외동포)</option>
+                            <option value="D-4">D-4 (일반연수)</option>
+                            <option value="D-2">D-2 (유학)</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 구인기업 전용 필드 -->
+                <div id="employerFields" class="hidden space-y-4">
+                    <div>
+                        <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1">회사명</label>
+                        <input type="text" id="companyName" name="companyName" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
+                               placeholder="회사명을 입력하세요">
+                    </div>
+                    <div>
+                        <label for="businessNumber" class="block text-sm font-medium text-gray-700 mb-1">사업자등록번호</label>
+                        <input type="text" id="businessNumber" name="businessNumber" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
+                               placeholder="000-00-00000">
+                    </div>
+                </div>
+
+                <!-- 에이전트 전용 필드 -->
+                <div id="agentFields" class="hidden space-y-4">
+                    <div>
+                        <label for="agencyName" class="block text-sm font-medium text-gray-700 mb-1">에이전시명</label>
+                        <input type="text" id="agencyName" name="agencyName" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
+                               placeholder="에이전시명을 입력하세요">
+                    </div>
+                    <div>
+                        <label for="licenseNumber" class="block text-sm font-medium text-gray-700 mb-1">허가번호</label>
+                        <input type="text" id="licenseNumber" name="licenseNumber" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
+                               placeholder="허가번호를 입력하세요">
+                    </div>
+                </div>
+
+                <button type="submit" id="registerBtn" class="w-full bg-wowcampus-blue text-white py-3 rounded-lg font-medium hover:bg-wowcampus-dark transition-colors disabled:opacity-50" disabled>
+                    회원가입
+                </button>
+            </form>
+
+            <!-- 로그인 링크 -->
+            <div class="text-center mt-6">
+                <p class="text-sm text-gray-600">
+                    이미 계정이 있으신가요? 
+                    <a href="/static/login.html" class="text-wowcampus-blue font-medium hover:underline">로그인</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- 로딩 오버레이 -->
+        <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-8 text-center">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-wowcampus-blue mx-auto mb-4"></div>
+                <p class="text-gray-600">회원가입 중...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        let selectedUserType = null;
+
+        // 회원 유형 선택
+        document.querySelectorAll('.user-type-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // 모든 버튼에서 active 클래스 제거
+                document.querySelectorAll('.user-type-btn').forEach(b => {
+                    b.classList.remove('bg-wowcampus-blue', 'text-white');
+                    b.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+                });
+                
+                // 선택된 버튼에 active 클래스 추가
+                this.classList.remove('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+                this.classList.add('bg-wowcampus-blue', 'text-white');
+                
+                selectedUserType = this.dataset.type;
+                showUserTypeFields();
+                updateRegisterButton();
+            });
+        });
+
+        // 초기 스타일 설정
+        document.querySelectorAll('.user-type-btn').forEach(btn => {
+            btn.classList.add('flex', 'items-center', 'p-4', 'rounded-lg', 'text-left', 'font-medium', 'transition-colors', 'bg-gray-100', 'text-gray-700', 'hover:bg-gray-200', 'cursor-pointer');
+        });
+
+        // 사용자 유형별 필드 표시
+        function showUserTypeFields() {
+            // 모든 필드 숨기기
+            document.getElementById('jobseekerFields').classList.add('hidden');
+            document.getElementById('employerFields').classList.add('hidden');
+            document.getElementById('agentFields').classList.add('hidden');
+            
+            // 선택된 유형에 따라 필드 표시
+            if (selectedUserType === 'jobseeker') {
+                document.getElementById('jobseekerFields').classList.remove('hidden');
+            } else if (selectedUserType === 'employer') {
+                document.getElementById('employerFields').classList.remove('hidden');
+            } else if (selectedUserType === 'agent') {
+                document.getElementById('agentFields').classList.remove('hidden');
+            }
+        }
+
+        // 회원가입 버튼 상태 업데이트
+        function updateRegisterButton() {
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const phone = document.getElementById('phone').value;
+            const registerBtn = document.getElementById('registerBtn');
+            
+            let allFieldsFilled = selectedUserType && firstName && lastName && email && password && confirmPassword && phone;
+            let passwordsMatch = password === confirmPassword;
+            
+            // 비밀번호 유효성 검사
+            const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+            let passwordValid = passwordRegex.test(password);
+            
+            if (allFieldsFilled && passwordsMatch && passwordValid) {
+                registerBtn.disabled = false;
+                registerBtn.classList.remove('opacity-50');
+            } else {
+                registerBtn.disabled = true;
+                registerBtn.classList.add('opacity-50');
+            }
+        }
+
+        // 입력 필드 이벤트 리스너
+        ['firstName', 'lastName', 'email', 'password', 'confirmPassword', 'phone'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateRegisterButton);
+        });
+
+        // 비밀번호 확인 실시간 검증
+        document.getElementById('confirmPassword').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            
+            if (confirmPassword && password !== confirmPassword) {
+                this.classList.add('border-red-500');
+                this.classList.remove('border-gray-300');
+            } else {
+                this.classList.remove('border-red-500');
+                this.classList.add('border-gray-300');
+            }
+            updateRegisterButton();
+        });
+
+        // 비밀번호 보기/숨기기
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const password = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (password.type === 'password') {
+                password.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                password.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+
+        // 회원가입 폼 제출
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!selectedUserType) {
+                alert('회원 유형을 선택해주세요.');
+                return;
+            }
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            // 비밀번호 확인
+            if (data.password !== data.confirmPassword) {
+                alert('비밀번호가 일치하지 않습니다.');
+                return;
+            }
+            
+            // 로딩 표시
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            
+            try {
+                let endpoint = '';
+                let requestData = {
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    email: data.email,
+                    password: data.password,
+                    phone: data.phone
+                };
+                
+                // 회원 유형별 API 엔드포인트 및 데이터 설정
+                if (selectedUserType === 'jobseeker') {
+                    endpoint = '/api/auth/register/jobseeker';
+                    requestData.nationality = data.nationality;
+                    requestData.visaType = data.visaType;
+                } else if (selectedUserType === 'employer') {
+                    endpoint = '/api/auth/register/employer';
+                    requestData.companyName = data.companyName;
+                    requestData.businessNumber = data.businessNumber;
+                } else if (selectedUserType === 'agent') {
+                    endpoint = '/api/auth/register/agent';
+                    requestData.agencyName = data.agencyName;
+                    requestData.licenseNumber = data.licenseNumber;
+                }
+                
+                const response = await axios.post(endpoint, requestData);
+                
+                if (response.data.success) {
+                    alert(response.data.message || '회원가입이 완료되었습니다!');
+                    window.location.href = '/static/login.html';
+                } else {
+                    throw new Error(response.data.error || '회원가입에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('회원가입 오류:', error);
+                alert(error.response?.data?.error || '회원가입 중 오류가 발생했습니다.');
+            } finally {
+                // 로딩 숨기기
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>`);
+  } catch (error) {
+    return c.text('Register page error', 500);
+  }
+})
+
 // 렌더러 설정
 app.use(renderer)
 
@@ -1864,6 +2275,53 @@ app.get('/', (c) => {
                 };
                 return typeNames[userType] || userType;
             }
+
+            // 로그인 페이지로 이동
+            function goToLogin() {
+                window.location.href = '/static/login.html';
+            }
+
+            // 회원가입 페이지로 이동
+            function goToRegister() {
+                window.location.href = '/static/register.html';
+            }
+
+            // 페이지 로드시 로그인 상태 확인
+            document.addEventListener('DOMContentLoaded', function() {
+                checkLoginStatus();
+            });
+
+            // 로그인 상태 확인 함수
+            function checkLoginStatus() {
+                const token = localStorage.getItem('token');
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                
+                const authButtons = document.getElementById('auth-buttons');
+                const userMenu = document.getElementById('user-menu');
+                const userNameSpan = document.getElementById('user-name');
+                
+                if (token && user.id) {
+                    // 로그인된 상태
+                    authButtons.classList.add('hidden');
+                    userMenu.classList.remove('hidden');
+                    if (userNameSpan && user.name) {
+                        userNameSpan.textContent = user.name;
+                    }
+                } else {
+                    // 로그아웃 상태
+                    authButtons.classList.remove('hidden');
+                    userMenu.classList.add('hidden');
+                }
+            }
+
+            // 로그아웃 함수
+            document.getElementById('logout-btn')?.addEventListener('click', function() {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                checkLoginStatus();
+                alert('로그아웃 되었습니다.');
+                window.location.reload();
+            });
         </script>
         
         <!-- Auth UI control script removed for normal operation -->

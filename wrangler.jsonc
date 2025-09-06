@@ -1,15 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "w-campus-com",
+  "name": "w-campus",
   "compatibility_date": "2025-08-25",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
     "nodejs_compat"
   ],
   "vars": {
-    "DOMAIN_NAME": "w-campus.com",
     "SITE_NAME": "WOW-CAMPUS",
-    "ENVIRONMENT": "production"
+    "ENVIRONMENT": "development"
   },
   "d1_databases": [
     {
@@ -17,10 +16,7 @@
       "database_name": "w-campus-production",
       "database_id": "35e76aa0-0043-4008-9a96-8546ac02b99c"
     }
-  ],
-  // Note: Routes will be configured in Cloudflare Dashboard for custom domain
-  // "routes": [
-  //   "w-campus.com/*",
-  //   "www.w-campus.com/*"
-  // ]
+  ]
+  // Note: Custom domain configuration removed for local development
+  // Domain will be configured later via Cloudflare Dashboard
 }
