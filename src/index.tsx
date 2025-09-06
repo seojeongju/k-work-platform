@@ -1637,6 +1637,58 @@ app.get('/', async (c) => {
                         </p>
                     </div>
 
+                    <!-- Search and Filter Section -->
+                    <div class="mb-8 bg-white rounded-lg shadow-md p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Search Input -->
+                            <div class="lg:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">검색</label>
+                                <div class="relative">
+                                    <input type="text" id="search-input" placeholder="회사명, 직종, 지역으로 검색..." 
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10">
+                                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Visa Filter -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">비자 유형</label>
+                                <select id="visa-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="">전체</option>
+                                    <option value="E-7">E-7 (특정기능)</option>
+                                    <option value="E-9">E-9 (비전문취업)</option>
+                                    <option value="H-2">H-2 (방문취업)</option>
+                                    <option value="F-4">F-4 (재외동포)</option>
+                                    <option value="D-4">D-4 (일반연수)</option>
+                                    <option value="D-2">D-2 (유학)</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Category Filter -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">직종</label>
+                                <select id="category-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="">전체</option>
+                                    <option value="IT001">IT 소프트웨어</option>
+                                    <option value="MFG001">제조업</option>
+                                    <option value="MFG002">전자제품 조립</option>
+                                    <option value="SVC001">서비스업</option>
+                                    <option value="SVC002">매장 판매직</option>
+                                    <option value="CON001">건설업</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 flex justify-between items-center">
+                            <button onclick="applyFilters()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-filter mr-2"></i>필터 적용
+                            </button>
+                            <button onclick="clearFilters()" class="text-gray-600 hover:text-gray-800 transition-colors">
+                                <i class="fas fa-times mr-2"></i>필터 초기화
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
                         <!-- 구인 정보 섹션 -->
                         <div class="bg-white rounded-lg shadow-lg p-6">
@@ -1644,12 +1696,13 @@ app.get('/', async (c) => {
                                 <h4 class="text-2xl font-bold text-gray-900 flex items-center">
                                     <i class="fas fa-briefcase text-wow-blue mr-3"></i>
                                     최신 구인 정보
+                                    <span id="jobs-count" class="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">0</span>
                                 </h4>
-                                <button onclick="showAllJobs()" class="text-wow-blue hover:text-wow-light-blue font-medium">
-                                    전체보기 <i class="fas fa-arrow-right ml-1"></i>
+                                <button onclick="toggleJobsExpanded()" id="jobs-toggle-btn" class="text-wow-blue hover:text-wow-light-blue font-medium">
+                                    더보기 <i class="fas fa-chevron-down ml-1"></i>
                                 </button>
                             </div>
-                            <div id="job-list-preview" class="space-y-4">
+                            <div id="job-list-preview" class="space-y-4 max-h-96 overflow-y-auto">
                                 <!-- 구인공고 리스트가 여기에 로드됨 -->
                                 <div class="animate-pulse">
                                     <div class="h-24 bg-gray-200 rounded"></div>
@@ -1667,6 +1720,15 @@ app.get('/', async (c) => {
                                     <div class="h-24 bg-gray-200 rounded"></div>
                                 </div>
                             </div>
+                            <div id="jobs-load-more" class="hidden mt-4 text-center">
+                                <button onclick="loadMoreJobs()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-plus mr-2"></i>더 많은 구인정보 보기
+                                </button>
+                            </div>
+                            <div id="jobs-loading" class="hidden mt-4 text-center">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                <p class="text-gray-600 mt-2">로딩 중...</p>
+                            </div>
                         </div>
 
                         <!-- 구직 정보 섹션 -->
@@ -1675,12 +1737,13 @@ app.get('/', async (c) => {
                                 <h4 class="text-2xl font-bold text-gray-900 flex items-center">
                                     <i class="fas fa-users text-wow-green mr-3"></i>
                                     최신 구직 정보
+                                    <span id="jobseekers-count" class="ml-2 text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">0</span>
                                 </h4>
-                                <button onclick="showAllJobSeekers()" class="text-wow-green hover:text-green-600 font-medium">
-                                    전체보기 <i class="fas fa-arrow-right ml-1"></i>
+                                <button onclick="toggleJobSeekersExpanded()" id="jobseekers-toggle-btn" class="text-wow-green hover:text-green-600 font-medium">
+                                    더보기 <i class="fas fa-chevron-down ml-1"></i>
                                 </button>
                             </div>
-                            <div id="jobseeker-list-preview" class="space-y-4">
+                            <div id="jobseeker-list-preview" class="space-y-4 max-h-96 overflow-y-auto">
                                 <!-- 구직자 리스트가 여기에 로드됨 -->
                                 <div class="animate-pulse">
                                     <div class="h-24 bg-gray-200 rounded"></div>
@@ -1698,37 +1761,66 @@ app.get('/', async (c) => {
                                     <div class="h-24 bg-gray-200 rounded"></div>
                                 </div>
                             </div>
+                            <div id="jobseekers-load-more" class="hidden mt-4 text-center">
+                                <button onclick="loadMoreJobSeekers()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-plus mr-2"></i>더 많은 구직자 보기
+                                </button>
+                            </div>
+                            <div id="jobseekers-loading" class="hidden mt-4 text-center">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                                <p class="text-gray-600 mt-2">로딩 중...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
             <!-- Job Details Modal -->
-            <div id="job-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-                <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-2xl font-bold text-gray-900">구인공고 상세</h3>
-                        <button onclick="closeJobDetailModal()" class="text-gray-500 hover:text-gray-700">
-                            <i class="fas fa-times text-xl"></i>
-                        </button>
+            <div id="job-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-2xl font-bold text-gray-900">구인공고 상세정보</h3>
+                            <button onclick="closeJobDetailModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                <i class="fas fa-times text-2xl"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div id="job-detail-content">
-                        <!-- 상세 정보가 여기에 로드됨 -->
+                    <div id="job-detail-content" class="p-6">
+                        <div class="animate-pulse">
+                            <div class="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+                            <div class="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+                            <div class="space-y-3">
+                                <div class="h-4 bg-gray-200 rounded"></div>
+                                <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+                                <div class="h-4 bg-gray-200 rounded w-4/6"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- JobSeeker Details Modal -->
-            <div id="jobseeker-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-                <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-2xl font-bold text-gray-900">구직자 상세</h3>
-                        <button onclick="closeJobSeekerDetailModal()" class="text-gray-500 hover:text-gray-700">
-                            <i class="fas fa-times text-xl"></i>
-                        </button>
+            <div id="jobseeker-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-2xl font-bold text-gray-900">구직자 상세정보</h3>
+                            <button onclick="closeJobSeekerDetailModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                <i class="fas fa-times text-2xl"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div id="jobseeker-detail-content">
-                        <!-- 상세 정보가 여기에 로드됨 -->
+                    <div id="jobseeker-detail-content" class="p-6">
+                        <div class="animate-pulse">
+                            <div class="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+                            <div class="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+                            <div class="space-y-3">
+                                <div class="h-4 bg-gray-200 rounded"></div>
+                                <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+                                <div class="h-4 bg-gray-200 rounded w-4/6"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

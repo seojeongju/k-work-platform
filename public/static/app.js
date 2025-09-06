@@ -5,6 +5,30 @@ class JobPlatformApp {
         this.currentTab = 'jobs';
         this.isLoggedIn = false;
         this.currentUser = {};
+        
+        // 무한 스크롤을 위한 데이터 관리
+        this.jobsData = {
+            items: [],
+            page: 1,
+            hasMore: true,
+            loading: false,
+            total: 0
+        };
+        
+        this.jobSeekersData = {
+            items: [],
+            page: 1,
+            hasMore: true,
+            loading: false,
+            total: 0
+        };
+        
+        // 필터링 상태
+        this.currentFilters = {
+            jobs: {},
+            jobseekers: {}
+        };
+        
         this.init();
     }
 
@@ -117,31 +141,86 @@ class JobPlatformApp {
         }
     }
 
-    async loadJobListings() {
+    async loadJobListings(reset = false) {
+        if (this.jobsData.loading || (!reset && !this.jobsData.hasMore)) return;
+        
+        this.jobsData.loading = true;
+        
         try {
-            console.log('Loading job listings...');
-            const response = await axios.get('/api/jobs?limit=5');
-            const jobs = response.data.jobs;
-            console.log('Jobs data received:', jobs);
+            console.log(`Loading job listings... Page: ${reset ? 1 : this.jobsData.page}`);
             
-            // Update main dashboard jobs list
-            const jobsContainer = document.getElementById('jobs-list');
-            if (jobsContainer) {
-                jobsContainer.innerHTML = '';
-                if (jobs && jobs.length > 0) {
-                    jobs.forEach(job => {
-                        jobsContainer.appendChild(this.createJobCard(job));
-                    });
-                } else {
-                    jobsContainer.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 구인 정보가 없습니다.</p>';
-                }
+            if (reset) {
+                this.jobsData.page = 1;
+                this.jobsData.items = [];
+                this.jobsData.hasMore = true;
             }
             
-            // Update main page preview
-            const previewContainer = document.getElementById('job-list-preview');
-            if (previewContainer && jobs && jobs.length > 0) {
-                console.log('Updating job preview container...');
-                previewContainer.innerHTML = jobs.map(job => `
+            // 필터 파라미터 구성
+            const filterParams = new URLSearchParams();
+            filterParams.append('page', this.jobsData.page);
+            filterParams.append('limit', '10'); // 더 많은 데이터 로딩
+            
+            // 필터링 적용
+            Object.entries(this.currentFilters.jobs).forEach(([key, value]) => {
+                if (value && value !== '' && value !== 'all') {
+                    filterParams.append(key, value);
+                }
+            });
+            
+            const response = await axios.get(`/api/jobs?${filterParams.toString()}`);
+            const jobs = response.data.jobs || [];
+            
+            console.log(`Jobs data received: ${jobs.length} items, Page: ${this.jobsData.page}`);
+            
+            // 데이터 추가
+            if (reset) {
+                this.jobsData.items = jobs;
+            } else {
+                this.jobsData.items = [...this.jobsData.items, ...jobs];
+            }
+            
+            // 더 이상 로드할 데이터가 있는지 확인
+            if (jobs.length < 10) {
+                this.jobsData.hasMore = false;
+            } else {
+                this.jobsData.page++;
+            }
+            
+            // UI 업데이트
+            this.renderJobListings();
+            
+        } catch (error) {
+            console.error('구인 정보 로드 실패:', error);
+            this.showJobListingsError();
+        } finally {
+            this.jobsData.loading = false;
+        }
+    }
+    
+    renderJobListings() {
+        const jobs = this.jobsData.items;
+        
+        // Update main dashboard jobs list
+        const jobsContainer = document.getElementById('jobs-list');
+        if (jobsContainer) {
+            jobsContainer.innerHTML = '';
+            if (jobs && jobs.length > 0) {
+                jobs.forEach(job => {
+                    jobsContainer.appendChild(this.createJobCard(job));
+                });
+            } else {
+                jobsContainer.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 구인 정보가 없습니다.</p>';
+            }
+        }
+        
+        // Update main page preview (처음 5개만)
+        const previewContainer = document.getElementById('job-list-preview');
+        if (previewContainer) {
+            console.log('Updating job preview container...');
+            const previewJobs = jobs.slice(0, 5);
+            
+            if (previewJobs.length > 0) {
+                previewContainer.innerHTML = previewJobs.map(job => `
                     <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
                          onclick="showJobDetail(${job.id})">
                         <div class="flex justify-between items-start mb-2">
@@ -164,32 +243,175 @@ class JobPlatformApp {
                         </div>
                     </div>
                 `).join('');
-            }
-        } catch (error) {
-            console.error('구인 정보 로드 실패:', error);
-            const jobsContainer = document.getElementById('jobs-list');
-            if (jobsContainer) {
-                jobsContainer.innerHTML = '<p class="text-red-500 text-center py-8">구인 정보를 불러오는데 실패했습니다.</p>';
-            }
-            const previewContainer = document.getElementById('job-list-preview');
-            if (previewContainer) {
-                previewContainer.innerHTML = '<p class="text-red-500 text-center py-8">구인 정보를 불러오는데 실패했습니다.</p>';
+                
+                // 무한 스크롤 더보기 버튼 추가
+                if (this.jobsData.hasMore) {
+                    previewContainer.innerHTML += `
+                        <div class="text-center pt-4">
+                            <button onclick="app.loadMoreJobs()" 
+                                    class="text-blue-600 hover:text-blue-800 font-medium text-sm bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg transition-colors ${this.jobsData.loading ? 'opacity-50 cursor-not-allowed' : ''}">
+                                ${this.jobsData.loading ? '로딩 중...' : '더 많은 구인정보 보기 →'}
+                            </button>
+                        </div>
+                    `;
+                }
+            } else {
+                previewContainer.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 구인 정보가 없습니다.</p>';
             }
         }
+        
+        // Update full list containers with infinite scroll
+        this.renderFullJobList();
+    }
+    
+    renderFullJobList() {
+        const fullListContainer = document.getElementById('jobs-full-list');
+        if (!fullListContainer) return;
+        
+        const jobs = this.jobsData.items;
+        
+        fullListContainer.innerHTML = jobs.map(job => `
+            <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer mb-4"
+                 onclick="showJobDetail(${job.id})">
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="text-xl font-bold text-gray-900 flex-1">${job.title}</h3>
+                    <div class="flex gap-2 ml-4">
+                        <span class="text-xs bg-blue-600 text-white px-3 py-1 rounded-full">${this.getVisaDisplayName(job.required_visa)}</span>
+                        <span class="text-xs bg-gray-200 text-gray-700 px-3 py-1 rounded-full">${this.getJobCategoryDisplay(job.job_category)}</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-building mr-2"></i><strong>회사:</strong> ${job.company_name || '회사명 미제공'}
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-map-marker-alt mr-2"></i><strong>위치:</strong> ${job.work_location || '위치 미제공'}
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-clock mr-2"></i><strong>근무시간:</strong> ${job.work_hours || '협의'}
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-calendar mr-2"></i><strong>마감일:</strong> ${job.deadline || '상시모집'}
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div class="text-lg font-semibold text-green-600">
+                        월 ${this.formatSalary(job.salary_min)} - ${this.formatSalary(job.salary_max)}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        등록일: ${this.formatDate(job.created_at)}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        // 로딩 스피너 또는 더보기 버튼 추가
+        if (this.jobsData.loading) {
+            fullListContainer.innerHTML += `
+                <div class="text-center py-8">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p class="text-gray-600 mt-2">로딩 중...</p>
+                </div>
+            `;
+        } else if (this.jobsData.hasMore) {
+            fullListContainer.innerHTML += `
+                <div class="text-center py-8">
+                    <button onclick="app.loadMoreJobs()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                        더 많은 구인정보 보기
+                    </button>
+                </div>
+            `;
+        } else if (jobs.length > 0) {
+            fullListContainer.innerHTML += `
+                <div class="text-center py-8">
+                    <p class="text-gray-500">모든 구인정보를 확인했습니다.</p>
+                </div>
+            `;
+        }
+    }
+    
+    async loadMoreJobs() {
+        await this.loadJobListings(false);
+    }
+    
+    showJobListingsError() {
+        const containers = ['jobs-list', 'job-list-preview', 'jobs-full-list'];
+        containers.forEach(id => {
+            const container = document.getElementById(id);
+            if (container) {
+                container.innerHTML = '<p class="text-red-500 text-center py-8">구인 정보를 불러오는데 실패했습니다.</p>';
+            }
+        });
     }
 
-    async loadJobSeekers() {
+    async loadJobSeekers(reset = false) {
+        if (this.jobSeekersData.loading || (!reset && !this.jobSeekersData.hasMore)) return;
+        
+        this.jobSeekersData.loading = true;
+        
         try {
-            console.log('Loading job seekers...');
-            const response = await axios.get('/api/jobseekers?limit=5');
-            const jobseekers = response.data.jobseekers;
-            console.log('JobSeekers data received:', jobseekers);
+            console.log(`Loading job seekers... Page: ${reset ? 1 : this.jobSeekersData.page}`);
             
-            // Update main page preview
-            const previewContainer = document.getElementById('jobseeker-list-preview');
-            if (previewContainer && jobseekers && jobseekers.length > 0) {
-                console.log('Updating jobseeker preview container...');
-                previewContainer.innerHTML = jobseekers.map(jobseeker => `
+            if (reset) {
+                this.jobSeekersData.page = 1;
+                this.jobSeekersData.items = [];
+                this.jobSeekersData.hasMore = true;
+            }
+            
+            // 필터 파라미터 구성
+            const filterParams = new URLSearchParams();
+            filterParams.append('page', this.jobSeekersData.page);
+            filterParams.append('limit', '10'); // 더 많은 데이터 로딩
+            
+            // 필터링 적용
+            Object.entries(this.currentFilters.jobseekers).forEach(([key, value]) => {
+                if (value && value !== '' && value !== 'all') {
+                    filterParams.append(key, value);
+                }
+            });
+            
+            const response = await axios.get(`/api/jobseekers?${filterParams.toString()}`);
+            const jobseekers = response.data.jobseekers || [];
+            
+            console.log(`JobSeekers data received: ${jobseekers.length} items, Page: ${this.jobSeekersData.page}`);
+            
+            // 데이터 추가
+            if (reset) {
+                this.jobSeekersData.items = jobseekers;
+            } else {
+                this.jobSeekersData.items = [...this.jobSeekersData.items, ...jobseekers];
+            }
+            
+            // 더 이상 로드할 데이터가 있는지 확인
+            if (jobseekers.length < 10) {
+                this.jobSeekersData.hasMore = false;
+            } else {
+                this.jobSeekersData.page++;
+            }
+            
+            // UI 업데이트
+            this.renderJobSeekerListings();
+            
+        } catch (error) {
+            console.error('구직자 정보 로드 실패:', error);
+            this.showJobSeekersError();
+        } finally {
+            this.jobSeekersData.loading = false;
+        }
+    }
+    
+    renderJobSeekerListings() {
+        const jobseekers = this.jobSeekersData.items;
+        
+        // Update main page preview (처음 5개만)
+        const previewContainer = document.getElementById('jobseeker-list-preview');
+        if (previewContainer) {
+            console.log('Updating jobseeker preview container...');
+            const previewJobSeekers = jobseekers.slice(0, 5);
+            
+            if (previewJobSeekers.length > 0) {
+                previewContainer.innerHTML = previewJobSeekers.map(jobseeker => `
                     <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
                          onclick="showJobSeekerDetail(${jobseeker.id})">
                         <div class="flex justify-between items-start mb-2">
@@ -212,16 +434,106 @@ class JobPlatformApp {
                         </div>
                     </div>
                 `).join('');
-            } else if (previewContainer) {
+                
+                // 무한 스크롤 더보기 버튼 추가
+                if (this.jobSeekersData.hasMore) {
+                    previewContainer.innerHTML += `
+                        <div class="text-center pt-4">
+                            <button onclick="app.loadMoreJobSeekers()" 
+                                    class="text-green-600 hover:text-green-800 font-medium text-sm bg-green-50 hover:bg-green-100 px-4 py-2 rounded-lg transition-colors ${this.jobSeekersData.loading ? 'opacity-50 cursor-not-allowed' : ''}">
+                                ${this.jobSeekersData.loading ? '로딩 중...' : '더 많은 구직자 보기 →'}
+                            </button>
+                        </div>
+                    `;
+                }
+            } else {
                 previewContainer.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 구직자 정보가 없습니다.</p>';
             }
-        } catch (error) {
-            console.error('구직자 정보 로드 실패:', error);
-            const previewContainer = document.getElementById('jobseeker-list-preview');
-            if (previewContainer) {
-                previewContainer.innerHTML = '<p class="text-red-500 text-center py-8">구직자 정보를 불러오는데 실패했습니다.</p>';
-            }
         }
+        
+        // Update full list containers
+        this.renderFullJobSeekerList();
+    }
+    
+    renderFullJobSeekerList() {
+        const fullListContainer = document.getElementById('jobseekers-full-list');
+        if (!fullListContainer) return;
+        
+        const jobseekers = this.jobSeekersData.items;
+        
+        fullListContainer.innerHTML = jobseekers.map(jobseeker => `
+            <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer mb-4"
+                 onclick="showJobSeekerDetail(${jobseeker.id})">
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="text-xl font-bold text-gray-900 flex-1">${jobseeker.name}</h3>
+                    <div class="flex gap-2 ml-4">
+                        <span class="text-xs bg-green-600 text-white px-3 py-1 rounded-full">${this.getVisaDisplayName(jobseeker.desired_visa)}</span>
+                        <span class="text-xs bg-blue-200 text-blue-700 px-3 py-1 rounded-full">${jobseeker.nationality || '미제공'}</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-briefcase mr-2"></i><strong>희망 직종:</strong> ${this.getJobCategoryDisplay(jobseeker.desired_job_category)}
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-graduation-cap mr-2"></i><strong>학력:</strong> ${jobseeker.education_level || '미제공'}
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-language mr-2"></i><strong>한국어 수준:</strong> ${jobseeker.korean_level || '미제공'}
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-birthday-cake mr-2"></i><strong>나이:</strong> ${jobseeker.age ? `${jobseeker.age}세` : '미제공'}
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div class="text-lg font-semibold text-green-600">
+                        희망 급여: 월 ${this.formatSalary(jobseeker.desired_salary_min)} - ${this.formatSalary(jobseeker.desired_salary_max)}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        등록일: ${this.formatDate(jobseeker.created_at)}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        // 로딩 스피너 또는 더보기 버튼 추가
+        if (this.jobSeekersData.loading) {
+            fullListContainer.innerHTML += `
+                <div class="text-center py-8">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                    <p class="text-gray-600 mt-2">로딩 중...</p>
+                </div>
+            `;
+        } else if (this.jobSeekersData.hasMore) {
+            fullListContainer.innerHTML += `
+                <div class="text-center py-8">
+                    <button onclick="app.loadMoreJobSeekers()" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                        더 많은 구직자 보기
+                    </button>
+                </div>
+            `;
+        } else if (jobseekers.length > 0) {
+            fullListContainer.innerHTML += `
+                <div class="text-center py-8">
+                    <p class="text-gray-500">모든 구직자 정보를 확인했습니다.</p>
+                </div>
+            `;
+        }
+    }
+    
+    async loadMoreJobSeekers() {
+        await this.loadJobSeekers(false);
+    }
+    
+    showJobSeekersError() {
+        const containers = ['jobseekers-list', 'jobseeker-list-preview', 'jobseekers-full-list'];
+        containers.forEach(id => {
+            const container = document.getElementById(id);
+            if (container) {
+                container.innerHTML = '<p class="text-red-500 text-center py-8">구직자 정보를 불러오는데 실패했습니다.</p>';
+            }
+        });
     }
 
     async loadStudyPrograms() {
@@ -359,159 +671,8 @@ class JobPlatformApp {
         return card;
     }
 
-    async showJobDetail(jobId) {
-        try {
-            // 로그인 상태 확인 및 토큰 가져오기
-            const token = localStorage.getItem('token');
-            if (!token) {
-                this.showLoginRequiredAlert('구인정보');
-                return;
-            }
-
-            const response = await axios.get(`/api/jobs/${jobId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            const job = response.data.job;
-            
-            if (!job) {
-                alert('구인 공고를 찾을 수 없습니다.');
-                return;
-            }
-            
-            // 모달 또는 상세 페이지 표시
-            this.displayJobDetailModal(job);
-        } catch (error) {
-            console.error('구인 공고 상세 조회 실패:', error);
-            
-            if (error.response && error.response.status === 401) {
-                // 인증 오류 - 로그인 필요
-                this.showLoginRequiredAlert('구인정보');
-            } else if (error.response && error.response.status === 404) {
-                alert('구인 공고를 찾을 수 없습니다.');
-            } else {
-                alert('구인 공고 정보를 불러오는데 실패했습니다.');
-            }
-        }
-    }
-    
-    displayJobDetailModal(job) {
-        const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-        modal.onclick = (e) => {
-            if (e.target === modal) {
-                document.body.removeChild(modal);
-            }
-        };
-        
-        const salaryRange = job.salary_min && job.salary_max ? 
-            `${this.formatSalary(job.salary_min)} - ${this.formatSalary(job.salary_max)}` : 
-            '급여 협의';
-            
-        const modalContent = `
-            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div class="p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <h2 class="text-2xl font-bold text-gray-800">${job.title}</h2>
-                        <button onclick="document.body.removeChild(this.closest('.fixed'))" 
-                                class="text-gray-400 hover:text-gray-600">
-                            <i class="fas fa-times text-xl"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div class="bg-blue-50 p-4 rounded-lg">
-                            <h3 class="font-semibold text-blue-800 mb-2">기업 정보</h3>
-                            <div class="grid md:grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <span class="text-gray-600">회사명:</span>
-                                    <span class="font-medium ml-2">${job.company_name || '정보없음'}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-600">담당자:</span>
-                                    <span class="font-medium ml-2">${job.contact_person || '정보없음'}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-600">연락처:</span>
-                                    <span class="font-medium ml-2">${job.phone || '정보없음'}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-600">웹사이트:</span>
-                                    <span class="font-medium ml-2">${job.website || '정보없음'}</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-green-50 p-4 rounded-lg">
-                            <h3 class="font-semibold text-green-800 mb-2">구인 조건</h3>
-                            <div class="grid md:grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <span class="text-gray-600">직종:</span>
-                                    <span class="font-medium ml-2">${job.job_category}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-600">근무지역:</span>
-                                    <span class="font-medium ml-2">${job.work_location}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-600">비자 유형:</span>
-                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs ml-2">${job.required_visa}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-600">급여:</span>
-                                    <span class="font-medium ml-2 text-green-600">${salaryRange}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-600">한국어 수준:</span>
-                                    <span class="font-medium ml-2">${job.korean_level_required || '무관'}</span>
-                                </div>
-                                <div>
-                                    <span class="text-gray-600">모집 마감:</span>
-                                    <span class="font-medium ml-2">${job.deadline ? new Date(job.deadline).toLocaleDateString('ko-KR') : '상시모집'}</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        ${job.description ? `
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <h3 class="font-semibold text-gray-800 mb-2">상세 설명</h3>
-                            <p class="text-gray-700 leading-relaxed">${job.description}</p>
-                        </div>
-                        ` : ''}
-                        
-                        ${job.benefits ? `
-                        <div class="bg-yellow-50 p-4 rounded-lg">
-                            <h3 class="font-semibold text-yellow-800 mb-2">복리혜택</h3>
-                            <p class="text-gray-700">${job.benefits}</p>
-                        </div>
-                        ` : ''}
-                        
-                        ${job.requirements ? `
-                        <div class="bg-purple-50 p-4 rounded-lg">
-                            <h3 class="font-semibold text-purple-800 mb-2">자격 요건</h3>
-                            <p class="text-gray-700">${job.requirements}</p>
-                        </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="mt-6 flex justify-end space-x-4">
-                        <button onclick="document.body.removeChild(this.closest('.fixed'))" 
-                                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-                            닫기
-                        </button>
-                        <button onclick="alert('지원 기능은 추후 구현 예정입니다.')" 
-                                class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary">
-                            지원하기
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        modal.innerHTML = modalContent;
-        document.body.appendChild(modal);
-    }
+    // 상세 조회 메서드는 아래에 어향상된 버전으로 대체됨
+    // 기존 displayJobDetailModal은 displayEnhancedJobDetailModal로 대체됨
 
     showProgramDetail(programId) {
         // 유학 프로그램 상세 페이지로 이동하거나 모달 표시
@@ -1382,6 +1543,9 @@ class JobPlatformApp {
         // MutationObserver로 DOM 변경 감지 및 강제 숨기기
         this.setupAuthButtonObserver();
         
+        // 검색 및 필터링 이벤트 설정
+        this.setupSearchAndFilters();
+        
         // localStorage 변경 감지
         window.addEventListener('storage', (e) => {
             console.log('localStorage changed:', e.key, e.newValue);
@@ -1655,6 +1819,553 @@ ${contentType}의 상세 내용을 보시려면 먼저 로그인해주세요.
         
         return date.toLocaleDateString('ko-KR');
     }
+    
+    // 검색 및 필터 기능 설정
+    setupSearchAndFilters() {
+        // 검색 입력 이벤트
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.currentFilters.jobs.search = e.target.value;
+                    this.loadJobListings(true); // 리셋하고 새로 로드
+                }, 300); // 300ms debounce
+            });
+        }
+        
+        // 비자 필터
+        const visaFilter = document.getElementById('visa-filter');
+        if (visaFilter) {
+            visaFilter.addEventListener('change', (e) => {
+                this.currentFilters.jobs.visa = e.target.value;
+                this.loadJobListings(true);
+            });
+        }
+        
+        // 카테고리 필터
+        const categoryFilter = document.getElementById('category-filter');
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', (e) => {
+                this.currentFilters.jobs.category = e.target.value;
+                this.loadJobListings(true);
+            });
+        }
+        
+        // 필터 버튼
+        const applyFiltersBtn = document.querySelector('button[onclick="applyFilters()"]');
+        if (applyFiltersBtn) {
+            applyFiltersBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.applyFilters();
+            });
+        }
+        
+        // 필터 초기화 버튼
+        const clearFiltersBtn = document.querySelector('button[onclick="clearFilters()"]');
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.clearFilters();
+            });
+        }
+    }
+    
+    // 필터 적용
+    applyFilters() {
+        console.log('필터 적용:', this.currentFilters);
+        this.loadJobListings(true);
+        this.loadJobSeekers(true);
+    }
+    
+    // 필터 초기화
+    clearFilters() {
+        console.log('필터 초기화');
+        
+        // 입력 필드 초기화
+        const searchInput = document.getElementById('search-input');
+        const visaFilter = document.getElementById('visa-filter');
+        const categoryFilter = document.getElementById('category-filter');
+        
+        if (searchInput) searchInput.value = '';
+        if (visaFilter) visaFilter.value = 'all';
+        if (categoryFilter) categoryFilter.value = 'all';
+        
+        // 필터 상태 초기화
+        this.currentFilters = {
+            jobs: {},
+            jobseekers: {}
+        };
+        
+        // 데이터 재로드
+        this.loadJobListings(true);
+        this.loadJobSeekers(true);
+    }
+    
+    // 향상된 구인 상세 모달
+    async showJobDetail(jobId) {
+        try {
+            // 로그인 상태 확인 및 토큰 가져오기
+            const token = localStorage.getItem('token');
+            if (!token) {
+                this.showLoginRequiredAlert('구인정보');
+                return;
+            }
+
+            // 로딩 스피너 표시
+            this.showLoadingModal();
+
+            const response = await axios.get(`/api/jobs/${jobId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const job = response.data.job;
+            
+            // 로딩 모달 닫기
+            this.hideLoadingModal();
+            
+            if (!job) {
+                alert('구인 공고를 찾을 수 없습니다.');
+                return;
+            }
+            
+            // 모달 또는 상세 페이지 표시
+            this.displayEnhancedJobDetailModal(job);
+        } catch (error) {
+            console.error('구인 공고 상세 조회 실패:', error);
+            
+            // 로딩 모달 닫기
+            this.hideLoadingModal();
+            
+            if (error.response && error.response.status === 401) {
+                // 인증 오류 - 로그인 필요
+                this.showLoginRequiredAlert('구인정보');
+            } else if (error.response && error.response.status === 404) {
+                alert('구인 공고를 찾을 수 없습니다.');
+            } else {
+                alert('구인 공고 정보를 불러오는데 실패했습니다.');
+            }
+        }
+    }
+    
+    // 향상된 구직자 상세 모달 표시
+    async showJobSeekerDetail(jobSeekerId) {
+        try {
+            // 로그인 상태 확인
+            const token = localStorage.getItem('token');
+            if (!token) {
+                this.showLoginRequiredAlert('구직정보');
+                return;
+            }
+
+            // 로딩 스피너 표시
+            this.showLoadingModal();
+
+            const response = await axios.get(`/api/jobseekers/${jobSeekerId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const jobseeker = response.data.jobseeker;
+            
+            // 로딩 모달 닫기
+            this.hideLoadingModal();
+            
+            if (!jobseeker) {
+                alert('구직자 정보를 찾을 수 없습니다.');
+                return;
+            }
+            
+            // 모달 표시
+            this.displayEnhancedJobSeekerDetailModal(jobseeker);
+        } catch (error) {
+            console.error('구직자 상세 조회 실패:', error);
+            
+            // 로딩 모달 닫기
+            this.hideLoadingModal();
+            
+            if (error.response && error.response.status === 401) {
+                this.showLoginRequiredAlert('구직정보');
+            } else if (error.response && error.response.status === 404) {
+                alert('구직자 정보를 찾을 수 없습니다.');
+            } else {
+                alert('구직자 정보를 불러오는데 실패했습니다.');
+            }
+        }
+    }
+    
+    // 로딩 모달 표시
+    showLoadingModal() {
+        const existingModal = document.querySelector('.loading-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        const modal = document.createElement('div');
+        modal.className = 'loading-modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg p-8 text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p class="text-gray-600">데이터를 불러오고 있습니다...</p>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    // 로딩 모달 숨기기
+    hideLoadingModal() {
+        const modal = document.querySelector('.loading-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+    
+    // 향상된 구인 상세 모달 표시
+    displayEnhancedJobDetailModal(job) {
+        const existingModal = document.querySelector('.job-detail-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        const modal = document.createElement('div');
+        modal.className = 'job-detail-modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        };
+        
+        const salaryRange = job.salary_min && job.salary_max ? 
+            `${this.formatSalary(job.salary_min)} - ${this.formatSalary(job.salary_max)}` : 
+            '급여 협의';
+            
+        const modalContent = `
+            <div class="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                <!-- 노방리 헤더 -->
+                <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 border-b z-10">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-briefcase text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold">${job.title}</h2>
+                                <p class="text-blue-100">${job.company_name || '정보없음'}</p>
+                            </div>
+                        </div>
+                        <button onclick="this.closest('.job-detail-modal').remove()" 
+                                class="text-white hover:text-gray-300 p-2 rounded-full hover:bg-white hover:bg-opacity-10 transition-colors">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 스크롤 가능한 콘텐츠 -->
+                <div class="overflow-y-auto max-h-[calc(90vh-100px)] p-6">
+                    <!-- 기본 정보 카드 -->
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-blue-800 mb-3 flex items-center">
+                                <i class="fas fa-info-circle mr-2"></i>기본 정보
+                            </h3>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">비자 유형:</span>
+                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">${this.getVisaDisplayName(job.required_visa)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">근무지역:</span>
+                                    <span class="font-medium">${job.work_location}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">직종:</span>
+                                    <span class="font-medium">${this.getJobCategoryDisplay(job.job_category)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">근무시간:</span>
+                                    <span class="font-medium">${job.work_hours || '협의'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-green-800 mb-3 flex items-center">
+                                <i class="fas fa-won-sign mr-2"></i>급여 및 조건
+                            </h3>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">월 급여:</span>
+                                    <span class="font-bold text-green-600 text-lg">${salaryRange}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">모집인원:</span>
+                                    <span class="font-medium">${job.positions || 1}명</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">한국어 수준:</span>
+                                    <span class="font-medium">${job.korean_level_required || '무관'}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">마감일:</span>
+                                    <span class="font-medium">${job.deadline ? new Date(job.deadline).toLocaleDateString('ko-KR') : '상시모집'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 회사 정보 -->
+                    <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                        <h3 class="font-semibold text-gray-800 mb-3 flex items-center">
+                            <i class="fas fa-building mr-2"></i>회사 정보
+                        </h3>
+                        <div class="grid md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">담당자:</span>
+                                <span class="font-medium ml-2">${job.contact_person || '정보없음'}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">연락처:</span>
+                                <span class="font-medium ml-2">${job.phone || '정보없음'}</span>
+                            </div>
+                            <div class="md:col-span-2">
+                                <span class="text-gray-600">웹사이트:</span>
+                                <span class="font-medium ml-2">${job.website ? `<a href="${job.website}" target="_blank" class="text-blue-600 hover:underline">${job.website}</a>` : '정보없음'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 상세 설명 -->
+                    ${job.description ? `
+                    <div class="bg-yellow-50 p-4 rounded-lg mb-6">
+                        <h3 class="font-semibold text-yellow-800 mb-3 flex items-center">
+                            <i class="fas fa-file-alt mr-2"></i>상세 설명
+                        </h3>
+                        <div class="text-gray-700 leading-relaxed whitespace-pre-wrap">${job.description}</div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- 복리혜택 -->
+                    ${job.benefits ? `
+                    <div class="bg-purple-50 p-4 rounded-lg mb-6">
+                        <h3 class="font-semibold text-purple-800 mb-3 flex items-center">
+                            <i class="fas fa-gift mr-2"></i>복리혜택
+                        </h3>
+                        <div class="text-gray-700 whitespace-pre-wrap">${job.benefits}</div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- 자격 요건 -->
+                    ${job.requirements ? `
+                    <div class="bg-red-50 p-4 rounded-lg mb-6">
+                        <h3 class="font-semibold text-red-800 mb-3 flex items-center">
+                            <i class="fas fa-list-check mr-2"></i>자격 요건
+                        </h3>
+                        <div class="text-gray-700 whitespace-pre-wrap">${job.requirements}</div>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <!-- 노방리 하단 버튼 -->
+                <div class="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-between items-center">
+                    <div class="text-sm text-gray-500">
+                        등록일: ${this.formatDate(job.created_at)}
+                    </div>
+                    <div class="flex space-x-3">
+                        <button onclick="this.closest('.job-detail-modal').remove()" 
+                                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-times mr-2"></i>닫기
+                        </button>
+                        <button onclick="app.handleJobApplication(${job.id})" 
+                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-paper-plane mr-2"></i>지원하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modal.innerHTML = modalContent;
+        document.body.appendChild(modal);
+    }
+    
+    // 향상된 구직자 상세 모달 표시
+    displayEnhancedJobSeekerDetailModal(jobseeker) {
+        const existingModal = document.querySelector('.jobseeker-detail-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        const modal = document.createElement('div');
+        modal.className = 'jobseeker-detail-modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        };
+        
+        const salaryRange = jobseeker.desired_salary_min && jobseeker.desired_salary_max ? 
+            `${this.formatSalary(jobseeker.desired_salary_min)} - ${this.formatSalary(jobseeker.desired_salary_max)}` : 
+            '협의';
+            
+        const modalContent = `
+            <div class="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                <!-- 노방리 헤더 -->
+                <div class="sticky top-0 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 border-b z-10">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-user-graduate text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold">${jobseeker.name}</h2>
+                                <p class="text-green-100">${jobseeker.nationality || '정보없음'}</p>
+                            </div>
+                        </div>
+                        <button onclick="this.closest('.jobseeker-detail-modal').remove()" 
+                                class="text-white hover:text-gray-300 p-2 rounded-full hover:bg-white hover:bg-opacity-10 transition-colors">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 스크롤 가능한 콘텐츠 -->
+                <div class="overflow-y-auto max-h-[calc(90vh-100px)] p-6">
+                    <!-- 기본 정보 카드 -->
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-green-800 mb-3 flex items-center">
+                                <i class="fas fa-id-card mr-2"></i>개인 정보
+                            </h3>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">나이:</span>
+                                    <span class="font-medium">${jobseeker.age ? `${jobseeker.age}세` : '미제공'}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">성별:</span>
+                                    <span class="font-medium">${jobseeker.gender || '미제공'}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">현재 비자:</span>
+                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">${this.getVisaDisplayName(jobseeker.current_visa)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">희망 비자:</span>
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">${this.getVisaDisplayName(jobseeker.desired_visa)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-blue-800 mb-3 flex items-center">
+                                <i class="fas fa-graduation-cap mr-2"></i>학력 및 능력
+                            </h3>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">학력:</span>
+                                    <span class="font-medium">${jobseeker.education_level || '미제공'}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">한국어 수준:</span>
+                                    <span class="font-medium">${jobseeker.korean_level || '미제공'}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">경력:</span>
+                                    <span class="font-medium">${jobseeker.work_experience || '미제공'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 희망 직종 및 조건 -->
+                    <div class="bg-yellow-50 p-4 rounded-lg mb-6">
+                        <h3 class="font-semibold text-yellow-800 mb-3 flex items-center">
+                            <i class="fas fa-briefcase mr-2"></i>희망 직종 및 조건
+                        </h3>
+                        <div class="grid md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">희망 직종:</span>
+                                <span class="font-medium ml-2">${this.getJobCategoryDisplay(jobseeker.desired_job_category)}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">희망 급여:</span>
+                                <span class="font-bold text-green-600 ml-2">월 ${salaryRange}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">희망 근무지:</span>
+                                <span class="font-medium ml-2">${jobseeker.desired_work_location || '전국'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 연락처 -->
+                    <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                        <h3 class="font-semibold text-gray-800 mb-3 flex items-center">
+                            <i class="fas fa-phone mr-2"></i>연락처
+                        </h3>
+                        <div class="grid md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">전화번호:</span>
+                                <span class="font-medium ml-2">${jobseeker.phone || '비공개'}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">이메일:</span>
+                                <span class="font-medium ml-2">${jobseeker.email || '비공개'}</span>
+                            </div>
+                            <div class="md:col-span-2">
+                                <span class="text-gray-600">주소:</span>
+                                <span class="font-medium ml-2">${jobseeker.current_address || '비공개'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 자기소개 -->
+                    ${jobseeker.bio ? `
+                    <div class="bg-purple-50 p-4 rounded-lg mb-6">
+                        <h3 class="font-semibold text-purple-800 mb-3 flex items-center">
+                            <i class="fas fa-user-edit mr-2"></i>자기소개
+                        </h3>
+                        <div class="text-gray-700 leading-relaxed whitespace-pre-wrap">${jobseeker.bio}</div>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <!-- 노방리 하단 버튼 -->
+                <div class="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-between items-center">
+                    <div class="text-sm text-gray-500">
+                        등록일: ${this.formatDate(jobseeker.created_at)}
+                    </div>
+                    <div class="flex space-x-3">
+                        <button onclick="this.closest('.jobseeker-detail-modal').remove()" 
+                                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-times mr-2"></i>닫기
+                        </button>
+                        <button onclick="app.handleJobSeekerContact(${jobseeker.id})" 
+                                class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-envelope mr-2"></i>연락하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modal.innerHTML = modalContent;
+        document.body.appendChild(modal);
+    }
+    
+    // 구인 지원 처리
+    handleJobApplication(jobId) {
+        alert(`구인 지원 기능 (ID: ${jobId})\n지원서 작성 및 제출 기능은 추후 구현 예정입니다.`);
+        // 지원 로직 구현 예정
+    }
+    
+    // 구직자 연락 처리
+    handleJobSeekerContact(jobSeekerId) {
+        alert(`구직자 연락 기능 (ID: ${jobSeekerId})\n메시지 전송 및 연락처 공유 기능은 추후 구현 예정입니다.`);
+        // 연락 로직 구현 예정
+    }
 }
 
 // 네비게이션 드롭다운 함수들 - 권한별 라우팅
@@ -1831,6 +2542,68 @@ function showJobSeekerRegisterForm() {
 //         app.resetJobSeekerForm();
 //     }
 // }
+
+// 구인 상세 정보 표시 (전역 함수)
+function showJobDetail(jobId) {
+    if (app) {
+        app.showJobDetail(jobId);
+    }
+}
+
+// 구직자 상세 정보 표시 (전역 함수)
+function showJobSeekerDetail(jobSeekerId) {
+    if (app) {
+        app.showJobSeekerDetail(jobSeekerId);
+    }
+}
+
+// 필터 적용 (전역 함수)
+function applyFilters() {
+    if (app) {
+        app.applyFilters();
+    }
+}
+
+// 필터 초기화 (전역 함수)
+function clearFilters() {
+    if (app) {
+        app.clearFilters();
+    }
+}
+
+// 구인정보 보기 토글 (전역 함수)
+function toggleJobsExpanded() {
+    if (app) {
+        // 전체 목록 보기 또는 요약 보기 전환
+        const isExpanded = app.jobsData.expanded || false;
+        app.jobsData.expanded = !isExpanded;
+        
+        if (app.jobsData.expanded) {
+            // 전체 목록 보기 모드
+            app.renderFullJobList();
+        } else {
+            // 요약 보기 모드
+            app.renderJobListings();
+        }
+    }
+}
+
+// 구직자정보 보기 토글 (전역 함수)
+function toggleJobSeekersExpanded() {
+    if (app) {
+        // 전체 목록 보기 또는 요약 보기 전환
+        const isExpanded = app.jobSeekersData.expanded || false;
+        app.jobSeekersData.expanded = !isExpanded;
+        
+        if (app.jobSeekersData.expanded) {
+            // 전체 목록 보기 모드
+            app.renderFullJobSeekerList();
+        } else {
+            // 요약 보기 모드
+            app.renderJobSeekerListings();
+        }
+    }
+}
 
 function showLanguageStudyView() {
     if (app) {
