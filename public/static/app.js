@@ -1553,92 +1553,13 @@ ${contentType}의 상세 내용을 보시려면 먼저 로그인해주세요.
 
 // 네비게이션 드롭다운 함수들 - 권한별 라우팅
 function showJobListView() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-        // 비로그인 상태 - 일반 구인정보 보기
-        if (app) {
-            app.switchTab('jobs');
-            app.showJobView();
-            // 더 확실한 스크롤 이동
-            setTimeout(() => {
-                const targetElement = document.getElementById('content-jobs');
-                if (targetElement) {
-                    targetElement.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'start' 
-                    });
-                    // 추가: 브라우저 URL 업데이트 (선택사항)
-                    window.history.pushState(null, '', '#jobs-view');
-                }
-            }, 200);
-        }
-    } else if (user.type === 'employer') {
-        // 구인기업 - 내 구인정보 관리 페이지로 이동
-        window.location.href = `/static/employer-dashboard.html?employerId=${user.id}`;
-    } else {
-        // 기타 로그인 사용자 - 일반 구인정보 보기
-        if (app) {
-            app.switchTab('jobs');
-            app.showJobView();
-            // 더 확실한 스크롤 이동
-            setTimeout(() => {
-                const targetElement = document.getElementById('content-jobs');
-                if (targetElement) {
-                    targetElement.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'start' 
-                    });
-                    // 추가: 브라우저 URL 업데이트 (선택사항)
-                    window.history.pushState(null, '', '#jobs-view');
-                }
-            }, 200);
-        }
-    }
+    // 구인정보 전용 대시보드로 리다이렉트
+    window.location.href = '/static/job-listings-dashboard.html';
 }
 
 function showJobSeekersView() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-        // 비로그인 상태 - 일반 구직정보 보기
-        if (app) {
-            app.switchTab('jobseekers');
-            app.showJobSeekerView();
-            // 더 확실한 스크롤 이동
-            setTimeout(() => {
-                const targetElement = document.getElementById('content-jobseekers');
-                if (targetElement) {
-                    targetElement.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'start' 
-                    });
-                    // 추가: 브라우저 URL 업데이트 (선택사항)
-                    window.history.pushState(null, '', '#jobseekers-view');
-                }
-            }, 200);
-        }
-    } else {
-        // 로그인 상태 - 일반 구직정보 보기
-        if (app) {
-            app.switchTab('jobseekers');
-            app.showJobSeekerView();
-            // 더 확실한 스크롤 이동
-            setTimeout(() => {
-                const targetElement = document.getElementById('content-jobseekers');
-                if (targetElement) {
-                    targetElement.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'start' 
-                    });
-                    // 추가: 브라우저 URL 업데이트 (선택사항)
-                    window.history.pushState(null, '', '#jobseekers-view');
-                }
-            }, 200);
-        }
-    }
+    // 구직정보 전용 대시보드로 리다이렉트
+    window.location.href = '/static/jobseeker-listings-dashboard.html';
 }
 
 function showJobRegisterForm() {
@@ -1654,37 +1575,8 @@ function resetJobForm() {
 }
 
 function showJobSeekerListView() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-        // 비로그인 상태 - 일반 구직자 보기 (제한적)
-        if (app) {
-            app.switchTab('jobseekers');
-            app.showJobSeekerView();
-            setTimeout(() => {
-                document.getElementById('content-jobseekers')?.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'start' 
-                });
-            }, 100);
-        }
-    } else if (user.type === 'jobseeker') {
-        // 구직자 - 내 프로필 관리 페이지로 이동
-        window.location.href = `/static/jobseeker-profile.html?jobSeekerId=${user.id}`;
-    } else {
-        // 기타 로그인 사용자 - 일반 구직자 보기
-        if (app) {
-            app.switchTab('jobseekers');
-            app.showJobSeekerView();
-            setTimeout(() => {
-                document.getElementById('content-jobseekers')?.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'start' 
-                });
-            }, 100);
-        }
-    }
+    // 구직정보 전용 대시보드로 리다이렉트
+    window.location.href = '/static/jobseeker-listings-dashboard.html';
 }
 
 function showJobSeekerRegisterForm() {
