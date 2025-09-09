@@ -2203,6 +2203,82 @@ app.post('/api/auth/login', async (c) => {
   }
 })
 
+// 토큰 검증 API
+app.get('/api/auth/verify', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '인증 토큰이 없습니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7) // "Bearer " 제거
+    
+    try {
+      // 토큰 검증
+      let payload
+      try {
+        // 먼저 production 키로 검증 시도
+        payload = await verify(token, 'production-secret-key')
+      } catch (prodError) {
+        // production 키 실패 시 test 키로 검증
+        payload = await verify(token, 'test-secret-key')
+      }
+      
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        return c.json({ 
+          success: false, 
+          error: '토큰이 만료되었습니다.' 
+        }, 401)
+      }
+
+      return c.json({
+        success: true,
+        user: {
+          id: payload.id,
+          email: payload.email,
+          user_type: payload.userType,
+          name: payload.name
+        }
+      })
+      
+    } catch (verifyError) {
+      console.error('Token verification failed:', verifyError)
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 토큰입니다.' 
+      }, 401)
+    }
+
+  } catch (error) {
+    console.error('Token verify API error:', error)
+    return c.json({ 
+      success: false, 
+      error: '토큰 검증 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 로그아웃 API
+app.post('/api/auth/logout', async (c) => {
+  try {
+    // 클라이언트에서 토큰을 삭제하도록 응답
+    return c.json({
+      success: true,
+      message: '로그아웃되었습니다.'
+    })
+  } catch (error) {
+    console.error('Logout API error:', error)
+    return c.json({ 
+      success: false, 
+      error: '로그아웃 처리 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
 // 회원가입 API
 app.post('/api/auth/register', async (c) => {
   try {

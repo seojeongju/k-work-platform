@@ -251,7 +251,16 @@
                     <a href="#features" class="nav-link">기능</a>
                     <a href="#demo" class="nav-link">데모</a>
                     <a href="/static/matching-service.html" class="nav-link">매칭서비스</a>
+                    <a href="/static/job-listings.html" class="nav-link">구인정보</a>
+                    <a href="/static/jobseeker-listings.html" class="nav-link">구직정보</a>
+                    <a href="/static/study-programs.html" class="nav-link">유학프로그램</a>
                     <a href="#about" class="nav-link">소개</a>
+                    <!-- 로그인 시 사용자별 대시보드 메뉴 -->
+                    <div id="dashboard-menu" class="hidden">
+                        <a href="#" id="dashboard-link" class="nav-link font-semibold">
+                            <i class="fas fa-tachometer-alt mr-1"></i><span id="dashboard-text">대시보드</span>
+                        </a>
+                    </div>
                 </div>
                 <div id="auth-buttons" class="flex space-x-4">
                     <!-- 로그아웃 상태 - 로그인/회원가입 버튼 -->
@@ -764,10 +773,7 @@
                     const data = await response.json();
                     if (data.authenticated && data.user) {
                         // 로그인 상태 - 로그인 버튼 숨기고 사용자 정보 표시
-                        document.getElementById('logged-out-buttons').classList.add('hidden');
-                        document.getElementById('logged-in-buttons').classList.remove('hidden');
-                        document.getElementById('logged-in-buttons').classList.add('flex');
-                        document.getElementById('user-email').textContent = data.user.email || data.user.username || '사용자';
+                        showLoggedInState(data.user);
                     } else {
                         // 로그아웃 상태 - 로그인/회원가입 버튼 표시
                         showLoggedOutState();
@@ -1312,6 +1318,144 @@
             const firstTab = document.querySelector('.service-tab');
             if (firstTab) {
                 switchServiceTab('matching-service');
+            }
+            
+            // 인증 상태 확인
+            checkAuthStatus();
+        });
+
+        // 인증 상태 확인 함수
+        async function checkAuthStatus() {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    showLoggedOutState();
+                    return;
+                }
+
+                // 토큰 유효성 검증을 위해 API 호출
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showLoggedInState(data.user);
+                } else {
+                    // 토큰이 유효하지 않은 경우
+                    localStorage.removeItem('authToken');
+                    showLoggedOutState();
+                }
+            } catch (error) {
+                console.error('인증 상태 확인 실패:', error);
+                showLoggedOutState();
+            }
+        }
+
+        // 로그인 상태 UI 표시
+        function showLoggedInState(user) {
+            const loggedOutButtons = document.getElementById('logged-out-buttons');
+            const loggedInButtons = document.getElementById('logged-in-buttons');
+            const dashboardMenu = document.getElementById('dashboard-menu');
+            const userEmailSpan = document.getElementById('user-email');
+            const dashboardLink = document.getElementById('dashboard-link');
+            const dashboardText = document.getElementById('dashboard-text');
+
+            // 버튼 상태 변경
+            loggedOutButtons.classList.add('hidden');
+            loggedInButtons.classList.remove('hidden');
+            
+            // 사용자 정보 표시
+            if (userEmailSpan) {
+                userEmailSpan.textContent = user.email;
+            }
+
+            // 사용자 타입별 대시보드 링크 설정
+            if (dashboardMenu && dashboardLink && dashboardText) {
+                dashboardMenu.classList.remove('hidden');
+                
+                switch (user.user_type) {
+                    case 'jobseeker':
+                        dashboardLink.href = '/static/jobseeker-dashboard.html';
+                        dashboardText.innerHTML = '<i class="fas fa-user mr-1"></i>구직자 대시보드';
+                        break;
+                    case 'employer':
+                        dashboardLink.href = '/static/employer-dashboard.html';
+                        dashboardText.innerHTML = '<i class="fas fa-building mr-1"></i>기업 대시보드';
+                        break;
+                    case 'agent':
+                        dashboardLink.href = '/static/agent-dashboard.html';
+                        dashboardText.innerHTML = '<i class="fas fa-handshake mr-1"></i>에이전트 대시보드';
+                        break;
+                    case 'admin':
+                        dashboardLink.href = '/static/admin-dashboard.html';
+                        dashboardText.innerHTML = '<i class="fas fa-cog mr-1"></i>관리자 대시보드';
+                        break;
+                    default:
+                        dashboardLink.href = '#';
+                        dashboardText.innerHTML = '<i class="fas fa-tachometer-alt mr-1"></i>대시보드';
+                }
+            }
+        }
+
+        // 로그아웃 상태 UI 표시
+        function showLoggedOutState() {
+            const loggedOutButtons = document.getElementById('logged-out-buttons');
+            const loggedInButtons = document.getElementById('logged-in-buttons');
+            const dashboardMenu = document.getElementById('dashboard-menu');
+
+            // 버튼 상태 변경
+            loggedOutButtons.classList.remove('hidden');
+            loggedInButtons.classList.add('hidden');
+            
+            // 대시보드 메뉴 숨기기
+            if (dashboardMenu) {
+                dashboardMenu.classList.add('hidden');
+            }
+        }
+
+        // 로그아웃 처리
+        async function handleLogout() {
+            try {
+                const token = localStorage.getItem('authToken');
+                
+                // 서버에 로그아웃 요청 (선택사항)
+                if (token) {
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                }
+                
+                // 로컬 토큰 제거
+                localStorage.removeItem('authToken');
+                
+                // UI 상태 업데이트
+                showLoggedOutState();
+                
+                // 메인 페이지로 이동
+                window.location.href = '/';
+                
+            } catch (error) {
+                console.error('로그아웃 실패:', error);
+                // 실패해도 로컬 토큰은 제거
+                localStorage.removeItem('authToken');
+                showLoggedOutState();
+            }
+        }
+
+        // 로그아웃 버튼 이벤트 리스너 등록
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutButton = document.getElementById('logout-button');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', handleLogout);
             }
         });
     </script>
