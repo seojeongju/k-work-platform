@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>네비게이션 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-8">
+    <h1 class="text-2xl font-bold mb-4">네비게이션 테스트</h1>
+    <div class="space-y-4">
+        <button onclick="testJobSeekerMatching()" class="bg-blue-500 text-white px-4 py-2 rounded">구직자 매칭 테스트</button>
+        <button onclick="testJobListings()" class="bg-green-500 text-white px-4 py-2 rounded">구인정보 테스트</button>
+        <div id="result" class="mt-4 p-4 bg-gray-100 rounded"></div>
+    </div>
+
+    <script>
+        function testJobSeekerMatching() {
+            console.log('구직자 매칭 테스트 클릭');
+            document.getElementById('result').innerHTML = '구직자 매칭으로 이동 시도...';
+            window.location.href = '/static/matching-service.html?tab=matching';
+        }
+
+        function testJobListings() {
+            console.log('구인정보 테스트 클릭');
+            document.getElementById('result').innerHTML = '구인정보로 이동 시도...';
+            window.location.href = '/static/matching-service.html?tab=programs';
+        }
+    </script>
+</body>
+</html>

@@ -205,8 +205,37 @@
 
     <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="auth-utils.js"></script>
     <script>
         let selectedUserType = null;
+        let returnUrl = null;
+        
+        // URL 파라미터에서 리턴 URL과 메시지 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            returnUrl = urlParams.get('returnUrl');
+            const message = urlParams.get('message');
+            
+            // 메시지가 있으면 표시
+            if (message) {
+                showLoginMessage(decodeURIComponent(message));
+            }
+        });
+        
+        // 로그인 필요 메시지 표시
+        function showLoginMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6';
+            messageDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-yellow-600 mr-3"></i>
+                    <span class="text-yellow-800">${message}</span>
+                </div>
+            `;
+            
+            const form = document.getElementById('loginForm');
+            form.parentNode.insertBefore(messageDiv, form);
+        }
 
         // 회원 유형 선택
         document.querySelectorAll('.user-type-btn').forEach(btn => {
@@ -294,17 +323,31 @@
                     
                     alert('로그인이 완료되었습니다!');
                     
-                    // 사용자 유형별 리다이렉트
-                    if (selectedUserType === 'agent') {
-                        window.location.href = `/static/agent-dashboard?agentId=${response.data.user.id}`;
-                    } else if (selectedUserType === 'admin') {
-                        window.location.href = '/static/admin-dashboard.html';
-                    } else if (selectedUserType === 'employer') {
-                        window.location.href = '/static/employer-dashboard.html';
-                    } else if (selectedUserType === 'jobseeker') {
-                        window.location.href = '/static/jobseeker-profile.html';
+                    // 인증 정보 저장 (새로운 형식)
+                    localStorage.setItem('authToken', response.data.token);
+                    localStorage.setItem('userData', JSON.stringify(response.data.user));
+                    localStorage.setItem('userType', selectedUserType);
+                    
+                    // 토큰 만료 시간 설정 (24시간)
+                    AuthUtils.setTokenExpiration(24 * 60 * 60);
+                    
+                    // 리다이렉트 처리
+                    if (returnUrl) {
+                        // 로그인 전 페이지로 돌아가기
+                        window.location.href = returnUrl;
                     } else {
-                        window.location.href = '/';
+                        // 사용자 유형별 기본 리다이렉트
+                        if (selectedUserType === 'agent') {
+                            window.location.href = `/static/agent-dashboard.html?agentId=${response.data.user.id}`;
+                        } else if (selectedUserType === 'admin') {
+                            window.location.href = '/static/admin-dashboard.html';
+                        } else if (selectedUserType === 'employer') {
+                            window.location.href = '/static/employer-dashboard.html';
+                        } else if (selectedUserType === 'jobseeker') {
+                            window.location.href = '/static/jobseeker-dashboard.html';
+                        } else {
+                            window.location.href = '/';
+                        }
                     }
                 } else {
                     throw new Error(response.data.error || '로그인에 실패했습니다.');

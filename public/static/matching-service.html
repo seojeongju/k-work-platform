@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>매칭 서비스 | WOW-CAMPUS K-Work Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wow-blue': '#1e40af',
+                        'wow-light-blue': '#3b82f6',
+                        'wow-green': '#059669',
+                        'wow-yellow': '#d97706',
+                        'wow-gray': '#f8fafc'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .service-tab {
+            transition: all 0.3s ease;
+        }
+        .service-tab.active {
+            background: #1e40af;
+            color: white;
+        }
+        .service-tab:not(.active) {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .matching-card {
+            transition: all 0.3s ease;
+        }
+        .matching-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 상단 네비게이션 -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center">
+                        <i class="fas fa-globe-asia text-wow-blue text-2xl mr-3"></i>
+                        <span class="text-xl font-bold text-gray-900">WOW-CAMPUS</span>
+                    </a>
+                    <div class="hidden md:ml-10 md:flex md:space-x-8">
+                        <a href="/" class="text-gray-700 hover:text-wow-blue px-3 py-2 text-sm font-medium">홈</a>
+                        <a href="/static/job-listings.html" class="text-gray-700 hover:text-wow-blue px-3 py-2 text-sm font-medium">구인정보</a>
+                        <a href="/static/jobseeker-listings.html" class="text-gray-700 hover:text-wow-blue px-3 py-2 text-sm font-medium">구직정보</a>
+                        <a href="/static/matching-service.html" class="text-wow-blue px-3 py-2 text-sm font-bold border-b-2 border-wow-blue">매칭서비스</a>
+                        <a href="/static/login.html" class="text-gray-700 hover:text-wow-blue px-3 py-2 text-sm font-medium">로그인</a>
+                    </div>
+                </div>
+                <div class="flex items-center md:hidden">
+                    <button id="mobile-menu-button" class="text-gray-700 hover:text-wow-blue">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 모바일 메뉴 -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <a href="/" class="text-gray-700 hover:text-wow-blue block px-3 py-2 text-base font-medium">홈</a>
+                <a href="/static/job-listings.html" class="text-gray-700 hover:text-wow-blue block px-3 py-2 text-base font-medium">구인정보</a>
+                <a href="/static/jobseeker-listings.html" class="text-gray-700 hover:text-wow-blue block px-3 py-2 text-base font-medium">구직정보</a>
+                <a href="/static/matching-service.html" class="text-wow-blue block px-3 py-2 text-base font-bold">매칭서비스</a>
+                <a href="/static/login.html" class="text-gray-700 hover:text-wow-blue block px-3 py-2 text-base font-medium">로그인</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 페이지 헤더 -->
+    <div class="bg-gradient-to-r from-wow-blue to-wow-light-blue text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                <i class="fas fa-magic mr-4"></i>매칭 서비스
+            </h1>
+            <p class="text-xl text-blue-100 max-w-3xl mx-auto mb-8">
+                AI 기반 스마트 매칭으로 최적의 구인구직 연결을 제공합니다
+            </p>
+            <div class="text-sm text-blue-200">
+                필요한 서비스를 선택하세요
+            </div>
+        </div>
+    </div>
+
+    <!-- 서비스 메뉴 탭 -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-center space-x-2 py-4">
+                <button onclick="switchTab('jobs')" id="tab-jobs" class="service-tab px-6 py-3 rounded-lg font-medium transition-all">
+                    <i class="fas fa-briefcase mr-2"></i>매칭 서비스
+                </button>
+                <button onclick="switchTab('talents')" id="tab-talents" class="service-tab px-6 py-3 rounded-lg font-medium transition-all">
+                    <i class="fas fa-users mr-2"></i>우수 프로그램
+                </button>
+                <button onclick="switchTab('education')" id="tab-education" class="service-tab px-6 py-3 rounded-lg font-medium transition-all">
+                    <i class="fas fa-graduation-cap mr-2"></i>통계 대시보드
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 스마트 매칭 시스템 소개 -->
+    <div class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">스마트 매칭 시스템</h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                    AI 기반으로 구직자의 조건과 구인공고를 자동 매칭합니다
+                </p>
+            </div>
+            
+            <!-- 통계 카드 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div class="bg-green-50 rounded-xl p-6 text-center">
+                    <div class="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-4">
+                        <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                    </div>
+                    <div class="stats-number text-green-600" id="stat-success">127</div>
+                    <div class="text-green-700 font-medium">완료 매칭</div>
+                </div>
+                
+                <div class="bg-yellow-50 rounded-xl p-6 text-center">
+                    <div class="inline-flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-full mb-4">
+                        <i class="fas fa-star text-yellow-600 text-xl"></i>
+                    </div>
+                    <div class="stats-number text-yellow-600" id="stat-excellent">284</div>
+                    <div class="text-yellow-700 font-medium">좋은 매칭</div>
+                </div>
+                
+                <div class="bg-blue-50 rounded-xl p-6 text-center">
+                    <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-4">
+                        <i class="fas fa-clock text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="stats-number text-blue-600" id="stat-pending">56</div>
+                    <div class="text-blue-700 font-medium">매칭 대기</div>
+                </div>
+            </div>
+            
+            <!-- 메인 서비스 버튼 -->
+            <div class="flex justify-center space-x-6">
+                <button onclick="startJobSeekerMatching()" class="bg-wow-blue hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg transition-all shadow-lg hover:shadow-xl">
+                    <i class="fas fa-user-friends mr-3"></i>구직자 매칭
+                </button>
+                <button onclick="viewJobListings()" class="bg-white hover:bg-gray-50 text-wow-blue font-bold py-4 px-8 rounded-lg border-2 border-wow-blue transition-all shadow-lg hover:shadow-xl">
+                    <i class="fas fa-briefcase mr-3"></i>구인정보 보기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 탭 컨텐츠 -->
+    <div class="max-w-7xl mx-auto px-4 pb-16">
+        
+        <!-- 매칭 서비스 탭 -->
+        <div id="content-jobs" class="tab-content">
+            <div class="text-center mb-8">
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">AI 기반 매칭 프로세스</h3>
+                <p class="text-gray-600">정확한 매칭을 위한 단계별 분석 과정</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="matching-card bg-white rounded-lg p-6 shadow-lg border border-gray-100">
+                    <div class="text-wow-blue text-4xl mb-4 text-center">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-3 text-center">조건 분석</h4>
+                    <ul class="text-gray-600 space-y-2">
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>비자 유형 매칭</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>희망 직종 분석</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>지역 선호도</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>급여 조건 비교</li>
+                    </ul>
+                </div>
+                
+                <div class="matching-card bg-white rounded-lg p-6 shadow-lg border border-gray-100">
+                    <div class="text-wow-green text-4xl mb-4 text-center">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-3 text-center">AI 매칭</h4>
+                    <ul class="text-gray-600 space-y-2">
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>완벽매칭 (90% 이상)</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>좋은매칭 (70-89%)</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>보통매칭 (50-69%)</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>실시간 업데이트</li>
+                    </ul>
+                </div>
+                
+                <div class="matching-card bg-white rounded-lg p-6 shadow-lg border border-gray-100">
+                    <div class="text-wow-yellow text-4xl mb-4 text-center">
+                        <i class="fas fa-handshake"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-3 text-center">매칭 결과</h4>
+                    <ul class="text-gray-600 space-y-2">
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>상세 매칭 점수</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>추천 이유 설명</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>연락처 정보</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>지원 가능 여부</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 우수 프로그램 탭 -->
+        <div id="content-talents" class="tab-content hidden">
+            <div class="text-center mb-8">
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">우수 프로그램</h3>
+                <p class="text-gray-600">검증된 우수 구직자들을 만나보세요</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="excellent-talents">
+                <!-- 우수 구직자 카드들이 여기에 동적으로 생성됩니다 -->
+            </div>
+        </div>
+
+        <!-- 통계 대시보드 탭 -->
+        <div id="content-education" class="tab-content hidden">
+            <div class="text-center mb-8">
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">통계 대시보드</h3>
+                <p class="text-gray-600">매칭 서비스 현황과 성과를 한눈에 확인하세요</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg p-6 shadow-lg">
+                    <div class="flex items-center">
+                        <div class="bg-blue-100 rounded-full p-3">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">총 구직자</p>
+                            <p class="text-2xl font-bold text-gray-900" id="total-jobseekers">1,247</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg p-6 shadow-lg">
+                    <div class="flex items-center">
+                        <div class="bg-green-100 rounded-full p-3">
+                            <i class="fas fa-briefcase text-green-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">총 구인공고</p>
+                            <p class="text-2xl font-bold text-gray-900" id="total-jobs">843</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg p-6 shadow-lg">
+                    <div class="flex items-center">
+                        <div class="bg-yellow-100 rounded-full p-3">
+                            <i class="fas fa-star text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">성공 매칭</p>
+                            <p class="text-2xl font-bold text-gray-900" id="success-matches">467</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg p-6 shadow-lg">
+                    <div class="flex items-center">
+                        <div class="bg-purple-100 rounded-full p-3">
+                            <i class="fas fa-percentage text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">매칭 성공률</p>
+                            <p class="text-2xl font-bold text-gray-900" id="success-rate">87.4%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 차트 영역 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white rounded-lg p-6 shadow-lg">
+                    <h4 class="text-lg font-bold text-gray-900 mb-4">월별 매칭 현황</h4>
+                    <div class="h-64 flex items-center justify-center bg-gray-50 rounded">
+                        <p class="text-gray-500">차트 영역 (향후 구현)</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg p-6 shadow-lg">
+                    <h4 class="text-lg font-bold text-gray-900 mb-4">직종별 매칭 분포</h4>
+                    <div class="h-64 flex items-center justify-center bg-gray-50 rounded">
+                        <p class="text-gray-500">차트 영역 (향후 구현)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 매칭 결과 모달 -->
+    <div id="matching-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-magic mr-2 text-wow-blue"></i>매칭 결과
+                    </h2>
+                    <button onclick="closeMatchingModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div id="matching-results">
+                    <!-- 매칭 결과가 여기에 동적으로 생성됩니다 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth-utils.js"></script>
+    <script src="matching-service.js"></script>
+</body>
+</html>

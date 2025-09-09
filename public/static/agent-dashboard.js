@@ -1,18 +1,38 @@
-// 에이전트 대시보드 JavaScript
+// 에이전트 대시보드 JavaScript - 안정화 버전
 
 class AgentDashboard {
     constructor() {
         this.currentTab = 'jobseekers';
         this.currentPage = 1;
         this.agentId = this.getAgentId();
+        this.isInitialized = false;
+        this.initTimeoutId = null;
         this.init();
     }
 
     init() {
-        this.setupTabs();
-        this.setupModal();
-        this.setupEventListeners();
-        this.loadInitialData();
+        // 중복 초기화 방지
+        if (this.isInitialized) {
+            console.warn('Dashboard already initialized');
+            return;
+        }
+
+        // 이전 타임아웃 클리어
+        if (this.initTimeoutId) {
+            clearTimeout(this.initTimeoutId);
+        }
+
+        try {
+            this.setupTabs();
+            this.setupModal();
+            this.setupEventListeners();
+            this.loadInitialData();
+            this.isInitialized = true;
+            console.log('Agent dashboard initialized successfully');
+        } catch (error) {
+            console.error('Dashboard initialization failed:', error);
+            this.showError('대시보드 초기화 실패: ' + error.message);
+        }
     }
 
     getAgentId() {
@@ -133,25 +153,80 @@ class AgentDashboard {
     }
 
     async loadInitialData() {
-        await this.loadAgentStats();
-        await this.loadJobseekers();
+        try {
+            // 비동기 로딩을 순차적으로 처리하여 충돌 방지
+            await this.loadAgentStats();
+            
+            // 작은 지연을 두어 DOM 안정화
+            setTimeout(async () => {
+                try {
+                    await this.loadJobseekers();
+                } catch (error) {
+                    console.error('구직자 데이터 로드 실패:', error);
+                    this.showError('구직자 데이터 로드에 실패했습니다.');
+                }
+            }, 100);
+        } catch (error) {
+            console.error('초기 데이터 로드 실패:', error);
+            this.showError('초기 데이터 로드에 실패했습니다.');
+        }
+    }
+
+    showError(message) {
+        console.error(message);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white p-4 rounded-lg z-50';
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        
+        setTimeout(() => {
+            try {
+                if (errorDiv && errorDiv.parentNode) {
+                    errorDiv.parentNode.removeChild(errorDiv);
+                }
+            } catch (e) {
+                console.error('Error removing error message:', e);
+            }
+        }, 5000);
     }
 
     async loadTabData(tabId) {
-        switch(tabId) {
-            case 'jobseekers':
-                await this.loadJobseekers();
-                break;
-            case 'jobs':
-                await this.loadJobPostings();
-                break;
-            case 'applications':
-                await this.loadApplications();
-                break;
-            case 'study':
-                await this.loadStudyPrograms();
-                await this.loadStudents();
-                break;
+        try {
+            // 탭 데이터 로딩 중복 방지
+            if (this.loadingTabs && this.loadingTabs[tabId]) {
+                console.warn(`Tab ${tabId} is already loading`);
+                return;
+            }
+            
+            if (!this.loadingTabs) {
+                this.loadingTabs = {};
+            }
+            this.loadingTabs[tabId] = true;
+
+            switch(tabId) {
+                case 'jobseekers':
+                    await this.loadJobseekers();
+                    break;
+                case 'jobs':
+                    await this.loadJobPostings();
+                    break;
+                case 'applications':
+                    await this.loadApplications();
+                    break;
+                case 'study':
+                    await this.loadStudyPrograms();
+                    await this.loadStudents();
+                    break;
+                default:
+                    console.warn('Unknown tab:', tabId);
+            }
+        } catch (error) {
+            console.error(`Tab ${tabId} data loading failed:`, error);
+            this.showError(`${tabId} 탭 데이터 로드에 실패했습니다.`);
+        } finally {
+            if (this.loadingTabs) {
+                this.loadingTabs[tabId] = false;
+            }
         }
     }
 
@@ -580,8 +655,44 @@ class AgentDashboard {
     }
 }
 
-// 대시보드 초기화
+// 대시보드 초기화 - 안전 가드 추가
 let dashboard;
-document.addEventListener('DOMContentLoaded', () => {
-    dashboard = new AgentDashboard();
+let isInitializing = false;
+
+function initializeDashboard() {
+    if (isInitializing || dashboard) {
+        console.warn('Dashboard initialization already in progress or completed');
+        return;
+    }
+    
+    isInitializing = true;
+    
+    try {
+        dashboard = new AgentDashboard();
+        console.log('Dashboard initialization completed');
+    } catch (error) {
+        console.error('Dashboard initialization failed:', error);
+        // 사용자에게 오류 표시
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white p-4 rounded-lg z-50';
+        errorDiv.textContent = '대시보드 초기화에 실패했습니다. 페이지를 새로고침해주세요.';
+        document.body.appendChild(errorDiv);
+    } finally {
+        isInitializing = false;
+    }
+}
+
+// DOM 로드 완료 시 대시보드 초기화
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeDashboard);
+} else {
+    // DOM이 이미 로드된 경우 즉시 실행
+    initializeDashboard();
+}
+
+// 페이지 언로드 시 정리
+window.addEventListener('beforeunload', () => {
+    if (dashboard && dashboard.initTimeoutId) {
+        clearTimeout(dashboard.initTimeoutId);
+    }
 });
