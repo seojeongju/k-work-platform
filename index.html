@@ -773,7 +773,10 @@
                     const data = await response.json();
                     if (data.authenticated && data.user) {
                         // 로그인 상태 - 로그인 버튼 숨기고 사용자 정보 표시
-                        showLoggedInState(data.user);
+                        document.getElementById('logged-out-buttons').classList.add('hidden');
+                        document.getElementById('logged-in-buttons').classList.remove('hidden');
+                        document.getElementById('logged-in-buttons').classList.add('flex');
+                        document.getElementById('user-email').textContent = data.user.email || data.user.username || '사용자';
                     } else {
                         // 로그아웃 상태 - 로그인/회원가입 버튼 표시
                         showLoggedOutState();
