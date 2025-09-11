@@ -1,11 +1,12 @@
-name = "w-campus-fresh"
+name = "w-campus"
 compatibility_date = "2025-09-11"
+pages_build_output_dir = "./dist"
 
-# Development build settings
-[build]
-command = "npm run build"
-
-# Environment variables
 [vars]
 SITE_NAME = "WOW-CAMPUS"
-ENVIRONMENT = "development"
+ENVIRONMENT = "production"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "w-campus-production-fresh"
+database_id = "d5248baa-5bf3-4292-bfc1-a81c2c44c7a4"
