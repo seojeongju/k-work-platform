@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'w-campus-platform',
+      name: 'w-campus-fresh-platform',
       script: 'npx',
       args: 'wrangler pages dev dist --local --port 3000',
       env: {
