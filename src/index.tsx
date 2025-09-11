@@ -2887,5 +2887,81 @@ app.get('/api/study-programs', async (c) => {
   }
 })
 
+// 구직자 API
+app.get('/api/jobseekers', async (c) => {
+  try {
+    const page = parseInt(c.req.query('page') || '1')
+    const limit = parseInt(c.req.query('limit') || '10')
+    const offset = (page - 1) * limit
+
+    const jobseekers = await c.env.DB.prepare(`
+      SELECT 
+        id, name, email, phone, nationality, current_visa as visa_status, korean_level,
+        work_experience, education_level, status, created_at
+      FROM job_seekers 
+      ORDER BY created_at DESC 
+      LIMIT ? OFFSET ?
+    `).bind(limit, offset).all()
+
+    const totalResult = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM job_seekers
+    `).first()
+
+    const total = totalResult?.count || 0
+
+    return c.json({
+      success: true,
+      jobseekers: jobseekers.results,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    })
+  } catch (error) {
+    console.error('Job seekers API error:', error)
+    return c.json({ error: 'Failed to fetch job seekers' }, 500)
+  }
+})
+
+// 통계 API
+app.get('/api/stats', async (c) => {
+  try {
+    // 구직자 통계
+    const jobSeekersCount = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM job_seekers
+    `).first()
+
+    // 구인 정보 통계
+    const jobsCount = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM job_postings WHERE status = 'active'
+    `).first()
+
+    // 매칭 통계
+    const matchesCount = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM job_matches WHERE status = 'matched'
+    `).first()
+
+    // 에이전트 통계
+    const agentsCount = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM agents WHERE status = 'active'
+    `).first()
+
+    return c.json({
+      success: true,
+      stats: {
+        totalJobSeekers: jobSeekersCount?.count || 0,
+        activeJobs: jobsCount?.count || 0,
+        successfulMatches: matchesCount?.count || 0,
+        activeAgents: agentsCount?.count || 0
+      }
+    })
+  } catch (error) {
+    console.error('Stats API error:', error)
+    return c.json({ error: 'Failed to fetch statistics' }, 500)
+  }
+})
+
 
 export default app
