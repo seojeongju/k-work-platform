@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>테스트 계정 관리 - WOW-CAMPUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#1E40AF',
+              secondary: '#3B82F6',
+              accent: '#059669'
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        .account-card {
+            transition: all 0.3s ease;
+        }
+        .account-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md border-b-2 border-primary">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
+                        <i class="fas fa-vial text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-primary">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">테스트 계정 관리</span>
+                    </div>
+                </a>
+                
+                <div class="flex items-center space-x-4">
+                    <div id="currentUserInfo" class="hidden bg-green-100 px-4 py-2 rounded-lg">
+                        <span class="text-sm text-green-800">로그인됨: <span id="currentUserName"></span></span>
+                    </div>
+                    <button onclick="logoutTestUser()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-2"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- 안내 메시지 -->
+        <div class="bg-blue-100 border-l-4 border-blue-500 p-4 mb-8">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-info-circle text-blue-500 text-xl"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-blue-800 font-medium">테스트 계정 시스템</p>
+                    <p class="text-blue-700 mt-1">각 사용자 유형별로 미리 준비된 테스트 계정으로 대시보드 기능을 체험해보세요. 원클릭으로 로그인하여 각 권한별 화면을 확인할 수 있습니다.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 현재 로그인 상태 -->
+        <div id="loginStatus" class="mb-8 p-6 bg-white rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-user-check mr-2 text-green-500"></i>현재 로그인 상태
+            </h2>
+            <div id="notLoggedIn" class="text-gray-600">
+                <i class="fas fa-times-circle mr-2 text-red-500"></i>로그인되지 않음
+            </div>
+            <div id="loggedIn" class="hidden">
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <p class="text-green-800"><strong>사용자:</strong> <span id="loggedUserName"></span></p>
+                    <p class="text-green-800"><strong>권한:</strong> <span id="loggedUserRole"></span></p>
+                    <p class="text-green-800"><strong>이메일:</strong> <span id="loggedUserEmail"></span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 테스트 계정 카드들 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- 구직자 계정 -->
+            <div class="account-card bg-white rounded-lg shadow-md p-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-user text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">구직자</h3>
+                    <div class="text-sm text-gray-600 mb-4">
+                        <p><strong>이름:</strong> 김구직</p>
+                        <p><strong>이메일:</strong> jobseeker@test.com</p>
+                        <p><strong>스킬:</strong> JavaScript, React</p>
+                    </div>
+                    <button onclick="loginAsTestUser('jobseeker')" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-sign-in-alt mr-2"></i>구직자로 로그인
+                    </button>
+                </div>
+            </div>
+
+            <!-- 구인기업 계정 -->
+            <div class="account-card bg-white rounded-lg shadow-md p-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-building text-green-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">구인기업</h3>
+                    <div class="text-sm text-gray-600 mb-4">
+                        <p><strong>담당자:</strong> 박기업</p>
+                        <p><strong>이메일:</strong> employer@test.com</p>
+                        <p><strong>회사:</strong> 테스트 기업</p>
+                    </div>
+                    <button onclick="loginAsTestUser('employer')" class="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors">
+                        <i class="fas fa-sign-in-alt mr-2"></i>기업으로 로그인
+                    </button>
+                </div>
+            </div>
+
+            <!-- 에이전트 계정 -->
+            <div class="account-card bg-white rounded-lg shadow-md p-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-user-tie text-purple-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">에이전트</h3>
+                    <div class="text-sm text-gray-600 mb-4">
+                        <p><strong>이름:</strong> 이에이전트</p>
+                        <p><strong>이메일:</strong> agent@test.com</p>
+                        <p><strong>기관:</strong> 글로벌 인재 에이전시</p>
+                    </div>
+                    <button onclick="loginAsTestUser('agent')" class="w-full bg-purple-500 text-white py-2 px-4 rounded-lg hover:bg-purple-600 transition-colors">
+                        <i class="fas fa-sign-in-alt mr-2"></i>에이전트로 로그인
+                    </button>
+                </div>
+            </div>
+
+            <!-- 관리자 계정 -->
+            <div class="account-card bg-white rounded-lg shadow-md p-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-user-shield text-red-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">관리자</h3>
+                    <div class="text-sm text-gray-600 mb-4">
+                        <p><strong>이름:</strong> 최관리자</p>
+                        <p><strong>이메일:</strong> admin@test.com</p>
+                        <p><strong>권한:</strong> 전체 관리</p>
+                    </div>
+                    <button onclick="loginAsTestUser('admin')" class="w-full bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-in-alt mr-2"></i>관리자로 로그인
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 빠른 링크들 -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                <i class="fas fa-link mr-2"></i>빠른 링크
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <a href="/static/jobseeker-dashboard.html" class="text-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                    <i class="fas fa-user text-blue-600 text-xl mb-2 block"></i>
+                    <span class="text-sm text-blue-800">구직자 대시보드</span>
+                </a>
+                <a href="/static/employer-dashboard.html" class="text-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                    <i class="fas fa-building text-green-600 text-xl mb-2 block"></i>
+                    <span class="text-sm text-green-800">기업 대시보드</span>
+                </a>
+                <a href="/static/agent-dashboard.html" class="text-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                    <i class="fas fa-user-tie text-purple-600 text-xl mb-2 block"></i>
+                    <span class="text-sm text-purple-800">에이전트 대시보드</span>
+                </a>
+                <a href="/static/admin-dashboard.html" class="text-center p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                    <i class="fas fa-user-shield text-red-600 text-xl mb-2 block"></i>
+                    <span class="text-sm text-red-800">관리자 대시보드</span>
+                </a>
+                <a href="/static/job-listings.html" class="text-center p-3 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+                    <i class="fas fa-briefcase text-yellow-600 text-xl mb-2 block"></i>
+                    <span class="text-sm text-yellow-800">구인정보</span>
+                </a>
+                <a href="/static/jobseeker-listings.html" class="text-center p-3 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                    <i class="fas fa-users text-indigo-600 text-xl mb-2 block"></i>
+                    <span class="text-sm text-indigo-800">구직정보</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 테스트 계정 스크립트 -->
+    <script>
+        // 테스트 계정 데이터
+        const testAccounts = {
+            jobseeker: {
+                id: 1,
+                type: 'jobseeker',
+                name: '김구직',
+                email: 'jobseeker@test.com',
+                password: 'test123',
+                token: 'jobseeker-token-123',
+                profile: {
+                    skills: ['JavaScript', 'React', 'Node.js'],
+                    experience: '2년',
+                    education: '대학교 졸업',
+                    location: '서울시 강남구',
+                    visa_status: 'E-7',
+                    phone: '010-1234-5678'
+                }
+            },
+            employer: {
+                id: 1,
+                type: 'employer',
+                name: '박기업',
+                email: 'employer@test.com',
+                password: 'test123',
+                token: 'employer-token-123',
+                company: {
+                    name: '테스트 기업',
+                    industry: 'IT/소프트웨어',
+                    size: '중소기업',
+                    location: '서울시 강남구',
+                    description: '혁신적인 IT 솔루션을 제공하는 기업입니다.'
+                }
+            },
+            agent: {
+                id: 1,
+                type: 'agent',
+                name: '이에이전트',
+                email: 'agent@test.com',
+                password: 'test123',
+                token: 'agent-token-123',
+                agency: {
+                    name: '글로벌 인재 에이전시',
+                    license: 'AG-2024-001',
+                    specialization: ['IT', '엔지니어링', '의료'],
+                    region: '서울/경기',
+                    success_rate: '85%'
+                }
+            },
+            admin: {
+                id: 1,
+                type: 'admin',
+                name: '최관리자',
+                email: 'admin@test.com',
+                password: 'admin123',
+                token: 'admin-token-123',
+                permissions: [
+                    'user_management',
+                    'job_management',
+                    'agent_management', 
+                    'system_settings',
+                    'statistics_view'
+                ]
+            }
+        };
+
+        // 테스트 사용자로 로그인
+        async function loginAsTestUser(userType) {
+            if (!testAccounts[userType]) {
+                alert('유효하지 않은 사용자 유형입니다.');
+                return;
+            }
+            
+            const user = testAccounts[userType];
+            
+            try {
+                // 실제 API를 통한 로그인
+                showLoading(`${user.name}로 로그인 중...`);
+                
+                const loginData = {
+                    email: user.email,
+                    password: userType === 'admin' ? 'admin123' : 'test123',
+                    userType: userType
+                };
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(loginData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.token) {
+                    // 로그인 성공 - API에서 받은 토큰 사용
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userRole', userType);
+                    localStorage.setItem('userName', data.user.name);
+                    localStorage.setItem('userEmail', data.user.email);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    hideLoading();
+                    alert(`${data.user.name} (${userType})로 로그인되었습니다.`);
+                    
+                    // 현재 페이지에서 로그인 상태 업데이트
+                    updateLoginStatus();
+                    
+                    // 해당 사용자 유형의 대시보드로 이동
+                    setTimeout(() => {
+                        switch(userType) {
+                            case 'jobseeker':
+                                window.location.href = '/static/jobseeker-dashboard.html';
+                                break;
+                            case 'employer':
+                                window.location.href = '/static/employer-dashboard.html';
+                                break;
+                            case 'agent':
+                                window.location.href = '/static/agent-dashboard.html';
+                                break;
+                            case 'admin':
+                                window.location.href = '/static/admin-dashboard.html';
+                                break;
+                        }
+                    }, 1000);
+                } else {
+                    hideLoading();
+                    alert('로그인에 실패했습니다: ' + (data.error || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                hideLoading();
+                console.error('Login error:', error);
+                alert('로그인 중 오류가 발생했습니다.');
+            }
+        }
+        
+        function showLoading(message) {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loading-overlay';
+            loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            loadingDiv.innerHTML = `
+                <div class="bg-white rounded-lg p-6 text-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p class="text-gray-700">${message}</p>
+                </div>
+            `;
+            document.body.appendChild(loadingDiv);
+        }
+        
+        function hideLoading() {
+            const loadingDiv = document.getElementById('loading-overlay');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+
+        // 로그아웃
+        function logoutTestUser() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('user');
+            
+            alert('로그아웃되었습니다.');
+            updateLoginStatus();
+        }
+
+        // 현재 로그인 상태 확인
+        function getCurrentUser() {
+            const token = localStorage.getItem('authToken');
+            const userRole = localStorage.getItem('userRole');
+            const userName = localStorage.getItem('userName');
+            const userEmail = localStorage.getItem('userEmail');
+            
+            if (token && userRole && userName) {
+                return {
+                    token,
+                    role: userRole,
+                    name: userName,
+                    email: userEmail,
+                    isLoggedIn: true
+                };
+            }
+            
+            return {
+                isLoggedIn: false
+            };
+        }
+
+        // 로그인 상태 UI 업데이트
+        function updateLoginStatus() {
+            const currentUser = getCurrentUser();
+            const notLoggedIn = document.getElementById('notLoggedIn');
+            const loggedIn = document.getElementById('loggedIn');
+            const currentUserInfo = document.getElementById('currentUserInfo');
+            
+            if (currentUser.isLoggedIn) {
+                notLoggedIn.classList.add('hidden');
+                loggedIn.classList.remove('hidden');
+                currentUserInfo.classList.remove('hidden');
+                
+                document.getElementById('loggedUserName').textContent = currentUser.name;
+                document.getElementById('loggedUserRole').textContent = currentUser.role;
+                document.getElementById('loggedUserEmail').textContent = currentUser.email;
+                document.getElementById('currentUserName').textContent = currentUser.name;
+            } else {
+                notLoggedIn.classList.remove('hidden');
+                loggedIn.classList.add('hidden');
+                currentUserInfo.classList.add('hidden');
+            }
+        }
+
+        // 페이지 로드 시 로그인 상태 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLoginStatus();
+        });
+    </script>
+</body>
+</html>

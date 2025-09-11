@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구직자 목록 - wow3D 외국인 구인구직 및 유학생 지원플랫폼</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-users text-primary text-3xl"></i>
+                    <h1 class="text-2xl font-bold text-gray-800">구직자 목록</h1>
+                </div>
+                <nav class="flex items-center space-x-6">
+                    <a href="/" class="text-gray-600 hover:text-primary">
+                        <i class="fas fa-home mr-2"></i>홈으로
+                    </a>
+                    <a href="/static/job-seeker-register.html" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary">
+                        <i class="fas fa-plus mr-2"></i>구직정보 등록
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 검색 및 필터 섹션 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                <i class="fas fa-filter mr-2"></i>구직자 검색
+            </h3>
+            
+            <div class="grid md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">국적</label>
+                    <select id="filter-nationality" class="form-input">
+                        <option value="">전체</option>
+                        <option value="Vietnam">베트남</option>
+                        <option value="Philippines">필리핀</option>
+                        <option value="Thailand">태국</option>
+                        <option value="Indonesia">인도네시아</option>
+                        <option value="Myanmar">미얀마</option>
+                        <option value="Cambodia">캄보디아</option>
+                        <option value="Nepal">네팔</option>
+                        <option value="Bangladesh">방글라데시</option>
+                        <option value="China">중국</option>
+                        <option value="Mongolia">몽골</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">비자</label>
+                    <select id="filter-visa" class="form-input">
+                        <option value="">전체</option>
+                        <option value="E-9">E-9 (비전문취업)</option>
+                        <option value="E-7">E-7 (특정활동)</option>
+                        <option value="H-2">H-2 (방문취업)</option>
+                        <option value="D-2">D-2 (유학)</option>
+                        <option value="D-4">D-4 (연수)</option>
+                        <option value="E-2">E-2 (회화지도)</option>
+                        <option value="F-4">F-4 (재외동포)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">한국어 수준</label>
+                    <select id="filter-korean" class="form-input">
+                        <option value="">전체</option>
+                        <option value="beginner">초급</option>
+                        <option value="intermediate">중급</option>
+                        <option value="advanced">고급</option>
+                        <option value="native">원어민급</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">희망 직종</label>
+                    <select id="filter-job-category" class="form-input">
+                        <option value="">전체</option>
+                        <option value="MFG">제조업</option>
+                        <option value="CON">건설업</option>
+                        <option value="AGR">농업</option>
+                        <option value="SVC">서비스업</option>
+                        <option value="IT">IT/소프트웨어</option>
+                        <option value="EDU">교육</option>
+                        <option value="HSP">의료/보건</option>
+                        <option value="TRD">무역/물류</option>
+                    </select>
+                </div>
+
+                <div class="flex items-end">
+                    <button id="search-btn" class="w-full bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary">
+                        <i class="fas fa-search mr-2"></i>검색
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 통계 정보 -->
+        <div class="grid md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <div class="flex items-center">
+                    <i class="fas fa-users text-blue-500 text-2xl mr-3"></i>
+                    <div>
+                        <div class="text-xl font-bold text-blue-600" id="total-count">0</div>
+                        <div class="text-sm text-gray-600">총 구직자</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <div class="flex items-center">
+                    <i class="fas fa-globe text-green-500 text-2xl mr-3"></i>
+                    <div>
+                        <div class="text-xl font-bold text-green-600" id="nationality-count">0</div>
+                        <div class="text-sm text-gray-600">국적 수</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <div class="flex items-center">
+                    <i class="fas fa-language text-purple-500 text-2xl mr-3"></i>
+                    <div>
+                        <div class="text-xl font-bold text-purple-600" id="korean-advanced">0</div>
+                        <div class="text-sm text-gray-600">고급 한국어</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <div class="flex items-center">
+                    <i class="fas fa-briefcase text-orange-500 text-2xl mr-3"></i>
+                    <div>
+                        <div class="text-xl font-bold text-orange-600" id="ready-to-work">0</div>
+                        <div class="text-sm text-gray-600">즉시 취업가능</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 구직자 목록 -->
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        구직자 목록 (<span id="result-count">0</span>명)
+                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm text-gray-600">정렬:</label>
+                        <select id="sort-by" class="form-input text-sm">
+                            <option value="created_at_desc">최근 등록순</option>
+                            <option value="created_at_asc">등록 오래된순</option>
+                            <option value="name_asc">이름 순</option>
+                            <option value="korean_level_desc">한국어 수준 높은순</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="job-seekers-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+                <!-- 구직자 카드들이 여기에 로드됩니다 -->
+            </div>
+
+            <!-- 로딩 상태 -->
+            <div id="loading" class="text-center py-12 hidden">
+                <div class="loading mx-auto mb-4"></div>
+                <p class="text-gray-600">구직자 정보를 불러오는 중...</p>
+            </div>
+
+            <!-- 빈 상태 -->
+            <div id="empty-state" class="text-center py-12 hidden">
+                <i class="fas fa-user-slash text-gray-400 text-4xl mb-4"></i>
+                <p class="text-gray-600 mb-4">조건에 맞는 구직자가 없습니다.</p>
+                <a href="/static/job-seeker-register.html" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary">
+                    첫 번째 구직자가 되어보세요
+                </a>
+            </div>
+        </div>
+
+        <!-- 페이지네이션 -->
+        <div class="flex justify-center mt-8">
+            <div class="flex items-center space-x-2" id="pagination">
+                <!-- 페이지네이션 버튼들이 여기에 로드됩니다 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 구직자 상세 모달 -->
+    <div id="job-seeker-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-screen overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-semibold">구직자 상세정보</h3>
+                        <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+
+                    <div id="job-seeker-detail">
+                        <!-- 상세 정보가 여기에 로드됩니다 -->
+                    </div>
+
+                    <div class="flex justify-end space-x-2 mt-6 pt-4 border-t">
+                        <button id="contact-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary">
+                            <i class="fas fa-phone mr-2"></i>연락하기
+                        </button>
+                        <button id="close-modal-btn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">
+                            닫기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/job-seeker-list.js"></script>
+</body>
+</html>

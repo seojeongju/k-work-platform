@@ -1,0 +1,11 @@
+name = "w-campus"
+compatibility_date = "2025-09-11"
+
+# Development build settings
+[build]
+command = "npm run build"
+
+# Environment variables
+[vars]
+SITE_NAME = "WOW-CAMPUS"
+ENVIRONMENT = "development"

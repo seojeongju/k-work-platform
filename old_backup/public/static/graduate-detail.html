@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대학원 과정 - WOW-CAMPUS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wowcampus-blue': '#2563eb',
+                        'wowcampus-light': '#dbeafe',
+                        'accent': '#f59e0b',
+                        'secondary': '#7c3aed'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-6">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-graduation-cap text-white text-lg"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-800">WOW-CAMPUS</span>
+                    </a>
+                    <span class="text-xs text-gray-500">대학원 과정 전문</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="window.location.href='/static/study-view.html'" class="text-gray-600 hover:text-wowcampus-blue transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i>유학정보로 돌아가기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-16">
+        <div class="container mx-auto px-6 text-center">
+            <i class="fas fa-graduation-cap text-6xl mb-6"></i>
+            <h1 class="text-5xl font-bold mb-4">대학원 과정 (석·박사)</h1>
+            <p class="text-xl opacity-90 max-w-3xl mx-auto">
+                전문적인 연구 활동과 심화된 학문 탐구를 통해 석사·박사 학위를 취득하고 글로벌 연구자로 성장하세요
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-12">
+        <!-- Overview -->
+        <div class="grid lg:grid-cols-2 gap-12 mb-16">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">대학원 과정 개요</h2>
+                <div class="space-y-4 text-gray-600">
+                    <p>한국의 대학원 과정은 세계 수준의 연구 환경과 우수한 지도교수진을 통해 전문 연구자 양성을 목표로 합니다.</p>
+                    <p>최첨단 연구 시설과 국제적인 연구 네트워크를 바탕으로 창의적이고 독립적인 연구 능력을 기를 수 있습니다.</p>
+                </div>
+                
+                <div class="mt-8 space-y-4">
+                    <div class="p-4 bg-orange-50 rounded-lg">
+                        <h3 class="font-semibold text-orange-800 mb-2">
+                            <i class="fas fa-microscope mr-2"></i>석사 과정 (2년)
+                        </h3>
+                        <p class="text-sm text-orange-700">전문 분야의 심화 연구와 논문 작성을 통한 석사 학위 취득</p>
+                    </div>
+                    <div class="p-4 bg-red-50 rounded-lg">
+                        <h3 class="font-semibold text-red-800 mb-2">
+                            <i class="fas fa-atom mr-2"></i>박사 과정 (3-4년)
+                        </h3>
+                        <p class="text-sm text-red-700">독창적인 연구를 통한 새로운 지식 창조와 박사 학위 취득</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" 
+                     alt="대학원 연구실" class="rounded-lg shadow-lg w-full h-80 object-cover">
+                <div class="mt-4 grid grid-cols-3 gap-4">
+                    <div class="text-center p-4 bg-white rounded-lg shadow">
+                        <div class="text-2xl font-bold text-orange-600">2-6년</div>
+                        <div class="text-sm text-gray-600">과정 기간</div>
+                    </div>
+                    <div class="text-center p-4 bg-white rounded-lg shadow">
+                        <div class="text-2xl font-bold text-orange-600">1:3</div>
+                        <div class="text-sm text-gray-600">지도교수:학생</div>
+                    </div>
+                    <div class="text-center p-4 bg-white rounded-lg shadow">
+                        <div class="text-2xl font-bold text-orange-600">100+</div>
+                        <div class="text-sm text-gray-600">연구분야</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Research Areas -->
+        <div class="mb-16">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8 text-center">주요 연구 분야</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                    <i class="fas fa-robot text-blue-500 text-3xl mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-3">AI·머신러닝</h3>
+                    <ul class="space-y-2 text-gray-600 text-sm">
+                        <li>• 딥러닝 알고리즘</li>
+                        <li>• 자연언어처리</li>
+                        <li>• 컴퓨터 비전</li>
+                        <li>• 로보틱스</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                    <i class="fas fa-dna text-green-500 text-3xl mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-3">바이오·의학</h3>
+                    <ul class="space-y-2 text-gray-600 text-sm">
+                        <li>• 분자생물학</li>
+                        <li>• 유전공학</li>
+                        <li>• 의료영상</li>
+                        <li>• 바이오소재</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                    <i class="fas fa-microchip text-purple-500 text-3xl mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-3">반도체·전자</h3>
+                    <ul class="space-y-2 text-gray-600 text-sm">
+                        <li>• 나노소자</li>
+                        <li>• 반도체 공정</li>
+                        <li>• 양자컴퓨팅</li>
+                        <li>• 차세대 메모리</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                    <i class="fas fa-leaf text-teal-500 text-3xl mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-3">환경·에너지</h3>
+                    <ul class="space-y-2 text-gray-600 text-sm">
+                        <li>• 신재생에너지</li>
+                        <li>• 환경정화기술</li>
+                        <li>• 배터리 기술</li>
+                        <li>• 수소연료전지</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                    <i class="fas fa-globe text-indigo-500 text-3xl mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-3">사회과학</h3>
+                    <ul class="space-y-2 text-gray-600 text-sm">
+                        <li>• 국제관계학</li>
+                        <li>• 경제학</li>
+                        <li>• 사회학</li>
+                        <li>• 정치학</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                    <i class="fas fa-pen-fancy text-pink-500 text-3xl mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-3">인문학</h3>
+                    <ul class="space-y-2 text-gray-600 text-sm">
+                        <li>• 한국학</li>
+                        <li>• 철학</li>
+                        <li>• 문학</li>
+                        <li>• 역사학</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Programs Comparison -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-16">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8 text-center">석사 vs 박사 과정</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="p-6 bg-orange-50 rounded-lg">
+                    <h3 class="text-2xl font-bold text-orange-600 mb-4">
+                        <i class="fas fa-award mr-2"></i>석사 과정
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800">기간 & 학점</h4>
+                            <p class="text-gray-600">2년, 24학점 이상</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">입학 요건</h4>
+                            <p class="text-gray-600">학사 학위, TOPIK 4급 이상</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">연구 내용</h4>
+                            <p class="text-gray-600">기존 이론의 심화 연구</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">졸업 요건</h4>
+                            <p class="text-gray-600">석사 논문 제출 및 심사</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">진로</h4>
+                            <p class="text-gray-600">전문직, 연구소, 박사과정 진학</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 bg-red-50 rounded-lg">
+                    <h3 class="text-2xl font-bold text-red-600 mb-4">
+                        <i class="fas fa-trophy mr-2"></i>박사 과정
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800">기간 & 학점</h4>
+                            <p class="text-gray-600">3-6년, 36학점 이상</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">입학 요건</h4>
+                            <p class="text-gray-600">석사 학위, TOPIK 5급 이상</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">연구 내용</h4>
+                            <p class="text-gray-600">독창적·혁신적 연구</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">졸업 요건</h4>
+                            <p class="text-gray-600">박사 논문 + 자격시험 합격</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">진로</h4>
+                            <p class="text-gray-600">교수, 수석연구원, 전문컨설턴트</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Research Support -->
+        <div class="mb-16">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8 text-center">연구 지원 시스템</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                    <i class="fas fa-flask text-blue-500 text-3xl mb-4"></i>
+                    <h3 class="font-semibold mb-2">첨단 연구 시설</h3>
+                    <p class="text-gray-600 text-sm">최신 장비와 연구 인프라 제공</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                    <i class="fas fa-dollar-sign text-green-500 text-3xl mb-4"></i>
+                    <h3 class="font-semibold mb-2">연구비 지원</h3>
+                    <p class="text-gray-600 text-sm">정부 및 기업 연구과제 참여</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                    <i class="fas fa-plane text-purple-500 text-3xl mb-4"></i>
+                    <h3 class="font-semibold mb-2">해외 연수</h3>
+                    <p class="text-gray-600 text-sm">국제 학회 참가 및 공동 연구</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                    <i class="fas fa-users text-orange-500 text-3xl mb-4"></i>
+                    <h3 class="font-semibold mb-2">멘토링</h3>
+                    <p class="text-gray-600 text-sm">우수한 지도교수와 1:1 멘토링</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Support -->
+        <div class="grid lg:grid-cols-2 gap-12 mb-16">
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">학비 및 생활비</h3>
+                <div class="space-y-4">
+                    <div class="border-b pb-4">
+                        <h4 class="font-semibold text-orange-600 mb-2">석사 과정</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>등록금 (학기당)</span>
+                                <span>4,000,000 - 8,000,000원</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>생활비 (월)</span>
+                                <span>800,000 - 1,200,000원</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-red-600 mb-2">박사 과정</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>등록금 (학기당)</span>
+                                <span>5,000,000 - 10,000,000원</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>생활비 (월)</span>
+                                <span>1,000,000 - 1,500,000원</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">재정 지원</h3>
+                <div class="space-y-4">
+                    <div class="p-4 bg-green-50 rounded-lg">
+                        <h4 class="font-semibold text-green-800 mb-2">연구 장학금</h4>
+                        <p class="text-sm text-green-700">연구 활동에 따른 장학금 (월 50만원~150만원)</p>
+                    </div>
+                    <div class="p-4 bg-blue-50 rounded-lg">
+                        <h4 class="font-semibold text-blue-800 mb-2">TA/RA 장학금</h4>
+                        <p class="text-sm text-blue-700">조교 활동을 통한 장학금 (월 30만원~100만원)</p>
+                    </div>
+                    <div class="p-4 bg-purple-50 rounded-lg">
+                        <h4 class="font-semibold text-purple-800 mb-2">BK21 장학금</h4>
+                        <p class="text-sm text-purple-700">정부 지원 대학원생 장학금</p>
+                    </div>
+                    <div class="p-4 bg-orange-50 rounded-lg">
+                        <h4 class="font-semibold text-orange-800 mb-2">기업 장학금</h4>
+                        <p class="text-sm text-orange-700">산학협력 기업 후원 장학금</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Application Timeline -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-16">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8 text-center">지원 일정</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold text-orange-600 mb-4">
+                        <i class="fas fa-calendar-alt mr-2"></i>봄학기 (3월 입학)
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-orange-50 rounded">
+                            <span class="font-semibold">지원 접수</span>
+                            <span>10월 ~ 11월</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                            <span class="font-semibold">서류 심사</span>
+                            <span>12월</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                            <span class="font-semibold">면접 심사</span>
+                            <span>1월</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded">
+                            <span class="font-semibold">합격 발표</span>
+                            <span>2월</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-semibold text-blue-600 mb-4">
+                        <i class="fas fa-calendar-alt mr-2"></i>가을학기 (9월 입학)
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-blue-50 rounded">
+                            <span class="font-semibold">지원 접수</span>
+                            <span>4월 ~ 5월</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                            <span class="font-semibold">서류 심사</span>
+                            <span>6월</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                            <span class="font-semibold">면접 심사</span>
+                            <span>7월</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded">
+                            <span class="font-semibold">합격 발표</span>
+                            <span>8월</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Application Process -->
+        <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-8 text-white">
+            <h3 class="text-3xl font-bold mb-8 text-center">지원 절차</h3>
+            <div class="grid md:grid-cols-5 gap-6">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white text-orange-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">1</div>
+                    <h4 class="font-semibold mb-2">지도교수 선정</h4>
+                    <p class="text-sm opacity-90">희망 연구 분야의 교수 컨택</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white text-orange-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">2</div>
+                    <h4 class="font-semibold mb-2">서류 준비</h4>
+                    <p class="text-sm opacity-90">학위증명서, 연구계획서, 추천서</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white text-orange-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">3</div>
+                    <h4 class="font-semibold mb-2">온라인 지원</h4>
+                    <p class="text-sm opacity-90">지원서 작성 및 서류 제출</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white text-orange-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">4</div>
+                    <h4 class="font-semibold mb-2">심사 과정</h4>
+                    <p class="text-sm opacity-90">서류 + 면접 + 연구계획 발표</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white text-orange-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">5</div>
+                    <h4 class="font-semibold mb-2">입학 확정</h4>
+                    <p class="text-sm opacity-90">합격 통보 및 연구실 배정</p>
+                </div>
+            </div>
+            <div class="text-center mt-8">
+                <button class="bg-white text-orange-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors mr-4">
+                    <i class="fas fa-edit mr-2"></i>지금 지원하기
+                </button>
+                <button class="bg-orange-700 text-white px-8 py-3 rounded-lg font-semibold hover:bg-orange-800 transition-colors">
+                    <i class="fas fa-phone mr-2"></i>지도교수 추천
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 WOW-CAMPUS 외국인 구인구직 및 유학생 지원플랫폼. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

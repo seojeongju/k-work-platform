@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구직정보 등록 - wow3D 외국인 구인구직 및 유학생 지원플랫폼</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-user-plus text-primary text-3xl"></i>
+                    <h1 class="text-2xl font-bold text-gray-800">구직정보 등록</h1>
+                </div>
+                <nav class="flex items-center space-x-6">
+                    <a href="/" class="text-gray-600 hover:text-primary">
+                        <i class="fas fa-home mr-2"></i>홈으로
+                    </a>
+                    <a href="/static/job-seeker-list.html" class="text-gray-600 hover:text-primary">
+                        <i class="fas fa-list mr-2"></i>구직정보 보기
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Progress Steps -->
+            <div class="mb-8">
+                <div class="flex items-center justify-center space-x-4">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-semibold">1</div>
+                        <span class="ml-2 text-primary font-medium">기본정보</span>
+                    </div>
+                    <div class="w-16 h-1 bg-gray-200"></div>
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-semibold">2</div>
+                        <span class="ml-2 text-gray-500">희망조건</span>
+                    </div>
+                    <div class="w-16 h-1 bg-gray-200"></div>
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-semibold">3</div>
+                        <span class="ml-2 text-gray-500">완료</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Container -->
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <form id="job-seeker-form" class="space-y-8">
+                    <!-- 기본 정보 섹션 -->
+                    <div id="step-1" class="step-content">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-user mr-3 text-primary"></i>
+                            기본 정보
+                        </h3>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    이름 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="name" name="name" required 
+                                       class="form-input" placeholder="홍길동">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    이메일 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="email" id="email" name="email" required 
+                                       class="form-input" placeholder="hong@example.com">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    비밀번호 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="password" id="password" name="password" required 
+                                       class="form-input" placeholder="8자리 이상">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    전화번호 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="tel" id="phone" name="phone" required 
+                                       class="form-input" placeholder="+82-10-1234-5678">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    국적 <span class="text-red-500">*</span>
+                                </label>
+                                <select id="nationality" name="nationality" required class="form-input">
+                                    <option value="">선택하세요</option>
+                                    <option value="Vietnam">베트남</option>
+                                    <option value="Philippines">필리핀</option>
+                                    <option value="Thailand">태국</option>
+                                    <option value="Indonesia">인도네시아</option>
+                                    <option value="Myanmar">미얀마</option>
+                                    <option value="Cambodia">캄보디아</option>
+                                    <option value="Laos">라오스</option>
+                                    <option value="Nepal">네팔</option>
+                                    <option value="Bangladesh">방글라데시</option>
+                                    <option value="Sri Lanka">스리랑카</option>
+                                    <option value="Pakistan">파키스탄</option>
+                                    <option value="India">인도</option>
+                                    <option value="China">중국</option>
+                                    <option value="Mongolia">몽골</option>
+                                    <option value="Uzbekistan">우즈베키스탄</option>
+                                    <option value="Kazakhstan">카자흐스탄</option>
+                                    <option value="Kyrgyzstan">키르기스스탄</option>
+                                    <option value="Other">기타</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    성별
+                                </label>
+                                <select id="gender" name="gender" class="form-input">
+                                    <option value="">선택하세요</option>
+                                    <option value="male">남성</option>
+                                    <option value="female">여성</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    생년월일
+                                </label>
+                                <input type="date" id="birth_date" name="birth_date" class="form-input">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    한국어 수준 <span class="text-red-500">*</span>
+                                </label>
+                                <select id="korean_level" name="korean_level" required class="form-input">
+                                    <option value="">선택하세요</option>
+                                    <option value="beginner">초급 (기초 인사, 숫자)</option>
+                                    <option value="intermediate">중급 (일상 대화 가능)</option>
+                                    <option value="advanced">고급 (업무 대화 가능)</option>
+                                    <option value="native">원어민급</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mt-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                현재 거주지 주소
+                            </label>
+                            <input type="text" id="current_address" name="current_address" 
+                                   class="form-input" placeholder="서울시 강남구 또는 베트남 호치민시">
+                        </div>
+                    </div>
+
+                    <!-- 희망 조건 섹션 -->
+                    <div id="step-2" class="step-content hidden">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-briefcase mr-3 text-primary"></i>
+                            희망 근무 조건
+                        </h3>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    현재 비자 상태 <span class="text-red-500">*</span>
+                                </label>
+                                <select id="current_visa" name="current_visa" required class="form-input">
+                                    <option value="">선택하세요</option>
+                                    <option value="Tourist">관광비자 (90일 단기체류)</option>
+                                    <option value="D-2">D-2 (유학) - 학위과정</option>
+                                    <option value="D-4">D-4 (일반연수) - 어학연수</option>
+                                    <option value="E-9">E-9 (비전문취업) - 현재 취업중</option>
+                                    <option value="E-7">E-7 (특정활동) - 전문직</option>
+                                    <option value="H-2">H-2 (방문취업) - 재외동포</option>
+                                    <option value="F-4">F-4 (재외동포) - 장기체류</option>
+                                    <option value="F-5">F-5 (영주권)</option>
+                                    <option value="None">비자 없음 (해외 거주)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    희망 비자/취업 형태 <span class="text-red-500">*</span>
+                                </label>
+                                <select id="desired_visa" name="desired_visa" required class="form-input">
+                                    <option value="">선택하세요</option>
+                                    <option value="E-9">E-9 (비전문취업) - 제조업, 건설업, 농업</option>
+                                    <option value="E-7">E-7 (특정활동) - IT, 엔지니어링</option>
+                                    <option value="H-2">H-2 (방문취업) - 서비스업</option>
+                                    <option value="E-2">E-2 (회화지도) - 어학강사</option>
+                                    <option value="D-2">D-2 (유학) - 학위 취득</option>
+                                    <option value="D-4">D-4 (연수) - 한국어 연수</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    희망 직종 <span class="text-red-500">*</span>
+                                </label>
+                                <select id="desired_job_category" name="desired_job_category" required class="form-input">
+                                    <option value="">선택하세요</option>
+                                    <option value="MFG">제조업 (공장, 조립, 생산직)</option>
+                                    <option value="CON">건설업 (건설 현장, 토목)</option>
+                                    <option value="AGR">농업 (농장, 축산, 수산업)</option>
+                                    <option value="SVC">서비스업 (음식점, 편의점, 마트)</option>
+                                    <option value="IT">IT/소프트웨어 (개발자, 프로그래머)</option>
+                                    <option value="EDU">교육 (어학강사, 튜터)</option>
+                                    <option value="HSP">의료/보건 (간병, 의료보조)</option>
+                                    <option value="TRD">무역/물류 (수출입, 통역)</option>
+                                    <option value="OTHER">기타</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    희망 근무지역 <span class="text-red-500">*</span>
+                                </label>
+                                <select id="preferred_region" name="preferred_region" required class="form-input">
+                                    <option value="">선택하세요</option>
+                                    <option value="SEL">서울특별시</option>
+                                    <option value="BSN">부산광역시</option>
+                                    <option value="DGU">대구광역시</option>
+                                    <option value="ICN">인천광역시</option>
+                                    <option value="GWJ">광주광역시</option>
+                                    <option value="DJN">대전광역시</option>
+                                    <option value="USN">울산광역시</option>
+                                    <option value="GGD">경기도</option>
+                                    <option value="GWD">강원도</option>
+                                    <option value="CBD">충청북도</option>
+                                    <option value="CND">충청남도</option>
+                                    <option value="JBD">전북특별자치도</option>
+                                    <option value="JND">전라남도</option>
+                                    <option value="GBD">경상북도</option>
+                                    <option value="GND">경상남도</option>
+                                    <option value="JJD">제주특별자치도</option>
+                                    <option value="ALL">전국 어디든</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    희망 월급 (만원)
+                                </label>
+                                <div class="flex space-x-2">
+                                    <input type="number" id="desired_salary_min" name="desired_salary_min" 
+                                           class="form-input" placeholder="최소" min="180">
+                                    <span class="flex items-center text-gray-500">~</span>
+                                    <input type="number" id="desired_salary_max" name="desired_salary_max" 
+                                           class="form-input" placeholder="최대">
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">최저임금: 월 약 180만원</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    최종 학력
+                                </label>
+                                <select id="education_level" name="education_level" class="form-input">
+                                    <option value="">선택하세요</option>
+                                    <option value="Middle School">중학교 졸업</option>
+                                    <option value="High School">고등학교 졸업</option>
+                                    <option value="Vocational">전문학교/기술학교 졸업</option>
+                                    <option value="Bachelor">대학교 졸업 (학사)</option>
+                                    <option value="Master">대학원 졸업 (석사)</option>
+                                    <option value="Doctorate">박사</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mt-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                업무 경험 및 기술
+                            </label>
+                            <textarea id="work_experience" name="work_experience" rows="4" class="form-input"
+                                      placeholder="예: 베트남에서 3년간 전자제품 조립 경험, 한국어 기초 회화 가능, 컴퓨터 기본 작업 가능"></textarea>
+                        </div>
+
+                        <div class="mt-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                자기소개 및 특기사항
+                            </label>
+                            <textarea id="self_introduction" name="self_introduction" rows="4" class="form-input"
+                                      placeholder="본인의 장점, 특기, 한국에서 일하고 싶은 이유 등을 자유롭게 작성해주세요"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="flex justify-between pt-8 border-t">
+                        <button type="button" id="prev-btn" class="hidden bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors">
+                            <i class="fas fa-arrow-left mr-2"></i>이전
+                        </button>
+                        <div></div>
+                        <button type="button" id="next-btn" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-secondary transition-colors">
+                            다음 <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                        <button type="submit" id="submit-btn" class="hidden bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-check mr-2"></i>등록 완료
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 도움말 섹션 -->
+            <div class="mt-8 bg-blue-50 rounded-lg p-6">
+                <h4 class="text-lg font-semibold text-blue-800 mb-4">
+                    <i class="fas fa-info-circle mr-2"></i>구직정보 등록 안내
+                </h4>
+                <div class="text-blue-700 space-y-2 text-sm">
+                    <p>• <strong>정확한 정보</strong>를 입력해주세요. 거짓 정보는 취업에 불리할 수 있습니다.</p>
+                    <p>• <strong>비자 상태</strong>가 중요합니다. 현재 상태에 따라 지원 가능한 일자리가 달라집니다.</p>
+                    <p>• <strong>한국어 수준</strong>을 솔직하게 평가해주세요. 면접에서 확인됩니다.</p>
+                    <p>• 등록 후 에이전트가 연락을 드릴 수 있습니다.</p>
+                    <p>• 개인정보는 구인구직 목적으로만 사용되며 안전하게 보호됩니다.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+                <div class="p-6 text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-check text-green-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">등록 완료!</h3>
+                    <p class="text-gray-600 mb-6">구직정보가 성공적으로 등록되었습니다.</p>
+                    <div class="space-y-2">
+                        <button id="view-jobs-btn" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-secondary">
+                            구인정보 보기
+                        </button>
+                        <button id="register-more-btn" class="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300">
+                            추가 등록하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/job-seeker-register.js"></script>
+</body>
+</html>

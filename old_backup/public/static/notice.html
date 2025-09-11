@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공지사항 - WOW-CAMPUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wowcampus-blue': '#1E40AF',
+                        'wowcampus-dark': '#0F172A',
+                        'wowcampus-light': '#E0F2FE',
+                        'accent': '#059669'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-graduation-cap text-4xl text-wowcampus-blue"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">WOW-CAMPUS</h1>
+                        <p class="text-sm text-gray-600">글로벌 취업 플랫폼</p>
+                    </div>
+                </div>
+                <nav class="flex space-x-6">
+                    <a href="/" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-home mr-2"></i>홈
+                    </a>
+                    <a href="/static/jobseeker-profile" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-briefcase mr-2"></i>채용정보
+                    </a>
+                    <a href="/static/login" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-sign-in-alt mr-2"></i>로그인
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                        <i class="fas fa-bullhorn text-wowcampus-blue mr-3"></i>공지사항
+                    </h1>
+                    <p class="text-gray-600">WOW-CAMPUS의 최신 소식과 중요한 공지를 확인하세요</p>
+                </div>
+                <div class="bg-wowcampus-light px-4 py-2 rounded-lg">
+                    <span class="text-wowcampus-blue font-semibold">총 <span id="notice-count">5</span>개의 공지</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notice Categories -->
+        <div class="mb-6">
+            <div class="flex flex-wrap gap-3">
+                <button onclick="filterNotices('all')" class="category-btn active bg-wowcampus-blue text-white px-4 py-2 rounded-full font-medium hover:bg-wowcampus-dark transition-colors">
+                    <i class="fas fa-list mr-2"></i>전체
+                </button>
+                <button onclick="filterNotices('service')" class="category-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium hover:bg-gray-300 transition-colors">
+                    <i class="fas fa-cog mr-2"></i>서비스
+                </button>
+                <button onclick="filterNotices('system')" class="category-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium hover:bg-gray-300 transition-colors">
+                    <i class="fas fa-server mr-2"></i>시스템
+                </button>
+                <button onclick="filterNotices('event')" class="category-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium hover:bg-gray-300 transition-colors">
+                    <i class="fas fa-calendar-alt mr-2"></i>이벤트
+                </button>
+                <button onclick="filterNotices('update')" class="category-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium hover:bg-gray-300 transition-colors">
+                    <i class="fas fa-arrow-up mr-2"></i>업데이트
+                </button>
+            </div>
+        </div>
+
+        <!-- Notice List -->
+        <div id="notice-list" class="space-y-4">
+            <!-- 로딩 상태 -->
+            <div id="loading" class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-2xl text-wowcampus-blue mb-2"></i>
+                <p class="text-gray-600">공지사항을 불러오고 있습니다...</p>
+            </div>
+            
+            <!-- 에러 상태 -->
+            <div id="error" class="text-center py-8 hidden">
+                <i class="fas fa-exclamation-triangle text-2xl text-red-500 mb-2"></i>
+                <p class="text-gray-600">공지사항을 불러오는 중 오류가 발생했습니다.</p>
+                <button onclick="loadNotices()" class="mt-2 bg-wowcampus-blue text-white px-4 py-2 rounded-lg hover:bg-wowcampus-dark transition-colors">
+                    다시 시도
+                </button>
+            </div>
+            
+            <!-- 공지사항이 없는 경우 -->
+            <div id="empty" class="text-center py-8 hidden">
+                <i class="fas fa-info-circle text-2xl text-gray-400 mb-2"></i>
+                <p class="text-gray-600">등록된 공지사항이 없습니다.</p>
+            </div>
+            
+            <!-- 동적으로 로드될 공지사항 목록 -->
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex justify-center mt-8">
+            <nav class="flex items-center space-x-1">
+                <button class="px-3 py-2 rounded-md bg-gray-200 text-gray-500">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="px-3 py-2 rounded-md bg-wowcampus-blue text-white">1</button>
+                <button class="px-3 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300">2</button>
+                <button class="px-3 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300">3</button>
+                <button class="px-3 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </nav>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h4 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-graduation-cap mr-2"></i>WOW-CAMPUS
+                    </h4>
+                    <p class="text-gray-400 text-sm">글로벌 취업의 새로운 시작</p>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">서비스</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/jobseeker-profile" class="hover:text-white">채용정보</a></li>
+                        <li><a href="/static/companies.html" class="hover:text-white">기업정보</a></li>
+                        <li><a href="/static/resume.html" class="hover:text-white">이력서</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">고객지원</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/faq" class="hover:text-white">자주묻는질문</a></li>
+                        <li><a href="/static/contact" class="hover:text-white">문의하기</a></li>
+                        <li><a href="/static/notice" class="hover:text-white text-blue-400">공지사항</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">정책</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/terms" class="hover:text-white">이용약관</a></li>
+                        <li><a href="/static/privacy" class="hover:text-white">개인정보처리방침</a></li>
+                        <li><a href="/static/cookies" class="hover:text-white">쿠키정책</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
+                <p>&copy; 2024 WOW-CAMPUS. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let allNotices = []; // 전체 공지사항 데이터
+
+        // 공지사항 로딩
+        async function loadNotices() {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error');
+            const emptyEl = document.getElementById('empty');
+            const noticeList = document.getElementById('notice-list');
+            
+            // 상태 초기화
+            loadingEl.style.display = 'block';
+            errorEl.style.display = 'none';
+            emptyEl.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/notices');
+                if (!response.ok) {
+                    throw new Error('네트워크 오류');
+                }
+                
+                const data = await response.json();
+                allNotices = data.notices || [];
+                
+                loadingEl.style.display = 'none';
+                
+                if (allNotices.length === 0) {
+                    emptyEl.style.display = 'block';
+                } else {
+                    displayNotices(allNotices);
+                }
+                
+                // 공지사항 수 업데이트
+                document.getElementById('notice-count').textContent = allNotices.length;
+                
+            } catch (error) {
+                console.error('공지사항 로딩 오류:', error);
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+            }
+        }
+
+        // 공지사항 표시
+        function displayNotices(notices) {
+            const noticeList = document.getElementById('notice-list');
+            
+            // 기존 공지사항 제거 (로딩/에러 메시지 제외)
+            const existingNotices = noticeList.querySelectorAll('.notice-item');
+            existingNotices.forEach(item => item.remove());
+            
+            if (notices.length === 0) {
+                document.getElementById('empty').style.display = 'block';
+                return;
+            }
+            
+            const noticesHTML = notices.map(notice => {
+                const createdDate = new Date(notice.created_at).toLocaleDateString('ko-KR');
+                const shortContent = notice.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...';
+                
+                return `
+                    <div class="notice-item bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer" data-category="general" onclick="showNoticeDetail(${notice.id})">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">일반</span>
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-800 mb-2 hover:text-wowcampus-blue transition-colors">
+                                    ${notice.title}
+                                </h3>
+                                <p class="text-gray-600 mb-3">
+                                    ${shortContent}
+                                </p>
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <i class="fas fa-calendar mr-2"></i>
+                                    <span>${createdDate}</span>
+                                    <i class="fas fa-user ml-4 mr-2"></i>
+                                    <span>관리자</span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            noticeList.insertAdjacentHTML('beforeend', noticesHTML);
+        }
+
+        // 카테고리 필터링
+        function filterNotices(category) {
+            const notices = document.querySelectorAll('.notice-item');
+            const buttons = document.querySelectorAll('.category-btn');
+            
+            // 버튼 스타일 업데이트
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-wowcampus-blue', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            
+            // 선택된 버튼 스타일 적용
+            if (event && event.target) {
+                event.target.classList.remove('bg-gray-200', 'text-gray-700');
+                event.target.classList.add('bg-wowcampus-blue', 'text-white');
+            }
+            
+            // 공지사항 필터링 (현재는 모든 공지사항이 일반 카테고리)
+            let visibleCount = 0;
+            notices.forEach(notice => {
+                if (category === 'all' || notice.getAttribute('data-category') === category) {
+                    notice.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    notice.style.display = 'none';
+                }
+            });
+            
+            // 카운트 업데이트
+            document.getElementById('notice-count').textContent = visibleCount;
+        }
+
+        // 공지사항 상세보기 모달 (향후 구현)
+        function showNoticeDetail(id) {
+            const notice = allNotices.find(n => n.id === id);
+            if (notice) {
+                alert(`제목: ${notice.title}\n\n내용: ${notice.content.replace(/<[^>]*>/g, '')}`);
+            }
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNotices();
+        });
+    </script>
+</body>
+</html>

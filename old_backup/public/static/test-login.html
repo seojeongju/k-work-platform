@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 테스트</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { margin: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        .login { background: #1E40AF; color: white; border: none; border-radius: 5px; }
+        .logout { background: #EF4444; color: white; border: none; border-radius: 5px; }
+        .nav { background: #059669; color: white; border: none; border-radius: 5px; }
+        .info { background: #f0f0f0; padding: 15px; margin: 15px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 WOW-CAMPUS 로그인 테스트</h1>
+    
+    <div class="info">
+        <h3>현재 로그인 상태:</h3>
+        <p id="status">확인 중...</p>
+    </div>
+    
+    <h3>테스트 계정으로 로그인:</h3>
+    <button class="login" onclick="testLogin('employer')">구인기업 로그인</button>
+    <button class="login" onclick="testLogin('jobseeker')">구직자 로그인</button>
+    <button class="login" onclick="testLogin('agent')">에이전트 로그인</button>
+    <button class="login" onclick="testLogin('admin')">관리자 로그인</button>
+    
+    <hr>
+    
+    <button class="logout" onclick="testLogout()">로그아웃</button>
+    <button class="nav" onclick="goToMain()">메인 페이지로 이동</button>
+    
+    <div class="info">
+        <h3>📋 사용 방법:</h3>
+        <ol>
+            <li>원하는 사용자 유형으로 로그인</li>
+            <li>"메인 페이지로 이동" 클릭</li>
+            <li>메인 페이지에서 상단 헤더 확인</li>
+            <li>로그인/회원가입 버튼이 숨겨져 있는지 확인</li>
+        </ol>
+    </div>
+    
+    <script>
+        const testUsers = {
+            employer: {
+                id: 1,
+                type: 'employer',
+                name: '테크코퍼레이션',
+                company_name: '테크코퍼레이션',
+                email: 'hr@techcorp.com'
+            },
+            jobseeker: {
+                id: 2,
+                type: 'jobseeker',
+                name: '응우엔 반',
+                email: 'nguyenvan@example.com',
+                nationality: '베트남'
+            },
+            agent: {
+                id: 3,
+                type: 'agent',
+                name: '글로벌인재에이전시',
+                company_name: '글로벌인재에이전시',
+                email: 'agent1@wowcampus.com'
+            },
+            admin: {
+                id: 4,
+                type: 'admin',
+                name: '관리자',
+                email: 'admin@wowcampus.com'
+            }
+        };
+        
+        function updateStatus() {
+            const user = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
+            const statusEl = document.getElementById('status');
+            
+            if (user && token) {
+                const userObj = JSON.parse(user);
+                statusEl.innerHTML = `
+                    ✅ <strong>로그인됨</strong><br>
+                    • 유형: ${userObj.type}<br>
+                    • 이름: ${userObj.name || userObj.company_name}<br>
+                    • 이메일: ${userObj.email}
+                `;
+                statusEl.style.color = 'green';
+            } else {
+                statusEl.innerHTML = '❌ <strong>로그아웃 상태</strong>';
+                statusEl.style.color = 'red';
+            }
+        }
+        
+        function testLogin(userType) {
+            const user = testUsers[userType];
+            const testToken = `test-token-${userType}-${Date.now()}`;
+            
+            localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('token', testToken);
+            
+            updateStatus();
+            alert(`${user.name}로 로그인되었습니다.`);
+        }
+        
+        function testLogout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            updateStatus();
+            alert('로그아웃되었습니다.');
+        }
+        
+        function goToMain() {
+            window.location.href = '/';
+        }
+        
+        // 페이지 로드시 상태 확인
+        updateStatus();
+        
+        // localStorage 변경 감지
+        window.addEventListener('storage', updateStatus);
+    </script>
+</body>
+</html>

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자주묻는질문 - WOW-CAMPUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wowcampus-blue': '#1E40AF',
+                        'wowcampus-dark': '#0F172A',
+                        'wowcampus-light': '#E0F2FE',
+                        'accent': '#059669'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-graduation-cap text-4xl text-wowcampus-blue"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">WOW-CAMPUS</h1>
+                        <p class="text-sm text-gray-600">글로벌 취업 플랫폼</p>
+                    </div>
+                </div>
+                <nav class="flex space-x-6">
+                    <a href="/" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-home mr-2"></i>홈
+                    </a>
+                    <a href="/static/jobseeker-profile" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-briefcase mr-2"></i>채용정보
+                    </a>
+                    <a href="/static/login" class="text-gray-600 hover:text-wowcampus-blue font-medium">
+                        <i class="fas fa-sign-in-alt mr-2"></i>로그인
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="text-center mb-8">
+            <div class="bg-gradient-to-r from-wowcampus-blue to-accent text-white p-8 rounded-lg shadow-lg">
+                <h1 class="text-4xl font-bold mb-4">
+                    <i class="fas fa-question-circle mr-3"></i>자주묻는질문
+                </h1>
+                <p class="text-lg opacity-90">WOW-CAMPUS 이용 관련 궁금한 점을 빠르게 해결하세요</p>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="mb-8">
+            <div class="relative">
+                <input type="text" id="faq-search" placeholder="궁금한 내용을 검색해보세요..." 
+                       class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent"
+                       onkeyup="searchFAQs()">
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
+        </div>
+
+        <!-- FAQ Categories -->
+        <div class="mb-8">
+            <div class="flex flex-wrap gap-3 justify-center">
+                <button onclick="filterFAQ('all')" class="faq-category-btn active bg-wowcampus-blue text-white px-6 py-3 rounded-full font-medium hover:bg-wowcampus-dark transition-colors">
+                    <i class="fas fa-list mr-2"></i>전체
+                </button>
+                <!-- 동적으로 생성될 카테고리 버튼들 -->
+                <div id="category-buttons"></div>
+            </div>
+        </div>
+
+        <!-- FAQ Items -->
+        <div id="faq-list" class="space-y-4">
+            <!-- 로딩 상태 -->
+            <div id="loading" class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-2xl text-wowcampus-blue mb-2"></i>
+                <p class="text-gray-600">FAQ를 불러오고 있습니다...</p>
+            </div>
+            
+            <!-- 에러 상태 -->
+            <div id="error" class="text-center py-8 hidden">
+                <i class="fas fa-exclamation-triangle text-2xl text-red-500 mb-2"></i>
+                <p class="text-gray-600">FAQ를 불러오는 중 오류가 발생했습니다.</p>
+                <button onclick="loadFAQs()" class="mt-2 bg-wowcampus-blue text-white px-4 py-2 rounded-lg hover:bg-wowcampus-dark transition-colors">
+                    다시 시도
+                </button>
+            </div>
+            
+            <!-- FAQ가 없는 경우 -->
+            <div id="empty" class="text-center py-8 hidden">
+                <i class="fas fa-info-circle text-2xl text-gray-400 mb-2"></i>
+                <p class="text-gray-600">등록된 FAQ가 없습니다.</p>
+            </div>
+            
+            <!-- 동적으로 로드될 FAQ 목록 -->
+        </div>
+
+        <!-- Contact Section -->
+        <div class="mt-12 bg-gradient-to-r from-wowcampus-blue to-accent text-white p-8 rounded-lg shadow-lg text-center">
+            <h3 class="text-2xl font-bold mb-4">원하는 답변을 찾지 못하셨나요?</h3>
+            <p class="mb-6 opacity-90">언제든지 고객지원팀에 문의해주세요. 빠르고 정확한 답변을 드리겠습니다.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/static/contact" class="bg-white text-wowcampus-blue px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-envelope mr-2"></i>문의하기
+                </a>
+                <a href="tel:02-1234-5678" class="bg-transparent border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-wowcampus-blue transition-colors">
+                    <i class="fas fa-phone mr-2"></i>02-1234-5678
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h4 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-graduation-cap mr-2"></i>WOW-CAMPUS
+                    </h4>
+                    <p class="text-gray-400 text-sm">글로벌 취업의 새로운 시작</p>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">서비스</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/jobseeker-profile" class="hover:text-white">채용정보</a></li>
+                        <li><a href="/static/companies.html" class="hover:text-white">기업정보</a></li>
+                        <li><a href="/static/resume.html" class="hover:text-white">이력서</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">고객지원</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/faq" class="hover:text-white text-blue-400">자주묻는질문</a></li>
+                        <li><a href="/static/contact" class="hover:text-white">문의하기</a></li>
+                        <li><a href="/static/notice" class="hover:text-white">공지사항</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">정책</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/static/terms" class="hover:text-white">이용약관</a></li>
+                        <li><a href="/static/privacy" class="hover:text-white">개인정보처리방침</a></li>
+                        <li><a href="/static/cookies" class="hover:text-white">쿠키정책</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
+                <p>&copy; 2024 WOW-CAMPUS. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let allFAQs = []; // 전체 FAQ 데이터
+        let categories = []; // FAQ 카테고리
+
+        // 카테고리별 색상 매핑
+        const categoryColors = {
+            '일반': 'bg-blue-100 text-blue-800',
+            '구인기업': 'bg-green-100 text-green-800', 
+            '구직자': 'bg-purple-100 text-purple-800',
+            '테스트': 'bg-orange-100 text-orange-800'
+        };
+
+        // FAQ 로딩
+        async function loadFAQs() {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error');
+            const emptyEl = document.getElementById('empty');
+            
+            // 상태 초기화
+            loadingEl.style.display = 'block';
+            errorEl.style.display = 'none';
+            emptyEl.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/faqs');
+                if (!response.ok) {
+                    throw new Error('네트워크 오류');
+                }
+                
+                allFAQs = await response.json();
+                
+                loadingEl.style.display = 'none';
+                
+                if (allFAQs.length === 0) {
+                    emptyEl.style.display = 'block';
+                } else {
+                    // 카테고리 추출 및 버튼 생성
+                    categories = [...new Set(allFAQs.map(faq => faq.category))];
+                    createCategoryButtons();
+                    
+                    // FAQ 표시
+                    displayFAQs(allFAQs);
+                }
+                
+            } catch (error) {
+                console.error('FAQ 로딩 오류:', error);
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+            }
+        }
+
+        // 카테고리 버튼 생성
+        function createCategoryButtons() {
+            const categoryContainer = document.getElementById('category-buttons');
+            categoryContainer.innerHTML = categories.map(category => `
+                <button onclick="filterFAQ('${category}')" class="faq-category-btn bg-gray-200 text-gray-700 px-6 py-3 rounded-full font-medium hover:bg-gray-300 transition-colors">
+                    ${category}
+                </button>
+            `).join('');
+        }
+
+        // FAQ 표시
+        function displayFAQs(faqs) {
+            const faqList = document.getElementById('faq-list');
+            
+            // 기존 FAQ 제거 (상태 메시지 제외)
+            const existingFAQs = faqList.querySelectorAll('.faq-item');
+            existingFAQs.forEach(item => item.remove());
+            
+            if (faqs.length === 0) {
+                document.getElementById('empty').style.display = 'block';
+                return;
+            }
+            
+            const faqsHTML = faqs.map(faq => {
+                const categoryClass = categoryColors[faq.category] || 'bg-gray-100 text-gray-800';
+                return `
+                    <div class="faq-item bg-white rounded-lg shadow-md overflow-hidden" data-category="${faq.category}">
+                        <button onclick="toggleFAQ(this)" class="w-full px-6 py-4 text-left hover:bg-gray-50 focus:outline-none">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span class="${categoryClass} text-xs font-medium px-2.5 py-0.5 rounded-full mr-3">${faq.category}</span>
+                                    <h3 class="font-semibold text-gray-800">${faq.question}</h3>
+                                </div>
+                                <i class="fas fa-chevron-down transition-transform"></i>
+                            </div>
+                        </button>
+                        <div class="faq-content hidden px-6 pb-4">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="text-gray-700">${faq.answer}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            faqList.insertAdjacentHTML('beforeend', faqsHTML);
+        }
+
+        // FAQ 토글
+        function toggleFAQ(button) {
+            const content = button.nextElementSibling;
+            const icon = button.querySelector('i');
+            
+            if (content.classList.contains('hidden')) {
+                // 다른 FAQ 닫기
+                document.querySelectorAll('.faq-content').forEach(c => {
+                    c.classList.add('hidden');
+                });
+                document.querySelectorAll('.faq-item i').forEach(i => {
+                    i.classList.remove('rotate-180');
+                });
+                
+                // 현재 FAQ 열기
+                content.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            } else {
+                content.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
+        }
+
+        // 카테고리 필터링
+        function filterFAQ(category) {
+            const buttons = document.querySelectorAll('.faq-category-btn');
+            
+            // 버튼 스타일 업데이트
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-wowcampus-blue', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            
+            // 선택된 버튼 스타일 적용
+            if (event && event.target) {
+                event.target.classList.remove('bg-gray-200', 'text-gray-700');
+                event.target.classList.add('bg-wowcampus-blue', 'text-white');
+            }
+            
+            // FAQ 필터링
+            const filteredFAQs = category === 'all' ? allFAQs : allFAQs.filter(faq => faq.category === category);
+            displayFAQs(filteredFAQs);
+        }
+
+        // FAQ 검색
+        function searchFAQs() {
+            const searchTerm = document.getElementById('faq-search').value.toLowerCase();
+            
+            if (searchTerm === '') {
+                displayFAQs(allFAQs);
+                return;
+            }
+            
+            const filteredFAQs = allFAQs.filter(faq => 
+                faq.question.toLowerCase().includes(searchTerm) || 
+                faq.answer.toLowerCase().includes(searchTerm)
+            );
+            
+            displayFAQs(filteredFAQs);
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFAQs();
+        });
+    </script>
+</body>
+</html>

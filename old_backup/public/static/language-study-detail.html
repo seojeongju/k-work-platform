@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>어학연수 과정 - WOW-CAMPUS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wowcampus-blue': '#2563eb',
+                        'wowcampus-light': '#dbeafe',
+                        'accent': '#f59e0b',
+                        'secondary': '#7c3aed'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-6">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-language text-white text-lg"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-800">WOW-CAMPUS</span>
+                    </a>
+                    <span class="text-xs text-gray-500">어학연수 전문</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="window.location.href='/static/study-view.html'" class="text-gray-600 hover:text-wowcampus-blue transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i>유학정보로 돌아가기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-16">
+        <div class="container mx-auto px-6 text-center">
+            <i class="fas fa-language text-6xl mb-6"></i>
+            <h1 class="text-5xl font-bold mb-4">한국어 어학연수</h1>
+            <p class="text-xl opacity-90 max-w-2xl mx-auto">
+                체계적인 한국어 교육 프로그램으로 한국어 실력 향상과 문화 체험을 동시에
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-12">
+        <!-- Overview -->
+        <div class="grid lg:grid-cols-2 gap-12 mb-16">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">프로그램 개요</h2>
+                <div class="space-y-4 text-gray-600">
+                    <p>한국어 어학연수는 외국인 학습자가 한국어를 체계적으로 배우고 한국 문화를 직접 체험할 수 있는 집중 교육 프로그램입니다.</p>
+                    <p>초급부터 고급까지 수준별 맞춤 교육을 통해 토픽(TOPIK) 시험 준비부터 실생활 한국어까지 완벽하게 마스터할 수 있습니다.</p>
+                </div>
+                
+                <div class="mt-8 p-6 bg-blue-50 rounded-lg">
+                    <h3 class="text-xl font-semibold text-blue-800 mb-4">주요 특징</h3>
+                    <ul class="space-y-2 text-blue-700">
+                        <li class="flex items-center"><i class="fas fa-check mr-3"></i>단계별 체계적 커리큘럼</li>
+                        <li class="flex items-center"><i class="fas fa-check mr-3"></i>원어민 강사진</li>
+                        <li class="flex items-center"><i class="fas fa-check mr-3"></i>소규모 반 편성</li>
+                        <li class="flex items-center"><i class="fas fa-check mr-3"></i>문화 체험 활동</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div>
+                <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" 
+                     alt="한국어 수업" class="rounded-lg shadow-lg w-full h-80 object-cover">
+                <div class="mt-4 grid grid-cols-2 gap-4">
+                    <div class="text-center p-4 bg-white rounded-lg shadow">
+                        <div class="text-2xl font-bold text-blue-600">1:8</div>
+                        <div class="text-sm text-gray-600">학생-교사 비율</div>
+                    </div>
+                    <div class="text-center p-4 bg-white rounded-lg shadow">
+                        <div class="text-2xl font-bold text-blue-600">6레벨</div>
+                        <div class="text-sm text-gray-600">단계별 과정</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Course Levels -->
+        <div class="mb-16">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8 text-center">레벨별 과정</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold">1</div>
+                        <h3 class="ml-4 text-xl font-semibold">초급 1</h3>
+                    </div>
+                    <ul class="space-y-2 text-gray-600">
+                        <li>• 한글 읽기, 쓰기</li>
+                        <li>• 기초 어휘 (500개)</li>
+                        <li>• 간단한 인사, 소개</li>
+                        <li>• 기본 문법 패턴</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">2</div>
+                        <h3 class="ml-4 text-xl font-semibold">초급 2</h3>
+                    </div>
+                    <ul class="space-y-2 text-gray-600">
+                        <li>• 일상 대화</li>
+                        <li>• 어휘 확장 (1,000개)</li>
+                        <li>• 시간, 날씨 표현</li>
+                        <li>• 존댓말 기초</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">3</div>
+                        <h3 class="ml-4 text-xl font-semibold">중급 1</h3>
+                    </div>
+                    <ul class="space-y-2 text-gray-600">
+                        <li>• 복잡한 문장 구조</li>
+                        <li>• 어휘 확장 (2,000개)</li>
+                        <li>• 의견 표현</li>
+                        <li>• 문화적 맥락 이해</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold">4</div>
+                        <h3 class="ml-4 text-xl font-semibold">중급 2</h3>
+                    </div>
+                    <ul class="space-y-2 text-gray-600">
+                        <li>• 추상적 개념 표현</li>
+                        <li>• 어휘 확장 (3,500개)</li>
+                        <li>• 토론, 발표</li>
+                        <li>• 비즈니스 한국어</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white font-bold">5</div>
+                        <h3 class="ml-4 text-xl font-semibold">고급 1</h3>
+                    </div>
+                    <ul class="space-y-2 text-gray-600">
+                        <li>• 전문 분야 어휘</li>
+                        <li>• 어휘 확장 (5,000개)</li>
+                        <li>• 학술적 글쓰기</li>
+                        <li>• 고급 문법</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold">6</div>
+                        <h3 class="ml-4 text-xl font-semibold">고급 2</h3>
+                    </div>
+                    <ul class="space-y-2 text-gray-600">
+                        <li>• 원어민 수준 표현</li>
+                        <li>• 어휘 확장 (7,000개+)</li>
+                        <li>• 전문 분야 활용</li>
+                        <li>• 문학적 표현</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule & Fees -->
+        <div class="grid lg:grid-cols-2 gap-12 mb-16">
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">수업 일정</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="font-semibold">수업 시간</span>
+                        <span class="text-blue-600">주 20시간 (월-금)</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="font-semibold">오전반</span>
+                        <span>09:00 - 13:00</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="font-semibold">오후반</span>
+                        <span>14:00 - 18:00</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="font-semibold">학기 기간</span>
+                        <span>10주 (1학기)</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold">방학</span>
+                        <span>학기 간 2주</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">학비 안내</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="font-semibold">등록금 (1학기)</span>
+                        <span class="text-blue-600 font-bold">1,500,000원</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="font-semibold">교재비</span>
+                        <span>100,000원</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="font-semibold">활동비</span>
+                        <span>150,000원</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="font-semibold">보험료</span>
+                        <span>50,000원</span>
+                    </div>
+                    <div class="flex justify-between items-center font-bold text-lg">
+                        <span>총 학비</span>
+                        <span class="text-blue-600">1,800,000원</span>
+                    </div>
+                </div>
+                <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                    <p class="text-sm text-blue-700">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        장학금 혜택 및 분할 결제 가능
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cultural Activities -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-16">
+            <h3 class="text-2xl font-bold text-gray-800 mb-8 text-center">문화 체험 활동</h3>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <i class="fas fa-utensils text-red-500 text-3xl mb-3"></i>
+                    <h4 class="font-semibold mb-2">전통 음식 체험</h4>
+                    <p class="text-sm text-gray-600">김치 만들기, 한식 요리 체험</p>
+                </div>
+                <div class="text-center">
+                    <i class="fas fa-music text-purple-500 text-3xl mb-3"></i>
+                    <h4 class="font-semibold mb-2">K-POP & 전통 문화</h4>
+                    <p class="text-sm text-gray-600">사물놀이, K-POP 댄스 배우기</p>
+                </div>
+                <div class="text-center">
+                    <i class="fas fa-map-marker-alt text-green-500 text-3xl mb-3"></i>
+                    <h4 class="font-semibold mb-2">문화 탐방</h4>
+                    <p class="text-sm text-gray-600">궁궐, 박물관, 전통 마을 방문</p>
+                </div>
+                <div class="text-center">
+                    <i class="fas fa-users text-blue-500 text-3xl mb-3"></i>
+                    <h4 class="font-semibold mb-2">언어 교환</h4>
+                    <p class="text-sm text-gray-600">한국 대학생과의 언어 교환</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Application Process -->
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-8 text-white">
+            <h3 class="text-3xl font-bold mb-8 text-center">지원 절차</h3>
+            <div class="grid md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white text-blue-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">1</div>
+                    <h4 class="font-semibold mb-2">서류 준비</h4>
+                    <p class="text-sm opacity-90">지원서, 학력증명서, 여권 사본</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white text-blue-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">2</div>
+                    <h4 class="font-semibold mb-2">온라인 지원</h4>
+                    <p class="text-sm opacity-90">홈페이지를 통한 온라인 지원</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white text-blue-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">3</div>
+                    <h4 class="font-semibold mb-2">레벨 테스트</h4>
+                    <p class="text-sm opacity-90">한국어 실력 평가 및 반 배정</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-white text-blue-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">4</div>
+                    <h4 class="font-semibold mb-2">입학 안내</h4>
+                    <p class="text-sm opacity-90">합격 통보 및 입학 준비</p>
+                </div>
+            </div>
+            <div class="text-center mt-8">
+                <button class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-edit mr-2"></i>지금 지원하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 WOW-CAMPUS 외국인 구인구직 및 유학생 지원플랫폼. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
