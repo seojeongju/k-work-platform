@@ -2384,42 +2384,40 @@ app.get('/static/jobs-view.html', async (c) => {
                 return;
             }
 
-            jobsList.innerHTML = jobs.map(job => `
-                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="text-xl font-semibold text-gray-800 mb-2">\${job.title}</h3>
-                            <p class="text-lg text-wowcampus-blue font-medium">\${job.company}</p>
-                        </div>
-                        <span class="bg-wowcampus-blue text-white px-3 py-1 rounded-full text-sm">\${job.visa_type}</span>
-                    </div>
-                    
-                    <div class="grid md:grid-cols-2 gap-4 text-gray-600">
-                        <div class="flex items-center">
-                            <i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>
-                            \${job.location}
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-won-sign mr-2 text-gray-400"></i>
-                            \${job.salary_min?.toLocaleString() || 'N/A'} - \${job.salary_max?.toLocaleString() || 'N/A'}만원
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-calendar mr-2 text-gray-400"></i>
-                            게시일: \${job.posted_date}
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-check-circle mr-2 text-green-400"></i>
-                            상태: \${job.status === 'active' ? '모집중' : '마감'}
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4 flex justify-end">
-                        <button class="bg-wowcampus-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-info-circle mr-2"></i>상세보기
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+            jobsList.innerHTML = jobs.map(job => 
+                '<div class="bg-gray-50 border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">' +
+                    '<div class="flex justify-between items-start mb-4">' +
+                        '<div>' +
+                            '<h3 class="text-xl font-semibold text-gray-800 mb-2">' + (job.title || '') + '</h3>' +
+                            '<p class="text-lg text-wowcampus-blue font-medium">' + (job.company || '') + '</p>' +
+                        '</div>' +
+                        '<span class="bg-wowcampus-blue text-white px-3 py-1 rounded-full text-sm">' + (job.visa_type || '') + '</span>' +
+                    '</div>' +
+                    '<div class="grid md:grid-cols-2 gap-4 text-gray-600">' +
+                        '<div class="flex items-center">' +
+                            '<i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>' +
+                            (job.location || '') +
+                        '</div>' +
+                        '<div class="flex items-center">' +
+                            '<i class="fas fa-won-sign mr-2 text-gray-400"></i>' +
+                            (job.salary_min ? job.salary_min.toLocaleString() : 'N/A') + ' - ' + (job.salary_max ? job.salary_max.toLocaleString() : 'N/A') + '만원' +
+                        '</div>' +
+                        '<div class="flex items-center">' +
+                            '<i class="fas fa-calendar mr-2 text-gray-400"></i>' +
+                            '게시일: ' + (job.posted_date || '') +
+                        '</div>' +
+                        '<div class="flex items-center">' +
+                            '<i class="fas fa-check-circle mr-2 text-green-400"></i>' +
+                            '상태: ' + (job.status === 'active' ? '모집중' : '마감') +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="mt-4 flex justify-end">' +
+                        '<button class="bg-wowcampus-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">' +
+                            '<i class="fas fa-info-circle mr-2"></i>상세보기' +
+                        '</button>' +
+                    '</div>' +
+                '</div>'
+            ).join('');
         }
 
         function goToLogin() {
@@ -2667,42 +2665,40 @@ app.get('/static/jobseekers-view.html', async (c) => {
                 return;
             }
 
-            jobseekersList.innerHTML = jobseekers.map(jobseeker => `
-                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="text-xl font-semibold text-gray-800 mb-2">\${jobseeker.name || '이름 비공개'}</h3>
-                            <p class="text-lg text-purple-500 font-medium">\${jobseeker.nationality || 'N/A'}</p>
-                        </div>
-                        <span class="bg-purple-500 text-white px-3 py-1 rounded-full text-sm">\${jobseeker.visa_status || 'N/A'}</span>
-                    </div>
-                    
-                    <div class="grid md:grid-cols-2 gap-4 text-gray-600">
-                        <div class="flex items-center">
-                            <i class="fas fa-graduation-cap mr-2 text-gray-400"></i>
-                            학력: \${jobseeker.education_level || 'N/A'}
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-briefcase mr-2 text-gray-400"></i>
-                            경력: \${jobseeker.work_experience || '0'}년
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-language mr-2 text-gray-400"></i>
-                            한국어: \${jobseeker.korean_level || 'N/A'}
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-check-circle mr-2 text-green-400"></i>
-                            상태: \${jobseeker.status === 'active' ? '구직중' : '비활성'}
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4 flex justify-end">
-                        <button class="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors">
-                            <i class="fas fa-info-circle mr-2"></i>상세보기
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+            jobseekersList.innerHTML = jobseekers.map(jobseeker => 
+                '<div class="bg-gray-50 border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">' +
+                    '<div class="flex justify-between items-start mb-4">' +
+                        '<div>' +
+                            '<h3 class="text-xl font-semibold text-gray-800 mb-2">' + (jobseeker.name || '이름 비공개') + '</h3>' +
+                            '<p class="text-lg text-purple-500 font-medium">' + (jobseeker.nationality || 'N/A') + '</p>' +
+                        '</div>' +
+                        '<span class="bg-purple-500 text-white px-3 py-1 rounded-full text-sm">' + (jobseeker.visa_status || 'N/A') + '</span>' +
+                    '</div>' +
+                    '<div class="grid md:grid-cols-2 gap-4 text-gray-600">' +
+                        '<div class="flex items-center">' +
+                            '<i class="fas fa-graduation-cap mr-2 text-gray-400"></i>' +
+                            '학력: ' + (jobseeker.education_level || 'N/A') +
+                        '</div>' +
+                        '<div class="flex items-center">' +
+                            '<i class="fas fa-briefcase mr-2 text-gray-400"></i>' +
+                            '경력: ' + (jobseeker.work_experience || '0') + '년' +
+                        '</div>' +
+                        '<div class="flex items-center">' +
+                            '<i class="fas fa-language mr-2 text-gray-400"></i>' +
+                            '한국어: ' + (jobseeker.korean_level || 'N/A') +
+                        '</div>' +
+                        '<div class="flex items-center">' +
+                            '<i class="fas fa-check-circle mr-2 text-green-400"></i>' +
+                            '상태: ' + (jobseeker.status === 'active' ? '구직중' : '비활성') +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="mt-4 flex justify-end">' +
+                        '<button class="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors">' +
+                            '<i class="fas fa-info-circle mr-2"></i>상세보기' +
+                        '</button>' +
+                    '</div>' +
+                '</div>'
+            ).join('');
         }
 
         function goToLogin() {
