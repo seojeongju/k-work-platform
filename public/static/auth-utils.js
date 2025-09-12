@@ -106,16 +106,16 @@ class AuthUtils {
                     </div>
                     <div class="flex flex-col sm:flex-row gap-3">
                         <button onclick="AuthUtils.redirectToLogin()" 
-                                class="flex-1 px-4 py-2 bg-wow-blue text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
                             <i class="fas fa-sign-in-alt mr-2"></i>로그인 하기
                         </button>
                         <button onclick="AuthUtils.closeLoginModal()" 
-                                class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                                class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
                             취소
                         </button>
                     </div>
                     <div class="mt-4 text-center">
-                        <a href="/static/register.html" class="text-sm text-wow-blue hover:underline">
+                        <a href="/static/register.html" class="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors">
                             계정이 없으신가요? 회원가입
                         </a>
                     </div>

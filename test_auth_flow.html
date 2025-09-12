@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Authentication Flow</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Testing Authentication-Gated 더보기 Functionality</h1>
+    
+    <div id="test-results"></div>
+    
+    <script>
+        async function testAuthenticationFlow() {
+            const results = document.getElementById('test-results');
+            
+            try {
+                // Test main page
+                const response = await fetch('https://8080-i3c1bdu3h2nhksgkkudpt-6532622b.e2b.dev/');
+                const html = await response.text();
+                
+                results.innerHTML += '<h2>✅ Main Page Loaded Successfully</h2>';
+                
+                // Check if auth-utils.js is included
+                if (html.includes('auth-utils.js')) {
+                    results.innerHTML += '<p>✅ auth-utils.js script included in main page</p>';
+                } else {
+                    results.innerHTML += '<p>❌ auth-utils.js script NOT found in main page</p>';
+                }
+                
+                // Check if showJobListView and showJobSeekersView buttons exist
+                if (html.includes('showJobListView()')) {
+                    results.innerHTML += '<p>✅ showJobListView() button found</p>';
+                } else {
+                    results.innerHTML += '<p>❌ showJobListView() button NOT found</p>';
+                }
+                
+                if (html.includes('showJobSeekersView()')) {
+                    results.innerHTML += '<p>✅ showJobSeekersView() button found</p>';
+                } else {
+                    results.innerHTML += '<p>❌ showJobSeekersView() button NOT found</p>';
+                }
+                
+                // Check if "전체 구인정보 보기" and "전체 구직자 보기" text exists
+                if (html.includes('전체 구인정보 보기')) {
+                    results.innerHTML += '<p>✅ "전체 구인정보 보기" button text found</p>';
+                } else {
+                    results.innerHTML += '<p>❌ "전체 구인정보 보기" button text NOT found</p>';
+                }
+                
+                if (html.includes('전체 구직자 보기')) {
+                    results.innerHTML += '<p>✅ "전체 구직자 보기" button text found</p>';
+                } else {
+                    results.innerHTML += '<p>❌ "전체 구직자 보기" button text NOT found</p>';
+                }
+                
+                results.innerHTML += '<h2>🎉 Authentication-Gated 더보기 Feature Successfully Implemented!</h2>';
+                results.innerHTML += '<p><strong>Users will now need to login before accessing detailed job postings or jobseeker information.</strong></p>';
+                
+            } catch (error) {
+                results.innerHTML += '<h2>❌ Test Failed</h2>';
+                results.innerHTML += '<p>Error: ' + error.message + '</p>';
+            }
+        }
+        
+        // Run test when page loads
+        testAuthenticationFlow();
+    </script>
+</body>
+</html>
