@@ -115,6 +115,11 @@ class JobPlatformApp {
         await this.loadJobSeekers();
         await this.loadStatistics();
         
+        // 메인 페이지 데이터 로딩 (별도 함수)
+        if (typeof loadMainPageData === 'function') {
+            await loadMainPageData();
+        }
+        
         // 로그인 상태에 따른 UI 업데이트 (약간 지연)
         setTimeout(() => {
             this.updateAuthUI();
@@ -569,22 +574,45 @@ class JobPlatformApp {
 
     async loadStatistics() {
         try {
+            console.log('통계 로딩 시작...');
             const response = await axios.get('/api/stats');
-            const stats = response.data;
+            console.log('통계 API 응답:', response.data);
+            
+            if (response.data && response.data.success && response.data.stats) {
+                const stats = response.data.stats;
 
-            // 통계 요소들이 존재하는지 확인하고 안전하게 업데이트
-            const statJobseekers = document.getElementById('stat-jobseekers');
-            const statEmployers = document.getElementById('stat-employers');
-            const statJobs = document.getElementById('stat-jobs');
-            const statMatches = document.getElementById('stat-matches');
+                // 통계 요소들이 존재하는지 확인하고 안전하게 업데이트
+                const statJobseekers = document.getElementById('stat-jobseekers');
+                const statJobs = document.getElementById('stat-jobs');
+                const statMatches = document.getElementById('stat-matches');
+                const statAgents = document.getElementById('stat-agents');
 
-            if (statJobseekers) statJobseekers.textContent = this.formatNumber(stats.jobSeekers);
-            if (statEmployers) statEmployers.textContent = this.formatNumber(stats.employers);
-            if (statJobs) statJobs.textContent = this.formatNumber(stats.jobPostings);
-            if (statMatches) statMatches.textContent = this.formatNumber(stats.successfulMatches);
+                if (statJobseekers) {
+                    statJobseekers.textContent = this.formatNumber(stats.totalJobSeekers || 0);
+                    console.log('구직자 수 업데이트:', stats.totalJobSeekers);
+                }
+                if (statJobs) {
+                    statJobs.textContent = this.formatNumber(stats.activeJobs || 0);
+                    console.log('구인공고 수 업데이트:', stats.activeJobs);
+                }
+                if (statMatches) {
+                    statMatches.textContent = this.formatNumber(stats.successfulMatches || 0);
+                    console.log('매칭 수 업데이트:', stats.successfulMatches);
+                }
+                if (statAgents) {
+                    statAgents.textContent = this.formatNumber(stats.activeAgents || 0);
+                    console.log('에이전트 수 업데이트:', stats.activeAgents);
+                }
+            }
             
         } catch (error) {
             console.error('통계 로드 실패:', error);
+            // 에러 시 0으로 표시
+            const elements = ['stat-jobseekers', 'stat-jobs', 'stat-matches', 'stat-agents'];
+            elements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = '0';
+            });
         }
     }
 
@@ -3107,40 +3135,99 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Global functions for job listing functionality
-function showAllJobs() {
-    alert('전체 구인정보 페이지로 이동합니다.');
-    // TODO: 추후 별도 페이지나 확장된 리스트 구현
-}
 
-function showAllJobSeekers() {
-    alert('전체 구직자 정보 페이지로 이동합니다.');
-    // TODO: 추후 별도 페이지나 확장된 리스트 구현
-}
-
-function showJobDetail(jobId) {
-    // Simple alert for now - TODO: implement modal with detailed job info
-    alert(`구인공고 ID ${jobId}의 상세 정보를 표시합니다.`);
-    // TODO: API call to /api/jobs/${jobId} and show modal
-}
-
-function showJobSeekerDetail(jobSeekerId) {
-    // Simple alert for now - TODO: implement modal with detailed jobseeker info
-    alert(`구직자 ID ${jobSeekerId}의 상세 정보를 표시합니다.`);
-    // TODO: API call to /api/jobseekers/${jobSeekerId} and show modal
-}
-
-function closeJobDetailModal() {
-    const modal = document.getElementById('job-detail-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+// 메인 페이지 데이터 로딩 함수 (app.js에서 처리)
+async function loadMainPageData() {
+    try {
+        console.log('app.js: 메인페이지 데이터 로딩 시작...');
+        
+        // 최신 구인정보 로딩
+        const jobsResponse = await fetch('/api/jobs?page=1&limit=3');
+        const jobsData = await jobsResponse.json();
+        console.log('app.js: 구인정보 API 응답:', jobsData);
+        
+        const jobsCountEl = document.getElementById('jobs-count');
+        const latestJobsEl = document.getElementById('latest-jobs');
+        
+        if (jobsData.success && jobsData.jobs && jobsData.jobs.length > 0) {
+            if (jobsCountEl) {
+                jobsCountEl.textContent = `${jobsData.total || jobsData.jobs.length}개`;
+                console.log('app.js: 구인정보 카운트 업데이트:', jobsData.total || jobsData.jobs.length);
+            }
+            
+            if (latestJobsEl) {
+                latestJobsEl.innerHTML = jobsData.jobs.map(job => `
+                    <div class="p-3 border border-gray-200 rounded-lg hover:border-wowcampus-blue transition-colors cursor-pointer">
+                        <h4 class="font-medium text-gray-800 mb-1">${job.title || '제목 없음'}</h4>
+                        <p class="text-sm text-gray-600">${job.company || '회사명 없음'} • ${job.location || '위치 미정'}</p>
+                        <span class="text-xs text-wowcampus-blue font-medium">${job.visa_type || 'E-9'} 비자</span>
+                    </div>
+                `).join('');
+            }
+        } else {
+            if (jobsCountEl) jobsCountEl.textContent = '0개';
+            if (latestJobsEl) latestJobsEl.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-briefcase text-2xl mb-2"></i>
+                    <p>등록된 구인정보가 없습니다</p>
+                </div>
+            `;
+            console.log('app.js: 구인정보 없음');
+        }
+        
+        // 구직자 현황 로딩
+        const jobseekersResponse = await fetch('/api/jobseekers?page=1&limit=3');
+        const jobseekersData = await jobseekersResponse.json();
+        console.log('app.js: 구직자 API 응답:', jobseekersData);
+        
+        const jobseekersCountEl = document.getElementById('jobseekers-count');
+        const latestJobseekersEl = document.getElementById('latest-jobseekers');
+        
+        if (jobseekersData.success && jobseekersData.jobseekers && jobseekersData.jobseekers.length > 0) {
+            if (jobseekersCountEl) {
+                jobseekersCountEl.textContent = `${jobseekersData.pagination?.total || jobseekersData.jobseekers.length}명`;
+                console.log('app.js: 구직자 카운트 업데이트:', jobseekersData.pagination?.total || jobseekersData.jobseekers.length);
+            }
+            
+            if (latestJobseekersEl) {
+                latestJobseekersEl.innerHTML = jobseekersData.jobseekers.map(seeker => `
+                    <div class="p-3 border border-gray-200 rounded-lg hover:border-accent transition-colors">
+                        <h4 class="font-medium text-gray-800 mb-1">${seeker.name || '이름 비공개'}</h4>
+                        <p class="text-sm text-gray-600">${seeker.nationality || '국적 미정'} • ${seeker.korean_level || '한국어 수준 미정'}</p>
+                        <span class="text-xs text-accent font-medium">${seeker.visa_status || '비자 상태'}</span>
+                    </div>
+                `).join('');
+            }
+        } else {
+            if (jobseekersCountEl) jobseekersCountEl.textContent = '0명';
+            if (latestJobseekersEl) latestJobseekersEl.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-users text-2xl mb-2"></i>
+                    <p>등록된 구직자가 없습니다</p>
+                </div>
+            `;
+            console.log('app.js: 구직자 없음');
+        }
+        
+        console.log('app.js: 메인페이지 데이터 로딩 완료');
+    } catch (error) {
+        console.error('app.js: 메인페이지 데이터 로딩 실패:', error);
+        
+        // 에러 시 기본값 표시
+        const jobsCountEl = document.getElementById('jobs-count');
+        const jobseekersCountEl = document.getElementById('jobseekers-count');
+        if (jobsCountEl) jobsCountEl.textContent = 'Error';
+        if (jobseekersCountEl) jobseekersCountEl.textContent = 'Error';
     }
 }
 
-function closeJobSeekerDetailModal() {
-    const modal = document.getElementById('jobseeker-detail-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-    }
+// 네비게이션 함수들
+function showJobListView() {
+    console.log('구인정보 대시보드로 이동');
+    window.location.href = '/static/job-listings-dashboard.html';
+}
+
+function showJobSeekersView() {
+    console.log('구직자 대시보드로 이동');
+    window.location.href = '/static/jobseeker-listings-dashboard.html';
 }
