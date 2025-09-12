@@ -58,11 +58,11 @@ app.use('*', async (c, next) => {
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin')
   c.header('Content-Security-Policy', 
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
+    "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com; " +
     "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
     "font-src 'self' https://cdn.jsdelivr.net; " +
     "img-src 'self' data: https:; " +
-    "connect-src 'self' https://w-campus.com https://www.w-campus.com"
+    "connect-src 'self' https://w-campus.com https://www.w-campus.com https://cloudflareinsights.com"
   )
   
   await next()
@@ -667,7 +667,87 @@ app.get('/', async (c) => {
                 </div>
             </section>
             
-
+            <!-- 실시간 데이터 섹션 -->
+            <section class="py-16 bg-gray-50">
+                <div class="container mx-auto px-6">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold text-gray-800 mb-4">최신 정보</h2>
+                        <p class="text-lg text-gray-600">실시간으로 업데이트되는 구인정보와 구직자 정보를 확인하세요</p>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                        <!-- 최신 구인정보 -->
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-xl font-semibold text-gray-800">
+                                    <i class="fas fa-briefcase text-wowcampus-blue mr-2"></i>
+                                    최신 구인정보
+                                </h3>
+                                <span id="jobs-count" class="bg-wowcampus-blue text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    Loading...
+                                </span>
+                            </div>
+                            <div id="latest-jobs" class="space-y-4">
+                                <div class="animate-pulse">
+                                    <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                    <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            </div>
+                            <button onclick="showJobListView()" class="w-full mt-4 text-center py-3 text-wowcampus-blue hover:bg-wowcampus-light rounded-lg transition-colors font-medium">
+                                전체 구인정보 보기 →
+                            </button>
+                        </div>
+                        
+                        <!-- 최신 구직자 정보 -->
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-xl font-semibold text-gray-800">
+                                    <i class="fas fa-users text-accent mr-2"></i>
+                                    구직자 현황
+                                </h3>
+                                <span id="jobseekers-count" class="bg-accent text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    Loading...
+                                </span>
+                            </div>
+                            <div id="latest-jobseekers" class="space-y-4">
+                                <div class="animate-pulse">
+                                    <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                    <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            </div>
+                            <button onclick="showJobSeekersView()" class="w-full mt-4 text-center py-3 text-accent hover:bg-green-50 rounded-lg transition-colors font-medium">
+                                전체 구직자 보기 →
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 통계 정보 -->
+                    <div class="mt-12 bg-white rounded-xl shadow-lg p-8">
+                        <div class="text-center mb-8">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-2">WOW-CAMPUS 통계</h3>
+                            <p class="text-gray-600">우리 플랫폼의 현재 현황을 한눈에 확인하세요</p>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-wowcampus-blue mb-2" id="stat-jobs">-</div>
+                                <div class="text-sm text-gray-600">활성 구인공고</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-accent mb-2" id="stat-jobseekers">-</div>
+                                <div class="text-sm text-gray-600">등록 구직자</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-purple-500 mb-2" id="stat-matches">-</div>
+                                <div class="text-sm text-gray-600">성공 매칭</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-orange-500 mb-2" id="stat-agents">-</div>
+                                <div class="text-sm text-gray-600">활성 에이전트</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <!-- Job Details Modal -->
             <div id="job-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
@@ -1074,6 +1154,93 @@ app.get('/', async (c) => {
                 checkLoginStatus();
                 alert('로그아웃 되었습니다.');
                 window.location.reload();
+            });
+            
+            // 메인페이지 실시간 데이터 로딩 함수
+            async function loadMainPageData() {
+                try {
+                    // 통계 정보 로딩
+                    const statsResponse = await fetch('/api/stats');
+                    const statsData = await statsResponse.json();
+                    
+                    if (statsData.success) {
+                        document.getElementById('stat-jobs').textContent = statsData.stats.activeJobs || '0';
+                        document.getElementById('stat-jobseekers').textContent = statsData.stats.totalJobSeekers || '0';
+                        document.getElementById('stat-matches').textContent = statsData.stats.successfulMatches || '0';
+                        document.getElementById('stat-agents').textContent = statsData.stats.activeAgents || '0';
+                    }
+                    
+                    // 최신 구인정보 로딩
+                    const jobsResponse = await fetch('/api/jobs?page=1&limit=3');
+                    const jobsData = await jobsResponse.json();
+                    
+                    if (jobsData.success && jobsData.jobs.length > 0) {
+                        const jobsCount = document.getElementById('jobs-count');
+                        const latestJobs = document.getElementById('latest-jobs');
+                        
+                        jobsCount.textContent = \`\${jobsData.pagination.total}개\`;
+                        
+                        latestJobs.innerHTML = jobsData.jobs.map(job => \`
+                            <div class="p-3 border border-gray-200 rounded-lg hover:border-wowcampus-blue transition-colors cursor-pointer">
+                                <h4 class="font-medium text-gray-800 mb-1">\${job.title || '제목 없음'}</h4>
+                                <p class="text-sm text-gray-600">\${job.company || '회사명 없음'} • \${job.location || '위치 미정'}</p>
+                                <span class="text-xs text-wowcampus-blue font-medium">\${job.visa_type || 'E-9'} 비자</span>
+                            </div>
+                        \`).join('');
+                    } else {
+                        document.getElementById('jobs-count').textContent = '0개';
+                        document.getElementById('latest-jobs').innerHTML = \`
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-briefcase text-2xl mb-2"></i>
+                                <p>등록된 구인정보가 없습니다</p>
+                            </div>
+                        \`;
+                    }
+                    
+                    // 구직자 현황 로딩
+                    const jobseekersResponse = await fetch('/api/jobseekers?page=1&limit=3');
+                    const jobseekersData = await jobseekersResponse.json();
+                    
+                    if (jobseekersData.success && jobseekersData.jobseekers.length > 0) {
+                        const jobseekersCount = document.getElementById('jobseekers-count');
+                        const latestJobseekers = document.getElementById('latest-jobseekers');
+                        
+                        jobseekersCount.textContent = \`\${jobseekersData.pagination.total}명\`;
+                        
+                        latestJobseekers.innerHTML = jobseekersData.jobseekers.map(seeker => \`
+                            <div class="p-3 border border-gray-200 rounded-lg hover:border-accent transition-colors">
+                                <h4 class="font-medium text-gray-800 mb-1">\${seeker.name || '이름 비공개'}</h4>
+                                <p class="text-sm text-gray-600">\${seeker.nationality || '국적 미정'} • \${seeker.korean_level || '한국어 수준 미정'}</p>
+                                <span class="text-xs text-accent font-medium">\${seeker.visa_status || '비자 상태'}</span>
+                            </div>
+                        \`).join('');
+                    } else {
+                        document.getElementById('jobseekers-count').textContent = '0명';
+                        document.getElementById('latest-jobseekers').innerHTML = \`
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-users text-2xl mb-2"></i>
+                                <p>등록된 구직자가 없습니다</p>
+                            </div>
+                        \`;
+                    }
+                    
+                } catch (error) {
+                    console.error('메인페이지 데이터 로딩 실패:', error);
+                    
+                    // 에러 시 기본값 표시
+                    document.getElementById('stat-jobs').textContent = '-';
+                    document.getElementById('stat-jobseekers').textContent = '-';
+                    document.getElementById('stat-matches').textContent = '-';
+                    document.getElementById('stat-agents').textContent = '-';
+                    document.getElementById('jobs-count').textContent = 'Error';
+                    document.getElementById('jobseekers-count').textContent = 'Error';
+                }
+            }
+            
+            // 페이지 로드 시 데이터 로딩
+            document.addEventListener('DOMContentLoaded', function() {
+                checkLoginStatus();
+                loadMainPageData();
             });
         </script>
         
@@ -2960,6 +3127,119 @@ app.get('/api/stats', async (c) => {
   } catch (error) {
     console.error('Stats API error:', error)
     return c.json({ error: 'Failed to fetch statistics' }, 500)
+  }
+})
+
+// 데이터베이스 시드 데이터 생성 API (관리용)
+app.post('/api/admin/seed-database', async (c) => {
+  try {
+    // 보안을 위해 특별한 키 확인
+    const { adminKey } = await c.req.json()
+    if (adminKey !== 'w-campus-seed-2025') {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+
+    // 기존 데이터 확인
+    const existingEmployers = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM employers`).first()
+    if (existingEmployers?.count > 0) {
+      return c.json({ 
+        success: true, 
+        message: 'Database already seeded', 
+        counts: { employers: existingEmployers.count }
+      })
+    }
+
+    // 샘플 구인 기업 추가
+    await c.env.DB.prepare(`
+      INSERT INTO employers (email, password, company_name, business_number, industry, contact_person, phone, address, region, website, status) VALUES 
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      'hr@samsung.com', 'hashed_password_1', '삼성전자', '123-45-67890', 'IT/소프트웨어', '김인사', '02-1234-5678', '서울시 강남구 테헤란로 123', '서울', 'https://samsung.com', 'approved',
+      'recruit@lg.com', 'hashed_password_2', 'LG전자', '234-56-78901', '제조업', '박채용', '02-2345-6789', '서울시 영등포구 여의도동 456', '서울', 'https://lg.com', 'approved',
+      'jobs@hyundai.com', 'hashed_password_3', '현대자동차', '345-67-89012', '자동차', '이모집', '031-123-4567', '경기도 화성시 현대로 789', '경기', 'https://hyundai.com', 'approved',
+      'careers@cj.co.kr', 'hashed_password_4', 'CJ제일제당', '456-78-90123', '식품', '최담당', '02-3456-7890', '서울시 중구 동호로 101', '서울', 'https://cj.co.kr', 'approved',
+      'hr@posco.com', 'hashed_password_5', 'POSCO', '567-89-01234', '철강', '정관리', '054-220-0114', '경북 포항시 남구 괌동로 100', '경북', 'https://posco.com', 'approved'
+    ).run()
+
+    // 샘플 구인공고 추가
+    await c.env.DB.prepare(`
+      INSERT INTO job_postings (employer_id, title, job_category, required_visa, salary_min, salary_max, work_location, region, work_hours, benefits, requirements, description, korean_level_required, experience_required, deadline, status) VALUES 
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      1, '소프트웨어 개발자 (외국인 전형)', 'IT/소프트웨어', 'E-7', 3000, 5000, '서울시 강남구', '서울', '주 40시간 (09:00-18:00)', '4대보험, 연차, 성과급, 교육비 지원', '컴퓨터공학 전공, 프로그래밍 경험 2년 이상', '모바일 앱 및 웹 서비스 개발 업무를 담당하게 됩니다.', 'intermediate', '2년 이상', '2025-10-15', 'active',
+      2, '전자제품 품질관리 담당자', '제조/생산', 'E-7', 2800, 4200, '서울시 영등포구', '서울', '주 40시간 (08:30-17:30)', '4대보험, 연차, 식대지원, 기숙사 제공', '전자공학 관련 전공, 품질관리 경험', 'TV, 냉장고 등 가전제품의 품질 검사 및 개선 업무', 'basic', '1년 이상', '2025-09-30', 'active',
+      3, '자동차 설계 엔지니어', '기계/자동차', 'E-7', 3500, 6000, '경기도 화성시', '경기', '주 40시간 (09:00-18:00)', '4대보험, 연차, 성과급, 주택자금 대출', '기계공학 전공, CAD 프로그램 활용 가능', '친환경 자동차 부품 설계 및 개발 업무를 담당합니다.', 'intermediate', '3년 이상', '2025-11-01', 'active',
+      4, '식품 연구개발 연구원', '연구개발', 'E-7', 2500, 4000, '서울시 중구', '서울', '주 40시간 (09:00-18:00)', '4대보험, 연차, 중식제공, 연구개발비 지원', '식품공학 또는 화학 전공, 연구경험', '신제품 개발 및 기존 제품 개선 연구 업무', 'intermediate', '2년 이상', '2025-10-20', 'active',
+      5, '철강 생산관리 담당자', '제조/생산', 'E-7', 3200, 4800, '경북 포항시', '경북', '3교대 근무', '4대보험, 연차, 야간수당, 기숙사 제공', '금속공학 또는 산업공학 전공', '철강 제품 생산 공정 관리 및 품질 개선 업무', 'basic', '1년 이상', '2025-09-25', 'active'
+    ).run()
+
+    // 샘플 에이전트 추가
+    await c.env.DB.prepare(`
+      INSERT INTO agents (email, password, company_name, country, contact_person, phone, address, license_number, status) VALUES 
+      (?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      'agent1@vietnam-agency.com', 'hashed_password_a1', '베트남 인재 에이전시', 'Vietnam', 'Nguyen Van A', '+84-123-456-789', 'Ho Chi Minh City, Vietnam', 'VN-001-2024', 'approved',
+      'contact@thailand-jobs.com', 'hashed_password_a2', '태국 취업 센터', 'Thailand', 'Somchai Jaidee', '+66-2-123-4567', 'Bangkok, Thailand', 'TH-002-2024', 'approved',
+      'info@philippines-work.com', 'hashed_password_a3', '필리핀 워크 에이전시', 'Philippines', 'Maria Santos', '+63-2-890-1234', 'Manila, Philippines', 'PH-003-2024', 'approved',
+      'jobs@indonesia-career.com', 'hashed_password_a4', '인도네시아 커리어 센터', 'Indonesia', 'Budi Santoso', '+62-21-567-8901', 'Jakarta, Indonesia', 'ID-004-2024', 'approved',
+      'help@cambodia-employment.com', 'hashed_password_a5', '캄보디아 고용 서비스', 'Cambodia', 'Sophea Chea', '+855-23-234-567', 'Phnom Penh, Cambodia', 'KH-005-2024', 'approved'
+    ).run()
+
+    // 샘플 구직자 추가
+    await c.env.DB.prepare(`
+      INSERT INTO job_seekers (email, password, name, birth_date, gender, nationality, current_visa, desired_visa, phone, current_address, korean_level, education_level, work_experience, agent_id, status) VALUES 
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      'nguyen.minh@gmail.com', 'hashed_password_s1', 'Nguyen Minh', '1995-03-15', 'male', 'Vietnamese', 'C-3', 'E-7', '+84-987-654-321', 'Ho Chi Minh City, Vietnam', 'intermediate', '대학교 졸업 (컴퓨터공학)', 'Software Developer - 3년', 1, 'active',
+      'somchai.work@gmail.com', 'hashed_password_s2', 'Somchai Thana', '1992-08-22', 'male', 'Thai', 'H-2', 'E-7', '+66-98-765-4321', 'Bangkok, Thailand', 'beginner', '대학교 졸업 (전자공학)', 'Electronics Technician - 4년', 2, 'active',
+      'maria.santos@yahoo.com', 'hashed_password_s3', 'Maria Santos', '1994-12-10', 'female', 'Filipino', 'C-3', 'E-7', '+63-917-123-4567', 'Manila, Philippines', 'advanced', '대학교 졸업 (간호학)', 'Registered Nurse - 5년', 3, 'active',
+      'budi.work@gmail.com', 'hashed_password_s4', 'Budi Hartono', '1990-06-05', 'male', 'Indonesian', 'H-2', 'E-7', '+62-812-345-6789', 'Jakarta, Indonesia', 'intermediate', '대학교 졸업 (기계공학)', 'Mechanical Engineer - 6년', 4, 'active',
+      'sophea.job@gmail.com', 'hashed_password_s5', 'Sophea Kim', '1996-11-18', 'female', 'Cambodian', 'C-3', 'D-2', '+855-12-345-678', 'Phnom Penh, Cambodia', 'beginner', '고등학교 졸업', 'Factory Worker - 2년', 5, 'active',
+      'john.vietnam@gmail.com', 'hashed_password_s6', 'John Tran', '1993-04-25', 'male', 'Vietnamese', 'D-2', 'E-7', '+84-901-234-567', 'Hanoi, Vietnam', 'advanced', '대학원 졸업 (MBA)', 'Business Analyst - 4년', 1, 'active',
+      'lisa.thailand@gmail.com', 'hashed_password_s7', 'Lisa Priya', '1991-09-14', 'female', 'Thai', 'C-3', 'F-2', '+66-87-654-3210', 'Chiang Mai, Thailand', 'intermediate', '대학교 졸업 (호텔경영)', 'Hotel Manager - 5년', 2, 'active',
+      'carlo.philippines@gmail.com', 'hashed_password_s8', 'Carlo Reyes', '1988-01-30', 'male', 'Filipino', 'E-7', 'F-5', '+63-928-765-4321', 'Cebu, Philippines', 'advanced', '대학교 졸업 (건축학)', 'Architect - 8년', 3, 'active'
+    ).run()
+
+    // 최종 통계 확인
+    const finalStats = {
+      employers: (await c.env.DB.prepare(`SELECT COUNT(*) as count FROM employers`).first())?.count || 0,
+      jobPostings: (await c.env.DB.prepare(`SELECT COUNT(*) as count FROM job_postings`).first())?.count || 0,
+      agents: (await c.env.DB.prepare(`SELECT COUNT(*) as count FROM agents`).first())?.count || 0,
+      jobSeekers: (await c.env.DB.prepare(`SELECT COUNT(*) as count FROM job_seekers`).first())?.count || 0
+    }
+
+    return c.json({
+      success: true,
+      message: 'Database seeded successfully',
+      counts: finalStats
+    })
+
+  } catch (error) {
+    console.error('Database seeding error:', error)
+    return c.json({ 
+      success: false, 
+      error: 'Failed to seed database',
+      details: error.message 
+    }, 500)
   }
 })
 
