@@ -1750,12 +1750,36 @@ app.get('/static/login.html', async (c) => {
             showLoading();
 
             try {
-                const response = await axios.post('/api/auth/login', loginData);
+                console.log('로그인 시도:', loginData);
                 
-                if (response.data.success || response.data.token) {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(loginData)
+                });
+                
+                // HTTP 상태 코드 체크
+                if (!response.ok) {
+                    let errorMessage = '로그인 중 오류가 발생했습니다.';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (parseError) {
+                        console.error('Error response parsing failed:', parseError);
+                        errorMessage = 'HTTP ' + response.status + ': ' + response.statusText;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const data = await response.json();
+                console.log('로그인 응답:', data);
+                
+                if (data.success && data.token) {
                     // 로그인 성공
-                    localStorage.setItem('token', response.data.token);
-                    localStorage.setItem('user', JSON.stringify(response.data.user));
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
                     
                     alert('로그인이 완료되었습니다!');
                     
@@ -1772,11 +1796,23 @@ app.get('/static/login.html', async (c) => {
                         window.location.href = '/';
                     }
                 } else {
-                    throw new Error(response.data.error || '로그인에 실패했습니다.');
+                    // 로그인 실패
+                    const errorMessage = data.error || '이메일 또는 비밀번호가 올바르지 않습니다.';
+                    alert(errorMessage);
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                alert(error.response?.data?.error || '로그인 중 오류가 발생했습니다.');
+                let userMessage = '로그인 중 오류가 발생했습니다.';
+                
+                if (error.message) {
+                    userMessage = error.message;
+                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    userMessage = '네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인해주세요.';
+                } else if (error.name === 'SyntaxError') {
+                    userMessage = '서버 응답 처리 중 오류가 발생했습니다.';
+                }
+                
+                alert(userMessage);
             } finally {
                 hideLoading();
             }
@@ -2164,41 +2200,77 @@ app.get('/static/register.html', async (c) => {
             document.getElementById('loadingOverlay').classList.remove('hidden');
             
             try {
-                let endpoint = '';
                 let requestData = {
-                    firstName: data.firstName,
-                    lastName: data.lastName,
+                    userType: selectedUserType,
                     email: data.email,
                     password: data.password,
-                    phone: data.phone
+                    confirmPassword: data.confirmPassword
                 };
                 
-                // 회원 유형별 API 엔드포인트 및 데이터 설정
+                // 사용자 유형별 추가 데이터 설정
                 if (selectedUserType === 'jobseeker') {
-                    endpoint = '/api/auth/register/jobseeker';
-                    requestData.nationality = data.nationality;
-                    requestData.visaType = data.visaType;
+                    requestData.name = data.firstName + ' ' + data.lastName;
+                    requestData.phone = data.phone;
+                    requestData.nationality = data.nationality || '대한민국';
+                    requestData.visa_type = data.visaType || 'E-9';
+                    requestData.korean_level = data.koreanLevel || '초급';
                 } else if (selectedUserType === 'employer') {
-                    endpoint = '/api/auth/register/employer';
-                    requestData.companyName = data.companyName;
-                    requestData.businessNumber = data.businessNumber;
+                    requestData.company_name = data.companyName;
+                    requestData.business_number = data.businessNumber;
+                    requestData.phone = data.phone;
+                    requestData.address = data.address || '';
                 } else if (selectedUserType === 'agent') {
-                    endpoint = '/api/auth/register/agent';
-                    requestData.agencyName = data.agencyName;
-                    requestData.licenseNumber = data.licenseNumber;
+                    requestData.company_name = data.agencyName;
+                    requestData.license_number = data.licenseNumber;
+                    requestData.phone = data.phone;
+                    requestData.address = data.address || '';
                 }
                 
-                const response = await axios.post(endpoint, requestData);
+                console.log('회원가입 요청 데이터:', requestData);
                 
-                if (response.data.success) {
-                    alert(response.data.message || '회원가입이 완료되었습니다!');
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                // HTTP 상태 코드 체크
+                if (!response.ok) {
+                    let errorMessage = '회원가입 중 오류가 발생했습니다.';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (parseError) {
+                        console.error('Error response parsing failed:', parseError);
+                        errorMessage = 'HTTP ' + response.status + ': ' + response.statusText;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const responseData = await response.json();
+                console.log('회원가입 응답:', responseData);
+                
+                if (responseData.success) {
+                    alert(responseData.message || '회원가입이 완료되었습니다!');
                     window.location.href = '/static/login.html';
                 } else {
-                    throw new Error(response.data.error || '회원가입에 실패했습니다.');
+                    throw new Error(responseData.error || '회원가입에 실패했습니다.');
                 }
             } catch (error) {
                 console.error('회원가입 오류:', error);
-                alert(error.response?.data?.error || '회원가입 중 오류가 발생했습니다.');
+                let userMessage = '회원가입 중 오류가 발생했습니다.';
+                
+                if (error.message) {
+                    userMessage = error.message;
+                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    userMessage = '네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인해주세요.';
+                } else if (error.name === 'SyntaxError') {
+                    userMessage = '서버 응답 처리 중 오류가 발생했습니다.';
+                }
+                
+                alert(userMessage);
             } finally {
                 // 로딩 숨기기
                 document.getElementById('loadingOverlay').classList.add('hidden');
@@ -3242,8 +3314,8 @@ app.post('/api/auth/register', async (c) => {
       }, 400)
     }
 
-    // 비밀번호 해시
-    const hashedPassword = await hash(password)
+    // 비밀번호 평문 저장 (개발/테스트 환경용 - 운영 시 해시 필요)
+    // const hashedPassword = await hash(password)
     
     // 사용자 유형별 회원가입 처리
     let userId: number | null = null
@@ -3252,21 +3324,21 @@ app.post('/api/auth/register', async (c) => {
       case 'jobseeker':
         userId = await createJobSeeker(c.env.DB, { 
           email, 
-          password: hashedPassword, 
+          password: password, // 평문으로 저장
           ...additionalData 
         })
         break
       case 'employer':
         userId = await createEmployer(c.env.DB, { 
           email, 
-          password: hashedPassword, 
+          password: password, // 평문으로 저장
           ...additionalData 
         })
         break
       case 'agent':
         userId = await createAgent(c.env.DB, { 
           email, 
-          password: hashedPassword, 
+          password: password, // 평문으로 저장
           ...additionalData 
         })
         break
