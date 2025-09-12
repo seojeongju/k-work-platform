@@ -637,31 +637,31 @@ app.get('/', async (c) => {
                     </div>
                     
                     <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="showJobListView()" style="background: white; padding: 32px; border-radius: 12px; text-align: center; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); min-height: 300px; display: flex; flex-direction: column; justify-content: center;">
-                            <div class="w-16 h-16 bg-gradient-to-br from-wowcampus-blue to-secondary rounded-full flex items-center justify-center mx-auto mb-6" style="width: 64px; height: 64px; background: linear-gradient(135deg, #1e40af, #3b82f6); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto;">
-                                <i class="fas fa-briefcase text-white text-2xl" style="color: white; font-size: 24px;">💼</i>
+                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="showJobListView()">
+                            <div class="w-16 h-16 bg-gradient-to-br from-wowcampus-blue to-secondary rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-briefcase text-white text-2xl"></i>
                             </div>
-                            <h3 class="text-2xl font-semibold text-gray-800 mb-4" style="font-size: 24px; font-weight: 600; color: #1f2937; margin-bottom: 16px; line-height: 1.2;">구인구직 매칭</h3>
-                            <p class="text-gray-600 leading-relaxed mb-6" style="color: #6b7280; line-height: 1.6; margin-bottom: 24px; font-size: 16px;">비자별, 직종별, 지역별 맞춤 매칭 서비스로 최적의 일자리를 찾아드립니다</p>
-                            <span class="text-wowcampus-blue font-semibold hover:underline" style="color: #1e40af; font-weight: 600; text-decoration: none; cursor: pointer; font-size: 16px;">구인정보 보기 →</span>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">구인구직 매칭</h3>
+                            <p class="text-gray-600 leading-relaxed mb-6">비자별, 직종별, 지역별 맞춤 매칭 서비스로 최적의 일자리를 찾아드립니다</p>
+                            <span class="text-wowcampus-blue font-semibold hover:underline">구인정보 보기 →</span>
                         </div>
                         
-                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="window.location.href='/static/study-view.html'" style="background: white; padding: 32px; border-radius: 12px; text-align: center; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); min-height: 300px; display: flex; flex-direction: column; justify-content: center;">
-                            <div class="w-16 h-16 bg-gradient-to-br from-accent to-green-400 rounded-full flex items-center justify-center mx-auto mb-6" style="width: 64px; height: 64px; background: linear-gradient(135deg, #059669, #10b981); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto;">
-                                <i class="fas fa-graduation-cap text-white text-2xl" style="color: white; font-size: 24px;">🎓</i>
+                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="window.location.href='/static/study-view.html'">
+                            <div class="w-16 h-16 bg-gradient-to-br from-accent to-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-graduation-cap text-white text-2xl"></i>
                             </div>
-                            <h3 class="text-2xl font-semibold text-gray-800 mb-4" style="font-size: 24px; font-weight: 600; color: #1f2937; margin-bottom: 16px; line-height: 1.2;">유학 지원</h3>
-                            <p class="text-gray-600 leading-relaxed mb-6" style="color: #6b7280; line-height: 1.6; margin-bottom: 24px; font-size: 16px;">한국어 연수부터 학위과정까지 전 과정에 대한 체계적 지원을 제공합니다</p>
-                            <span class="text-accent font-semibold hover:underline" style="color: #059669; font-weight: 600; text-decoration: none; cursor: pointer; font-size: 16px;">유학정보 보기 →</span>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">유학 지원</h3>
+                            <p class="text-gray-600 leading-relaxed mb-6">한국어 연수부터 학위과정까지 전 과정에 대한 체계적 지원을 제공합니다</p>
+                            <span class="text-accent font-semibold hover:underline">유학정보 보기 →</span>
                         </div>
                         
-                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="showJobSeekersView()" style="background: white; padding: 32px; border-radius: 12px; text-align: center; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); min-height: 300px; display: flex; flex-direction: column; justify-content: center;">
-                            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6" style="width: 64px; height: 64px; background: linear-gradient(135deg, #8b5cf6, #ec4899); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto;">
-                                <i class="fas fa-users text-white text-2xl" style="color: white; font-size: 24px;">👥</i>
+                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="showJobSeekersView()">
+                            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-users text-white text-2xl"></i>
                             </div>
-                            <h3 class="text-2xl font-semibold text-gray-800 mb-4" style="font-size: 24px; font-weight: 600; color: #1f2937; margin-bottom: 16px; line-height: 1.2;">에이전트 관리</h3>
-                            <p class="text-gray-600 leading-relaxed mb-6" style="color: #6b7280; line-height: 1.6; margin-bottom: 24px; font-size: 16px;">해외 에이전트별 구직자 관리 및 지원 현황을 체계적으로 관리합니다</p>
-                            <span class="text-purple-500 font-semibold hover:underline" style="color: #8b5cf6; font-weight: 600; text-decoration: none; cursor: pointer; font-size: 16px;">구직정보 보기 →</span>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">에이전트 관리</h3>
+                            <p class="text-gray-600 leading-relaxed mb-6">해외 에이전트별 구직자 관리 및 지원 현황을 체계적으로 관리합니다</p>
+                            <span class="text-purple-500 font-semibold hover:underline">구직정보 보기 →</span>
                         </div>
                     </div>
                 </div>
