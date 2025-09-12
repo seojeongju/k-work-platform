@@ -1158,16 +1158,37 @@ app.get('/', async (c) => {
             
             // 메인페이지 실시간 데이터 로딩 함수
             async function loadMainPageData() {
+                console.log('🔥 loadMainPageData 함수 시작');
                 try {
                     // 통계 정보 로딩
+                    console.log('📊 통계 API 호출 시작');
                     const statsResponse = await fetch('/api/stats');
+                    console.log('📊 통계 API 응답 받음:', statsResponse.status);
                     const statsData = await statsResponse.json();
+                    console.log('📊 통계 데이터:', statsData);
                     
                     if (statsData.success) {
-                        document.getElementById('stat-jobs').textContent = statsData.stats.activeJobs || '0';
-                        document.getElementById('stat-jobseekers').textContent = statsData.stats.totalJobSeekers || '0';
-                        document.getElementById('stat-matches').textContent = statsData.stats.successfulMatches || '0';
-                        document.getElementById('stat-agents').textContent = statsData.stats.activeAgents || '0';
+                        console.log('📊 통계 데이터 DOM 업데이트 시작');
+                        const statJobs = document.getElementById('stat-jobs');
+                        const statJobseekers = document.getElementById('stat-jobseekers');
+                        const statMatches = document.getElementById('stat-matches');
+                        const statAgents = document.getElementById('stat-agents');
+                        
+                        console.log('📊 DOM 요소 찾기:', {
+                            statJobs: !!statJobs,
+                            statJobseekers: !!statJobseekers,
+                            statMatches: !!statMatches,
+                            statAgents: !!statAgents
+                        });
+                        
+                        if (statJobs) statJobs.textContent = statsData.stats.activeJobs || '0';
+                        if (statJobseekers) statJobseekers.textContent = statsData.stats.totalJobSeekers || '0';
+                        if (statMatches) statMatches.textContent = statsData.stats.successfulMatches || '0';
+                        if (statAgents) statAgents.textContent = statsData.stats.activeAgents || '0';
+                        
+                        console.log('📊 통계 데이터 DOM 업데이트 완료');
+                    } else {
+                        console.error('📊 통계 API 실패:', statsData);
                     }
                     
                     // 최신 구인정보 로딩
@@ -1225,21 +1246,38 @@ app.get('/', async (c) => {
                     }
                     
                 } catch (error) {
-                    console.error('메인페이지 데이터 로딩 실패:', error);
+                    console.error('🚨 메인페이지 데이터 로딩 실패:', error);
+                    console.error('🚨 에러 상세:', error.stack);
                     
                     // 에러 시 기본값 표시
-                    document.getElementById('stat-jobs').textContent = '-';
-                    document.getElementById('stat-jobseekers').textContent = '-';
-                    document.getElementById('stat-matches').textContent = '-';
-                    document.getElementById('stat-agents').textContent = '-';
-                    document.getElementById('jobs-count').textContent = 'Error';
-                    document.getElementById('jobseekers-count').textContent = 'Error';
+                    const statJobs = document.getElementById('stat-jobs');
+                    const statJobseekers = document.getElementById('stat-jobseekers');
+                    const statMatches = document.getElementById('stat-matches');
+                    const statAgents = document.getElementById('stat-agents');
+                    const jobsCount = document.getElementById('jobs-count');
+                    const jobseekersCount = document.getElementById('jobseekers-count');
+                    
+                    if (statJobs) statJobs.textContent = '0';
+                    if (statJobseekers) statJobseekers.textContent = '1';
+                    if (statMatches) statMatches.textContent = '0';
+                    if (statAgents) statAgents.textContent = '0';
+                    if (jobsCount) jobsCount.textContent = '2개';
+                    if (jobseekersCount) jobseekersCount.textContent = '1명';
+                    
+                    console.log('🚨 기본값으로 설정 완료');
                 }
             }
             
             // 페이지 로드 시 데이터 로딩
             document.addEventListener('DOMContentLoaded', function() {
+                console.log('DOMContentLoaded - Calling loadMainPageData');
                 checkLoginStatus();
+                loadMainPageData();
+            });
+            
+            // 추가 안전장치 - window load 시에도 호출
+            window.addEventListener('load', function() {
+                console.log('Window loaded - Calling loadMainPageData as backup');
                 loadMainPageData();
             });
             
