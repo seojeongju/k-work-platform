@@ -58,11 +58,11 @@ app.use('*', async (c, next) => {
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin')
   c.header('Content-Security-Policy', 
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
+    "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com; " +
     "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
     "font-src 'self' https://cdn.jsdelivr.net; " +
     "img-src 'self' data: https:; " +
-    "connect-src 'self' https://w-campus.com https://www.w-campus.com"
+    "connect-src 'self' https://w-campus.com https://www.w-campus.com https://cloudflareinsights.com"
   )
   
   await next()
@@ -667,7 +667,87 @@ app.get('/', async (c) => {
                 </div>
             </section>
             
-
+            <!-- 실시간 데이터 섹션 -->
+            <section class="py-16 bg-gray-50">
+                <div class="container mx-auto px-6">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold text-gray-800 mb-4">최신 정보</h2>
+                        <p class="text-lg text-gray-600">실시간으로 업데이트되는 구인정보와 구직자 정보를 확인하세요</p>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                        <!-- 최신 구인정보 -->
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-xl font-semibold text-gray-800">
+                                    <i class="fas fa-briefcase text-wowcampus-blue mr-2"></i>
+                                    최신 구인정보
+                                </h3>
+                                <span id="jobs-count" class="bg-wowcampus-blue text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    Loading...
+                                </span>
+                            </div>
+                            <div id="latest-jobs" class="space-y-4">
+                                <div class="animate-pulse">
+                                    <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                    <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            </div>
+                            <button onclick="showJobListView()" class="w-full mt-4 text-center py-3 text-wowcampus-blue hover:bg-wowcampus-light rounded-lg transition-colors font-medium">
+                                전체 구인정보 보기 →
+                            </button>
+                        </div>
+                        
+                        <!-- 최신 구직자 정보 -->
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-xl font-semibold text-gray-800">
+                                    <i class="fas fa-users text-accent mr-2"></i>
+                                    구직자 현황
+                                </h3>
+                                <span id="jobseekers-count" class="bg-accent text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    Loading...
+                                </span>
+                            </div>
+                            <div id="latest-jobseekers" class="space-y-4">
+                                <div class="animate-pulse">
+                                    <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                    <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            </div>
+                            <button onclick="showJobSeekersView()" class="w-full mt-4 text-center py-3 text-accent hover:bg-green-50 rounded-lg transition-colors font-medium">
+                                전체 구직자 보기 →
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 통계 정보 -->
+                    <div class="mt-12 bg-white rounded-xl shadow-lg p-8">
+                        <div class="text-center mb-8">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-2">WOW-CAMPUS 통계</h3>
+                            <p class="text-gray-600">우리 플랫폼의 현재 현황을 한눈에 확인하세요</p>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-wowcampus-blue mb-2" id="stat-jobs">-</div>
+                                <div class="text-sm text-gray-600">활성 구인공고</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-accent mb-2" id="stat-jobseekers">-</div>
+                                <div class="text-sm text-gray-600">등록 구직자</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-purple-500 mb-2" id="stat-matches">-</div>
+                                <div class="text-sm text-gray-600">성공 매칭</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-orange-500 mb-2" id="stat-agents">-</div>
+                                <div class="text-sm text-gray-600">활성 에이전트</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <!-- Job Details Modal -->
             <div id="job-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
@@ -1074,6 +1154,93 @@ app.get('/', async (c) => {
                 checkLoginStatus();
                 alert('로그아웃 되었습니다.');
                 window.location.reload();
+            });
+            
+            // 메인페이지 실시간 데이터 로딩 함수
+            async function loadMainPageData() {
+                try {
+                    // 통계 정보 로딩
+                    const statsResponse = await fetch('/api/stats');
+                    const statsData = await statsResponse.json();
+                    
+                    if (statsData.success) {
+                        document.getElementById('stat-jobs').textContent = statsData.stats.activeJobs || '0';
+                        document.getElementById('stat-jobseekers').textContent = statsData.stats.totalJobSeekers || '0';
+                        document.getElementById('stat-matches').textContent = statsData.stats.successfulMatches || '0';
+                        document.getElementById('stat-agents').textContent = statsData.stats.activeAgents || '0';
+                    }
+                    
+                    // 최신 구인정보 로딩
+                    const jobsResponse = await fetch('/api/jobs?page=1&limit=3');
+                    const jobsData = await jobsResponse.json();
+                    
+                    if (jobsData.success && jobsData.jobs.length > 0) {
+                        const jobsCount = document.getElementById('jobs-count');
+                        const latestJobs = document.getElementById('latest-jobs');
+                        
+                        jobsCount.textContent = \`\${jobsData.pagination.total}개\`;
+                        
+                        latestJobs.innerHTML = jobsData.jobs.map(job => \`
+                            <div class="p-3 border border-gray-200 rounded-lg hover:border-wowcampus-blue transition-colors cursor-pointer">
+                                <h4 class="font-medium text-gray-800 mb-1">\${job.title || '제목 없음'}</h4>
+                                <p class="text-sm text-gray-600">\${job.company || '회사명 없음'} • \${job.location || '위치 미정'}</p>
+                                <span class="text-xs text-wowcampus-blue font-medium">\${job.visa_type || 'E-9'} 비자</span>
+                            </div>
+                        \`).join('');
+                    } else {
+                        document.getElementById('jobs-count').textContent = '0개';
+                        document.getElementById('latest-jobs').innerHTML = \`
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-briefcase text-2xl mb-2"></i>
+                                <p>등록된 구인정보가 없습니다</p>
+                            </div>
+                        \`;
+                    }
+                    
+                    // 구직자 현황 로딩
+                    const jobseekersResponse = await fetch('/api/jobseekers?page=1&limit=3');
+                    const jobseekersData = await jobseekersResponse.json();
+                    
+                    if (jobseekersData.success && jobseekersData.jobseekers.length > 0) {
+                        const jobseekersCount = document.getElementById('jobseekers-count');
+                        const latestJobseekers = document.getElementById('latest-jobseekers');
+                        
+                        jobseekersCount.textContent = \`\${jobseekersData.pagination.total}명\`;
+                        
+                        latestJobseekers.innerHTML = jobseekersData.jobseekers.map(seeker => \`
+                            <div class="p-3 border border-gray-200 rounded-lg hover:border-accent transition-colors">
+                                <h4 class="font-medium text-gray-800 mb-1">\${seeker.name || '이름 비공개'}</h4>
+                                <p class="text-sm text-gray-600">\${seeker.nationality || '국적 미정'} • \${seeker.korean_level || '한국어 수준 미정'}</p>
+                                <span class="text-xs text-accent font-medium">\${seeker.visa_status || '비자 상태'}</span>
+                            </div>
+                        \`).join('');
+                    } else {
+                        document.getElementById('jobseekers-count').textContent = '0명';
+                        document.getElementById('latest-jobseekers').innerHTML = \`
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-users text-2xl mb-2"></i>
+                                <p>등록된 구직자가 없습니다</p>
+                            </div>
+                        \`;
+                    }
+                    
+                } catch (error) {
+                    console.error('메인페이지 데이터 로딩 실패:', error);
+                    
+                    // 에러 시 기본값 표시
+                    document.getElementById('stat-jobs').textContent = '-';
+                    document.getElementById('stat-jobseekers').textContent = '-';
+                    document.getElementById('stat-matches').textContent = '-';
+                    document.getElementById('stat-agents').textContent = '-';
+                    document.getElementById('jobs-count').textContent = 'Error';
+                    document.getElementById('jobseekers-count').textContent = 'Error';
+                }
+            }
+            
+            // 페이지 로드 시 데이터 로딩
+            document.addEventListener('DOMContentLoaded', function() {
+                checkLoginStatus();
+                loadMainPageData();
             });
         </script>
         
