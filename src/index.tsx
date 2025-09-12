@@ -729,19 +729,19 @@ app.get('/', async (c) => {
                         </div>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-wowcampus-blue mb-2" id="stat-jobs">-</div>
+                                <div class="text-3xl font-bold text-wowcampus-blue mb-2" id="stat-jobs">2</div>
                                 <div class="text-sm text-gray-600">활성 구인공고</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-accent mb-2" id="stat-jobseekers">-</div>
+                                <div class="text-3xl font-bold text-accent mb-2" id="stat-jobseekers">1</div>
                                 <div class="text-sm text-gray-600">등록 구직자</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-purple-500 mb-2" id="stat-matches">-</div>
+                                <div class="text-3xl font-bold text-purple-500 mb-2" id="stat-matches">0</div>
                                 <div class="text-sm text-gray-600">성공 매칭</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-orange-500 mb-2" id="stat-agents">-</div>
+                                <div class="text-3xl font-bold text-orange-500 mb-2" id="stat-agents">0</div>
                                 <div class="text-sm text-gray-600">활성 에이전트</div>
                             </div>
                         </div>
