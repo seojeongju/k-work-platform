@@ -1242,6 +1242,88 @@ app.get('/', async (c) => {
                 checkLoginStatus();
                 loadMainPageData();
             });
+            
+            // 네비게이션 메뉴 함수들
+            
+            // 구인정보 페이지로 이동
+            function showJobListView() {
+                console.log('구인정보 페이지로 이동');
+                window.location.href = '/static/matching-service.html?tab=jobs';
+            }
+            
+            // 구직정보 페이지로 이동
+            function showJobSeekersView() {
+                console.log('구직정보 페이지로 이동');
+                window.location.href = '/static/matching-service.html?tab=jobseekers';
+            }
+            
+            // 어학연수 페이지로 이동
+            function showLanguageStudyView() {
+                console.log('어학연수 페이지로 이동');
+                window.location.href = '/static/matching-service.html?tab=language';
+            }
+            
+            // 학부과정 페이지로 이동
+            function showUndergraduateView() {
+                console.log('학부과정 페이지로 이동');
+                window.location.href = '/static/matching-service.html?tab=undergraduate';
+            }
+            
+            // 대학원과정 페이지로 이동
+            function showGraduateView() {
+                console.log('대학원과정 페이지로 이동');
+                window.location.href = '/static/matching-service.html?tab=graduate';
+            }
+            
+            // 모바일 메뉴 토글 함수들
+            function toggleMobileMenu() {
+                const mobileMenu = document.getElementById('mobile-menu');
+                mobileMenu.classList.toggle('hidden');
+            }
+            
+            function closeMobileMenu() {
+                const mobileMenu = document.getElementById('mobile-menu');
+                mobileMenu.classList.add('hidden');
+            }
+            
+            // 모바일 메뉴 버튼 이벤트 리스너 추가
+            document.addEventListener('DOMContentLoaded', function() {
+                const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+                if (mobileMenuBtn) {
+                    mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+                }
+            });
+            
+            // 탭 관련 함수들
+            function switchTab(tabName) {
+                // 모든 탭 비활성화
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                
+                // 선택된 탭 활성화
+                const selectedTabBtn = document.getElementById('tab-' + tabName);
+                const selectedContent = document.getElementById('content-' + tabName);
+                
+                if (selectedTabBtn && selectedContent) {
+                    selectedTabBtn.classList.add('active');
+                    selectedContent.classList.remove('hidden');
+                }
+            }
+            
+            // 탭 버튼 이벤트 리스너 등록
+            document.addEventListener('DOMContentLoaded', function() {
+                const tabButtons = document.querySelectorAll('.tab-button');
+                tabButtons.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const tabName = this.id.replace('tab-', '');
+                        switchTab(tabName);
+                    });
+                });
+            });
         </script>
         
         <!-- Auth UI control script removed for normal operation -->
