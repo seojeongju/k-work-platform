@@ -638,7 +638,7 @@ app.get('/', async (c) => {
                     
                     <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                         <!-- 구인구직 매칭 서비스 카드 -->
-                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="showJobListView()">
+                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="window.location.href='/static/jobs-view.html'">
                             <div class="w-16 h-16 bg-gradient-to-br from-wowcampus-blue to-secondary rounded-full flex items-center justify-center mx-auto mb-6">
                                 <i class="fas fa-briefcase text-white text-2xl"></i>
                             </div>
