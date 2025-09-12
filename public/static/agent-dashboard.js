@@ -36,9 +36,46 @@ class AgentDashboard {
     }
 
     getAgentId() {
-        // 실제 환경에서는 JWT 토큰에서 추출하거나 세션에서 가져옴
+        // 1. URL 파라미터에서 agentId 확인
         const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('agentId') || '1'; // 기본값으로 1 사용
+        let agentId = urlParams.get('agentId');
+        
+        if (agentId) {
+            console.log('Agent ID from URL:', agentId);
+            return agentId;
+        }
+        
+        // 2. 로컬 스토리지에서 사용자 정보 확인
+        try {
+            const userData = localStorage.getItem('userData');
+            if (userData) {
+                const user = JSON.parse(userData);
+                if (user.userType === 'agent' && user.id) {
+                    console.log('Agent ID from localStorage:', user.id);
+                    return user.id.toString();
+                }
+            }
+        } catch (error) {
+            console.error('Error parsing user data from localStorage:', error);
+        }
+        
+        // 3. JWT 토큰에서 추출 시도
+        try {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.userType === 'agent' && payload.id) {
+                    console.log('Agent ID from JWT:', payload.id);
+                    return payload.id.toString();
+                }
+            }
+        } catch (error) {
+            console.error('Error parsing JWT token:', error);
+        }
+        
+        // 4. 기본값 사용 (테스트용)
+        console.log('Using default agent ID: 1');
+        return '1';
     }
 
     setupTabs() {
@@ -232,40 +269,53 @@ class AgentDashboard {
 
     async loadAgentStats() {
         try {
-            const [jobseekers, applications, studyApps] = await Promise.all([
-                axios.get(`/api/agent/${this.agentId}/job-seekers`),
-                axios.get(`/api/agent/${this.agentId}/job-applications`),
-                axios.get(`/api/agent/${this.agentId}/study-applications`)
-            ]);
-
-            const totalJobseekers = jobseekers.data.jobSeekers.length;
-            const activeApps = applications.data?.applications?.filter(app => 
-                ['pending', 'submitted', 'interview'].includes(app.application_status)
-            ).length || 0;
-            const studyAppsCount = studyApps.data?.applications?.length || 0;
-            const successfulMatches = applications.data?.applications?.filter(app => 
-                app.application_status === 'accepted'
-            ).length || 0;
-
-            document.getElementById('total-jobseekers').textContent = totalJobseekers;
-            document.getElementById('active-applications').textContent = activeApps;
-            document.getElementById('study-applications').textContent = studyAppsCount;
-            document.getElementById('successful-matches').textContent = successfulMatches;
-
+            console.log(`Loading stats for agent ${this.agentId}`);
+            
+            // 새로운 통계 API 사용
+            const statsResponse = await axios.get(`/api/agents/${this.agentId}/stats`);
+            console.log('Stats API response:', statsResponse.data);
+            
+            if (statsResponse.data) {
+                const stats = statsResponse.data;
+                document.getElementById('total-jobseekers').textContent = stats.totalJobseekers || 0;
+                document.getElementById('active-applications').textContent = stats.totalApplications || 0;
+                document.getElementById('study-applications').textContent = stats.totalStudents || 0;
+                document.getElementById('successful-matches').textContent = stats.successfulMatches || 0;
+            } else {
+                // Fallback: 기본값 설정
+                document.getElementById('total-jobseekers').textContent = 0;
+                document.getElementById('active-applications').textContent = 0;
+                document.getElementById('study-applications').textContent = 0;
+                document.getElementById('successful-matches').textContent = 0;
+            }
+            
         } catch (error) {
             console.error('통계 로드 실패:', error);
+            
+            // 에러 시 기본값 표시
+            document.getElementById('total-jobseekers').textContent = 0;
+            document.getElementById('active-applications').textContent = 0;
+            document.getElementById('study-applications').textContent = 0;
+            document.getElementById('successful-matches').textContent = 0;
         }
     }
 
     async loadJobseekers() {
         try {
-            const response = await axios.get(`/api/agent/${this.agentId}/job-seekers`);
-            const jobseekers = response.data.jobSeekers;
+            console.log(`Loading jobseekers for agent ${this.agentId}`);
+            const response = await axios.get(`/api/agents/${this.agentId}/jobseekers`);
+            console.log('Jobseekers API response:', response.data);
+            
+            // 서버 응답 구조에 맞게 수정
+            const jobseekers = response.data.jobseekers || response.data.jobSeekers || [];
             
             this.renderJobseekersTable(jobseekers);
         } catch (error) {
             console.error('구직자 목록 로드 실패:', error);
             this.showError('구직자 목록을 불러오는데 실패했습니다.');
+            
+            // 에러 시 빈 테이블 렌더링
+            this.renderJobseekersTable([]);
         }
     }
 
@@ -343,12 +393,17 @@ class AgentDashboard {
             if (visaFilter) url += `visa=${visaFilter}&`;
             if (regionFilter) url += `region=${regionFilter}&`;
             
+            console.log('Loading job postings from:', url);
             const response = await axios.get(url);
-            const jobs = response.data.jobs;
+            console.log('Job postings response:', response.data);
+            
+            // 응답 구조 유연하게 처리
+            const jobs = response.data.jobs || response.data || [];
             
             this.renderJobsList(jobs);
         } catch (error) {
             console.error('구인 정보 로드 실패:', error);
+            this.renderJobsList([]); // 에러 시 빈 목록 표시
         }
     }
 
@@ -416,15 +471,167 @@ class AgentDashboard {
     }
 
     async loadApplications() {
-        // 지원 현황 로드
+        try {
+            console.log(`Loading applications for agent ${this.agentId}`);
+            const response = await axios.get(`/api/agents/${this.agentId}/applications`);
+            console.log('Applications response:', response.data);
+            
+            const applications = response.data.applications || response.data || [];
+            this.renderApplicationsList(applications);
+        } catch (error) {
+            console.error('지원 현황 로드 실패:', error);
+            const container = document.getElementById('applications-list');
+            container.innerHTML = '<p class="text-gray-500">지원 현황을 불러올 수 없습니다.</p>';
+        }
+    }
+
+    renderApplicationsList(applications) {
         const container = document.getElementById('applications-list');
-        container.innerHTML = '<p class="text-gray-500">지원 현황 기능은 개발 중입니다.</p>';
+        container.innerHTML = '';
+
+        if (applications.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 지원 내역이 없습니다.</p>';
+            return;
+        }
+
+        applications.forEach(app => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-4 rounded-lg shadow-md mb-4';
+            card.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h4 class="font-semibold text-gray-800">${app.job_title}</h4>
+                        <p class="text-sm text-gray-600">${app.applicant_name}</p>
+                        <p class="text-xs text-gray-500">지원일: ${app.applied_date}</p>
+                    </div>
+                    <div class="text-sm">
+                        <span class="px-2 py-1 rounded-full text-xs ${this.getStatusColor(app.status)}">
+                            ${this.getStatusText(app.status)}
+                        </span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    getStatusColor(status) {
+        const colors = {
+            'pending': 'bg-yellow-100 text-yellow-800',
+            'submitted': 'bg-blue-100 text-blue-800',
+            'interview': 'bg-purple-100 text-purple-800',
+            'accepted': 'bg-green-100 text-green-800',
+            'rejected': 'bg-red-100 text-red-800'
+        };
+        return colors[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    getStatusText(status) {
+        const texts = {
+            'pending': '검토중',
+            'submitted': '제출됨',
+            'interview': '면접예정',
+            'accepted': '합격',
+            'rejected': '불합격'
+        };
+        return texts[status] || status;
     }
 
     async loadStudyPrograms() {
-        // 유학 프로그램 로드
+        try {
+            console.log('Loading study programs');
+            const response = await axios.get('/api/study-programs');
+            console.log('Study programs response:', response.data);
+            
+            const programs = response.data.programs || response.data || [];
+            this.renderStudyProgramsList(programs);
+        } catch (error) {
+            console.error('유학 프로그램 로드 실패:', error);
+            const container = document.getElementById('study-programs-list');
+            container.innerHTML = '<p class="text-gray-500">유학 프로그램을 불러올 수 없습니다.</p>';
+        }
+    }
+
+    async loadStudents() {
+        try {
+            console.log(`Loading students for agent ${this.agentId}`);
+            const response = await axios.get(`/api/agents/${this.agentId}/students`);
+            console.log('Students response:', response.data);
+            
+            const students = response.data.students || response.data || [];
+            this.renderStudentsList(students);
+        } catch (error) {
+            console.error('학생 목록 로드 실패:', error);
+            const container = document.getElementById('students-list');
+            if (container) {
+                container.innerHTML = '<p class="text-gray-500">학생 목록을 불러올 수 없습니다.</p>';
+            }
+        }
+    }
+
+    renderStudyProgramsList(programs) {
         const container = document.getElementById('study-programs-list');
-        container.innerHTML = '<p class="text-gray-500">유학 지원 기능은 개발 중입니다.</p>';
+        container.innerHTML = '';
+
+        if (programs.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 유학 프로그램이 없습니다.</p>';
+            return;
+        }
+
+        programs.forEach(program => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-4 rounded-lg shadow-md mb-4';
+            card.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h4 class="font-semibold text-gray-800">${program.program_name}</h4>
+                        <p class="text-sm text-gray-600">${program.institution_name}</p>
+                        <p class="text-xs text-gray-500">${program.program_type} | ${program.location}</p>
+                    </div>
+                    <div class="text-sm text-right">
+                        <p class="text-gray-600">학비: ${program.tuition_fee ? this.formatTuition(program.tuition_fee) : 'N/A'}</p>
+                        <p class="text-xs text-gray-500">기간: ${program.duration || 'N/A'}</p>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    renderStudentsList(students) {
+        const container = document.getElementById('students-list');
+        if (!container) return;
+        
+        container.innerHTML = '';
+
+        if (students.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-8">등록된 학생이 없습니다.</p>';
+            return;
+        }
+
+        students.forEach(student => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-4 rounded-lg shadow-md mb-4';
+            card.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h4 class="font-semibold text-gray-800">${student.student_name}</h4>
+                        <p class="text-sm text-gray-600">${student.nationality}</p>
+                        <p class="text-xs text-gray-500">지원일: ${student.applied_date}</p>
+                    </div>
+                    <div class="text-sm">
+                        <span class="px-2 py-1 rounded-full text-xs ${this.getStatusColor(student.status)}">
+                            ${this.getStatusText(student.status)}
+                        </span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    formatTuition(fee) {
+        return new Intl.NumberFormat('ko-KR').format(fee) + '원';
     }
 
     openModal(jobseekerId = null) {
