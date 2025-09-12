@@ -637,7 +637,7 @@ app.get('/', async (c) => {
                     </div>
                     
                     <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="window.location.href='/static/job-listings-dashboard.html'">
+                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="showJobListView()">
                             <div class="w-16 h-16 bg-gradient-to-br from-wowcampus-blue to-secondary rounded-full flex items-center justify-center mx-auto mb-6">
                                 <i class="fas fa-briefcase text-white text-2xl"></i>
                             </div>
@@ -655,7 +655,7 @@ app.get('/', async (c) => {
                             <span class="text-accent font-semibold hover:underline">유학정보 보기 →</span>
                         </div>
                         
-                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="window.location.href='/static/jobseeker-listings-dashboard.html'">
+                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="showJobSeekersView()">
                             <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <i class="fas fa-users text-white text-2xl"></i>
                             </div>
@@ -1283,16 +1283,16 @@ app.get('/', async (c) => {
             
             // 네비게이션 메뉴 함수들
             
-            // 구인정보 페이지로 이동
+            // 구인정보 페이지로 이동 (로그인 필요)
             function showJobListView() {
                 console.log('구인정보 페이지로 이동');
-                window.location.href = '/static/matching-service.html?tab=jobs';
+                window.location.href = '/static/jobs-view.html';
             }
             
-            // 구직정보 페이지로 이동
+            // 구직정보 페이지로 이동 (로그인 필요)
             function showJobSeekersView() {
                 console.log('구직정보 페이지로 이동');
-                window.location.href = '/static/matching-service.html?tab=jobseekers';
+                window.location.href = '/static/jobseekers-view.html';
             }
             
             // 어학연수 페이지로 이동
@@ -2184,6 +2184,557 @@ app.get('/static/register.html', async (c) => {
   } catch (error) {
     return c.text('Register page error', 500);
   }
+})
+
+// 구인정보 보기 페이지 (로그인 필요)
+app.get('/static/jobs-view.html', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구인정보 보기 | WOW-CAMPUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wowcampus-blue': '#1e40af',
+                        'wowcampus-light': '#e3f2fd',
+                        'secondary': '#3b82f6',
+                        'accent': '#059669'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-wowcampus-blue mx-auto mb-4"></div>
+            <p class="text-gray-600">인증 확인 중...</p>
+        </div>
+    </div>
+
+    <!-- 인증 실패 알림 -->
+    <div id="authError" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 text-center max-w-md mx-4">
+            <div class="text-red-500 mb-4">
+                <i class="fas fa-lock text-4xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold mb-2">로그인이 필요합니다</h3>
+            <p class="text-gray-600 mb-6">구인정보를 보려면 먼저 로그인해주세요.</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="goToLogin()" class="bg-wowcampus-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                    로그인하기
+                </button>
+                <button onclick="goHome()" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400">
+                    홈으로
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div id="mainContent" class="hidden">
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <a href="/" class="text-2xl font-bold text-wowcampus-blue">WOW-CAMPUS</a>
+                        <span class="ml-4 text-gray-600">구인정보 보기</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span id="userInfo" class="text-gray-600"></span>
+                        <button onclick="logout()" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h1 class="text-3xl font-bold text-gray-800">
+                        <i class="fas fa-briefcase text-wowcampus-blue mr-3"></i>구인정보
+                    </h1>
+                    <div class="flex gap-2">
+                        <select id="sortBy" class="border rounded-lg px-3 py-2">
+                            <option value="date">최신순</option>
+                            <option value="salary">급여순</option>
+                            <option value="company">회사명순</option>
+                        </select>
+                        <select id="filterVisa" class="border rounded-lg px-3 py-2">
+                            <option value="">모든 비자</option>
+                            <option value="E-7">E-7</option>
+                            <option value="E-9">E-9</option>
+                            <option value="F-4">F-4</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 구인정보 리스트 -->
+                <div id="jobsList" class="space-y-4">
+                    <!-- 로딩 스켈레톤 -->
+                    <div class="animate-pulse">
+                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                </div>
+
+                <!-- 페이지네이션 -->
+                <div id="pagination" class="flex justify-center mt-8">
+                    <!-- 페이지네이션 버튼들이 여기에 추가됩니다 -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        // 페이지 로드 시 인증 확인
+        document.addEventListener('DOMContentLoaded', async function() {
+            await checkAuthentication();
+        });
+
+        async function checkAuthentication() {
+            try {
+                const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                
+                if (!token) {
+                    showAuthError();
+                    return;
+                }
+
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.authenticated) {
+                        currentUser = result.user;
+                        showMainContent();
+                        await loadJobsData();
+                    } else {
+                        showAuthError();
+                    }
+                } else {
+                    showAuthError();
+                }
+            } catch (error) {
+                console.error('인증 확인 중 오류:', error);
+                showAuthError();
+            }
+        }
+
+        function showMainContent() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            
+            // 사용자 정보 표시
+            if (currentUser) {
+                document.getElementById('userInfo').textContent = 
+                    (currentUser.name || currentUser.email || 'User') + ' 님';
+            }
+        }
+
+        function showAuthError() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('authError').classList.remove('hidden');
+        }
+
+        async function loadJobsData() {
+            try {
+                const response = await fetch('/api/jobs');
+                const result = await response.json();
+                
+                if (result.success && result.jobs) {
+                    displayJobs(result.jobs);
+                }
+            } catch (error) {
+                console.error('구인정보 로드 중 오류:', error);
+                document.getElementById('jobsList').innerHTML = 
+                    '<div class="text-center py-8 text-gray-500">구인정보를 불러오는 중 오류가 발생했습니다.</div>';
+            }
+        }
+
+        function displayJobs(jobs) {
+            const jobsList = document.getElementById('jobsList');
+            
+            if (!jobs || jobs.length === 0) {
+                jobsList.innerHTML = 
+                    '<div class="text-center py-8 text-gray-500">등록된 구인정보가 없습니다.</div>';
+                return;
+            }
+
+            jobsList.innerHTML = jobs.map(job => `
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">\${job.title}</h3>
+                            <p class="text-lg text-wowcampus-blue font-medium">\${job.company}</p>
+                        </div>
+                        <span class="bg-wowcampus-blue text-white px-3 py-1 rounded-full text-sm">\${job.visa_type}</span>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-4 text-gray-600">
+                        <div class="flex items-center">
+                            <i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>
+                            \${job.location}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-won-sign mr-2 text-gray-400"></i>
+                            \${job.salary_min?.toLocaleString() || 'N/A'} - \${job.salary_max?.toLocaleString() || 'N/A'}만원
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar mr-2 text-gray-400"></i>
+                            게시일: \${job.posted_date}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle mr-2 text-green-400"></i>
+                            상태: \${job.status === 'active' ? '모집중' : '마감'}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-end">
+                        <button class="bg-wowcampus-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-info-circle mr-2"></i>상세보기
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function goToLogin() {
+            window.location.href = '/static/login.html';
+        }
+
+        function goHome() {
+            window.location.href = '/';
+        }
+
+        async function logout() {
+            try {
+                const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                
+                if (token) {
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                }
+                
+                localStorage.removeItem('authToken');
+                sessionStorage.removeItem('authToken');
+                window.location.href = '/';
+            } catch (error) {
+                console.error('로그아웃 중 오류:', error);
+                localStorage.removeItem('authToken');
+                sessionStorage.removeItem('authToken');
+                window.location.href = '/';
+            }
+        }
+
+        // 필터 및 정렬 기능
+        document.getElementById('sortBy').addEventListener('change', loadJobsData);
+        document.getElementById('filterVisa').addEventListener('change', loadJobsData);
+    </script>
+</body>
+</html>`);
+})
+
+// 구직정보 보기 페이지 (로그인 필요)
+app.get('/static/jobseekers-view.html', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구직정보 보기 | WOW-CAMPUS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wowcampus-blue': '#1e40af',
+                        'wowcampus-light': '#e3f2fd',
+                        'secondary': '#3b82f6',
+                        'accent': '#059669'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
+            <p class="text-gray-600">인증 확인 중...</p>
+        </div>
+    </div>
+
+    <!-- 인증 실패 알림 -->
+    <div id="authError" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 text-center max-w-md mx-4">
+            <div class="text-purple-500 mb-4">
+                <i class="fas fa-lock text-4xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold mb-2">로그인이 필요합니다</h3>
+            <p class="text-gray-600 mb-6">구직정보를 보려면 먼저 로그인해주세요.</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="goToLogin()" class="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600">
+                    로그인하기
+                </button>
+                <button onclick="goHome()" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400">
+                    홈으로
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div id="mainContent" class="hidden">
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <a href="/" class="text-2xl font-bold text-wowcampus-blue">WOW-CAMPUS</a>
+                        <span class="ml-4 text-gray-600">구직정보 보기</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span id="userInfo" class="text-gray-600"></span>
+                        <button onclick="logout()" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h1 class="text-3xl font-bold text-gray-800">
+                        <i class="fas fa-users text-purple-500 mr-3"></i>구직정보
+                    </h1>
+                    <div class="flex gap-2">
+                        <select id="sortBy" class="border rounded-lg px-3 py-2">
+                            <option value="date">최신순</option>
+                            <option value="experience">경력순</option>
+                            <option value="education">학력순</option>
+                        </select>
+                        <select id="filterVisa" class="border rounded-lg px-3 py-2">
+                            <option value="">모든 비자</option>
+                            <option value="F-4">F-4</option>
+                            <option value="E-7">E-7</option>
+                            <option value="D-2">D-2</option>
+                        </select>
+                        <select id="filterNationality" class="border rounded-lg px-3 py-2">
+                            <option value="">모든 국가</option>
+                            <option value="중국">중국</option>
+                            <option value="베트남">베트남</option>
+                            <option value="필리핀">필리핀</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 구직정보 리스트 -->
+                <div id="jobseekersList" class="space-y-4">
+                    <!-- 로딩 스켈레톤 -->
+                    <div class="animate-pulse">
+                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                </div>
+
+                <!-- 페이지네이션 -->
+                <div id="pagination" class="flex justify-center mt-8">
+                    <!-- 페이지네이션 버튼들이 여기에 추가됩니다 -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        // 페이지 로드 시 인증 확인
+        document.addEventListener('DOMContentLoaded', async function() {
+            await checkAuthentication();
+        });
+
+        async function checkAuthentication() {
+            try {
+                const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                
+                if (!token) {
+                    showAuthError();
+                    return;
+                }
+
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.authenticated) {
+                        currentUser = result.user;
+                        showMainContent();
+                        await loadJobseekersData();
+                    } else {
+                        showAuthError();
+                    }
+                } else {
+                    showAuthError();
+                }
+            } catch (error) {
+                console.error('인증 확인 중 오류:', error);
+                showAuthError();
+            }
+        }
+
+        function showMainContent() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            
+            // 사용자 정보 표시
+            if (currentUser) {
+                document.getElementById('userInfo').textContent = 
+                    (currentUser.name || currentUser.email || 'User') + ' 님';
+            }
+        }
+
+        function showAuthError() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('authError').classList.remove('hidden');
+        }
+
+        async function loadJobseekersData() {
+            try {
+                const response = await fetch('/api/jobseekers');
+                const result = await response.json();
+                
+                if (result.success && result.jobseekers) {
+                    displayJobseekers(result.jobseekers);
+                }
+            } catch (error) {
+                console.error('구직정보 로드 중 오류:', error);
+                document.getElementById('jobseekersList').innerHTML = 
+                    '<div class="text-center py-8 text-gray-500">구직정보를 불러오는 중 오류가 발생했습니다.</div>';
+            }
+        }
+
+        function displayJobseekers(jobseekers) {
+            const jobseekersList = document.getElementById('jobseekersList');
+            
+            if (!jobseekers || jobseekers.length === 0) {
+                jobseekersList.innerHTML = 
+                    '<div class="text-center py-8 text-gray-500">등록된 구직정보가 없습니다.</div>';
+                return;
+            }
+
+            jobseekersList.innerHTML = jobseekers.map(jobseeker => `
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">\${jobseeker.name || '이름 비공개'}</h3>
+                            <p class="text-lg text-purple-500 font-medium">\${jobseeker.nationality || 'N/A'}</p>
+                        </div>
+                        <span class="bg-purple-500 text-white px-3 py-1 rounded-full text-sm">\${jobseeker.visa_status || 'N/A'}</span>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-4 text-gray-600">
+                        <div class="flex items-center">
+                            <i class="fas fa-graduation-cap mr-2 text-gray-400"></i>
+                            학력: \${jobseeker.education_level || 'N/A'}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-briefcase mr-2 text-gray-400"></i>
+                            경력: \${jobseeker.work_experience || '0'}년
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-language mr-2 text-gray-400"></i>
+                            한국어: \${jobseeker.korean_level || 'N/A'}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle mr-2 text-green-400"></i>
+                            상태: \${jobseeker.status === 'active' ? '구직중' : '비활성'}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-end">
+                        <button class="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors">
+                            <i class="fas fa-info-circle mr-2"></i>상세보기
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function goToLogin() {
+            window.location.href = '/static/login.html';
+        }
+
+        function goHome() {
+            window.location.href = '/';
+        }
+
+        async function logout() {
+            try {
+                const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                
+                if (token) {
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                }
+                
+                localStorage.removeItem('authToken');
+                sessionStorage.removeItem('authToken');
+                window.location.href = '/';
+            } catch (error) {
+                console.error('로그아웃 중 오류:', error);
+                localStorage.removeItem('authToken');
+                sessionStorage.removeItem('authToken');
+                window.location.href = '/';
+            }
+        }
+
+        // 필터 및 정렬 기능
+        document.getElementById('sortBy').addEventListener('change', loadJobseekersData);
+        document.getElementById('filterVisa').addEventListener('change', loadJobseekersData);
+        document.getElementById('filterNationality').addEventListener('change', loadJobseekersData);
+    </script>
+</body>
+</html>`);
 })
 
 // 렌더러 설정
