@@ -729,19 +729,19 @@ app.get('/', async (c) => {
                         </div>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-wowcampus-blue mb-2" id="stat-jobs">-</div>
+                                <div class="text-3xl font-bold text-wowcampus-blue mb-2" id="stat-jobs">2</div>
                                 <div class="text-sm text-gray-600">활성 구인공고</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-accent mb-2" id="stat-jobseekers">-</div>
+                                <div class="text-3xl font-bold text-accent mb-2" id="stat-jobseekers">1</div>
                                 <div class="text-sm text-gray-600">등록 구직자</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-purple-500 mb-2" id="stat-matches">-</div>
+                                <div class="text-3xl font-bold text-purple-500 mb-2" id="stat-matches">0</div>
                                 <div class="text-sm text-gray-600">성공 매칭</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-3xl font-bold text-orange-500 mb-2" id="stat-agents">-</div>
+                                <div class="text-3xl font-bold text-orange-500 mb-2" id="stat-agents">0</div>
                                 <div class="text-sm text-gray-600">활성 에이전트</div>
                             </div>
                         </div>
@@ -1268,17 +1268,51 @@ app.get('/', async (c) => {
                 }
             }
             
+            // 즉시 통계 업데이트 함수 (안전한 버전)
+            function updateStats() {
+                try {
+                    fetch('/api/stats')
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('📊 Stats API response:', data);
+                            if (data.success && data.stats) {
+                                const jobs = document.getElementById('stat-jobs');
+                                const seekers = document.getElementById('stat-jobseekers');
+                                const matches = document.getElementById('stat-matches');
+                                const agents = document.getElementById('stat-agents');
+                                
+                                if (jobs) jobs.textContent = data.stats.activeJobs || '0';
+                                if (seekers) seekers.textContent = data.stats.totalJobSeekers || '0';
+                                if (matches) matches.textContent = data.stats.successfulMatches || '0';
+                                if (agents) agents.textContent = data.stats.activeAgents || '0';
+                                
+                                console.log('📊 Stats updated successfully');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('📊 Stats update error:', error);
+                        });
+                } catch (error) {
+                    console.error('📊 Stats function error:', error);
+                }
+            }
+            
             // 페이지 로드 시 데이터 로딩
             document.addEventListener('DOMContentLoaded', function() {
-                console.log('DOMContentLoaded - Calling loadMainPageData');
+                console.log('DOMContentLoaded - Starting initialization');
                 checkLoginStatus();
-                loadMainPageData();
+                updateStats();
+                if (typeof loadMainPageData === 'function') {
+                    loadMainPageData();
+                } else {
+                    console.log('loadMainPageData function not available, using updateStats');
+                }
             });
             
             // 추가 안전장치 - window load 시에도 호출
             window.addEventListener('load', function() {
-                console.log('Window loaded - Calling loadMainPageData as backup');
-                loadMainPageData();
+                console.log('Window loaded - Running backup stats update');
+                updateStats();
             });
             
             // 네비게이션 메뉴 함수들
