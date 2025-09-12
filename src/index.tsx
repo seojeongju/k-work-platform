@@ -2448,7 +2448,13 @@ app.post('/api/auth/login', async (c) => {
 
     // 실제 데이터베이스에서 사용자 조회 (우선 처리)
     try {
-      const dbUser = await authenticateUser(c.env.DB, email, password, userType)
+      // 먼저 평문 비밀번호로 시도 (신규 가입자)
+      let dbUser = await authenticateUserWithPlainPassword(c.env.DB, email, password, userType)
+      
+      // 평문 비밀번호로 찾지 못하면 해시된 비밀번호로 시도
+      if (!dbUser) {
+        dbUser = await authenticateUser(c.env.DB, email, password, userType)
+      }
       
       if (dbUser) {
         const token = await sign({
@@ -2814,6 +2820,37 @@ async function createAgent(db: D1Database, data: any): Promise<number | null> {
   }
 }
 
+// 평문 비밀번호로 인증하는 함수 (신규 가입자용)
+async function authenticateUserWithPlainPassword(db: D1Database, email: string, password: string, userType: string) {
+  const tables = {
+    'jobseeker': 'job_seekers',
+    'employer': 'employers', 
+    'agent': 'agents',
+    'admin': 'admins'
+  }
+  
+  const tableName = tables[userType as keyof typeof tables]
+  if (!tableName) return null
+  
+  try {
+    let query: string
+    
+    if (tableName === 'admins') {
+      query = `SELECT id, email, name, role as userType FROM ${tableName} WHERE email = ? AND password = ? AND status = 'active'`
+    } else if (tableName === 'job_seekers') {
+      query = `SELECT id, email, name, nationality, korean_level FROM ${tableName} WHERE email = ? AND password = ? AND status = 'active'`
+    } else {
+      query = `SELECT id, email, company_name as name FROM ${tableName} WHERE email = ? AND password = ? AND status IN ('approved', 'active')`
+    }
+    
+    const user = await db.prepare(query).bind(email, password).first()
+    return user
+  } catch (error) {
+    console.error(`Plain password authentication error for ${userType}:`, error)
+    return null
+  }
+}
+
 // 실제 데이터베이스 로그인 검증 개선
 async function authenticateUser(db: D1Database, email: string, password: string, userType: string) {
   const tables = {
@@ -2845,6 +2882,103 @@ async function authenticateUser(db: D1Database, email: string, password: string,
     return null
   }
 }
+
+// 구직자 등록 API (별도 엔드포인트) 
+app.post('/api/job-seekers/register', async (c) => {
+  try {
+    const data = await c.req.json()
+    
+    // 필수 필드 검증
+    const { 
+      name, 
+      email, 
+      password, 
+      nationality, 
+      birth_date, 
+      gender, 
+      phone, 
+      current_address, 
+      korean_level,
+      education_level,
+      current_visa,
+      desired_visa
+    } = data
+    
+    if (!name || !email || !password || !nationality) {
+      return c.json({ 
+        success: false, 
+        error: '필수 정보가 누락되었습니다.' 
+      }, 400)
+    }
+    
+    if (!validateEmail(email)) {
+      return c.json({ 
+        success: false, 
+        error: '올바른 이메일 형식이 아닙니다.' 
+      }, 400)
+    }
+    
+    if (!validatePassword(password)) {
+      return c.json({ 
+        success: false, 
+        error: '비밀번호는 최소 8자, 영문자와 숫자를 포함해야 합니다.' 
+      }, 400)
+    }
+    
+    // 이메일 중복 확인
+    const emailExists = await checkEmailExists(c.env.DB, email, 'jobseeker')
+    if (emailExists) {
+      return c.json({ 
+        success: false, 
+        error: '이미 사용 중인 이메일입니다.' 
+      }, 400)
+    }
+    
+    // 비밀번호 해시
+    const hashedPassword = await hash(password)
+    
+    // 구직자 생성 (비밀번호 평문으로 저장 - 추후 해시로 변경 예정)
+    const userId = await createJobSeeker(c.env.DB, {
+      email,
+      password: password, // 임시로 평문 저장
+      name,
+      birth_date,
+      gender,
+      nationality,
+      phone,
+      current_address,
+      korean_level: korean_level || 'beginner',
+      education_level,
+      current_visa,
+      desired_visa
+    })
+    
+    if (!userId) {
+      return c.json({ 
+        success: false, 
+        error: '회원가입 중 오류가 발생했습니다.' 
+      }, 500)
+    }
+    
+    return c.json({
+      success: true,
+      user: {
+        id: userId,
+        email: email,
+        name: name,
+        userType: 'jobseeker'
+      },
+      message: '구직자 회원가입이 완료되었습니다 (마켓 우선 처리)'
+    })
+    
+  } catch (error) {
+    console.error('Job seeker registration API error:', error)
+    return c.json({ 
+      success: false, 
+      error: '회원가입 처리 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
 
 // 활성 에이전트 목록 API (회원가입용)
 app.get('/api/agents/active', async (c) => {
