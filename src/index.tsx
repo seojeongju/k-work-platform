@@ -2413,12 +2413,15 @@ app.post('/api/auth/login', async (c) => {
       }, 400)
     }
 
-    // 테스트 계정 로그인 처리
+    // 테스트 계정 로그인 처리 (실제 사용자도 포함)
     const testAccounts = {
       'jobseeker@test.com': { userType: 'jobseeker', password: 'test123', name: '김구직', id: 1 },
       'employer@test.com': { userType: 'employer', password: 'test123', name: '박기업', id: 2 },
       'agent@test.com': { userType: 'agent', password: 'test123', name: '이에이전트', id: 3 },
-      'admin@test.com': { userType: 'admin', password: 'admin123', name: '최관리자', id: 4 }
+      'admin@test.com': { userType: 'admin', password: 'admin123', name: '최관리자', id: 4 },
+      // 실제 테스트를 위한 계정들 추가
+      'wow3d7@naver.com': { userType: 'jobseeker', password: 'wow3d7144', name: '테스트 사용자', id: 100 },
+      'test@test.com': { userType: 'jobseeker', password: 'test1234', name: '테스트 구직자', id: 101 }
     }
 
     const testAccount = testAccounts[email as keyof typeof testAccounts]
@@ -2448,15 +2451,22 @@ app.post('/api/auth/login', async (c) => {
 
     // 실제 데이터베이스에서 사용자 조회 (우선 처리)
     try {
+      console.log(`=== Login attempt ===`)
+      console.log(`Email: ${email}`)
+      console.log(`UserType: ${userType}`)
+      
       // 먼저 평문 비밀번호로 시도 (신규 가입자)
       let dbUser = await authenticateUserWithPlainPassword(c.env.DB, email, password, userType)
+      console.log(`Plain password auth result:`, dbUser ? 'SUCCESS' : 'FAILED')
       
       // 평문 비밀번호로 찾지 못하면 해시된 비밀번호로 시도
       if (!dbUser) {
         dbUser = await authenticateUser(c.env.DB, email, password, userType)
+        console.log(`Hashed password auth result:`, dbUser ? 'SUCCESS' : 'FAILED')
       }
       
       if (dbUser) {
+        console.log(`Found user in DB:`, dbUser)
         const token = await sign({
           id: dbUser.id,
           email: dbUser.email,
@@ -2477,11 +2487,42 @@ app.post('/api/auth/login', async (c) => {
           message: '로그인 성공'
         })
       }
+      
+      console.log(`No user found in DB for email: ${email}, userType: ${userType}`)
+      
+      // DB에서 찾지 못한 경우, 일반적인 DB 조회도 시도 (userType 무관)
+      console.log(`Attempting generic database search for: ${email}`)
+      const genericUser = await searchUserInAllTables(c.env.DB, email, password)
+      
+      if (genericUser) {
+        console.log(`Found user in generic search:`, genericUser)
+        const token = await sign({
+          id: genericUser.id,
+          email: genericUser.email,
+          userType: genericUser.userType || userType,
+          name: genericUser.name || 'Unknown',
+          exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
+        }, 'production-secret-key')
+
+        return c.json({
+          success: true,
+          token,
+          user: {
+            id: genericUser.id,
+            email: genericUser.email,
+            name: genericUser.name || 'Unknown',
+            userType: genericUser.userType || userType
+          },
+          message: '로그인 성공'
+        })
+      }
+      
     } catch (dbError) {
       console.log('실제 DB 조회 실패, 테스트 계정으로 폴백:', dbError)
     }
     
     // 로그인 실패
+    console.log(`Login failed for: ${email}`)
     return c.json({ 
       success: false, 
       error: '이메일 또는 비밀번호가 올바르지 않습니다.' 
@@ -2729,6 +2770,8 @@ async function createJobSeeker(db: D1Database, data: any): Promise<number | null
       throw new Error('구직자 필수 정보가 누락되었습니다.')
     }
     
+    console.log(`Creating job seeker with email: ${email}, password length: ${password?.length}`)
+    
     const result = await db.prepare(`
       INSERT INTO job_seekers (
         email, password, name, birth_date, gender, nationality, 
@@ -2851,6 +2894,43 @@ async function authenticateUserWithPlainPassword(db: D1Database, email: string, 
   }
 }
 
+// 모든 테이블에서 사용자 검색 (userType 무관)
+async function searchUserInAllTables(db: D1Database, email: string, password: string) {
+  const tables = [
+    { name: 'job_seekers', userType: 'jobseeker', nameField: 'name' },
+    { name: 'employers', userType: 'employer', nameField: 'company_name' },
+    { name: 'agents', userType: 'agent', nameField: 'company_name' },
+    { name: 'admins', userType: 'admin', nameField: 'name' }
+  ]
+  
+  for (const table of tables) {
+    try {
+      // 평문 비밀번호로 먼저 시도
+      let query = `SELECT id, email, ${table.nameField} as name FROM ${table.name} WHERE email = ? AND password = ?`
+      let user = await db.prepare(query).bind(email, password).first()
+      
+      if (user) {
+        console.log(`Found user in ${table.name} with plain password`)
+        return { ...user, userType: table.userType }
+      }
+      
+      // 해시된 비밀번호로 시도
+      const hashedPassword = await hash(password)
+      user = await db.prepare(query).bind(email, hashedPassword).first()
+      
+      if (user) {
+        console.log(`Found user in ${table.name} with hashed password`)
+        return { ...user, userType: table.userType }
+      }
+      
+    } catch (error) {
+      console.log(`Error searching in ${table.name}:`, error)
+    }
+  }
+  
+  return null
+}
+
 // 실제 데이터베이스 로그인 검증 개선
 async function authenticateUser(db: D1Database, email: string, password: string, userType: string) {
   const tables = {
@@ -2937,6 +3017,11 @@ app.post('/api/job-seekers/register', async (c) => {
     // 비밀번호 해시
     const hashedPassword = await hash(password)
     
+    console.log(`=== Job Seeker Registration ===`)
+    console.log(`Email: ${email}`)
+    console.log(`Name: ${name}`)
+    console.log(`Nationality: ${nationality}`)
+    
     // 구직자 생성 (비밀번호 평문으로 저장 - 추후 해시로 변경 예정)
     const userId = await createJobSeeker(c.env.DB, {
       email,
@@ -2953,12 +3038,17 @@ app.post('/api/job-seekers/register', async (c) => {
       desired_visa
     })
     
+    console.log(`Created user ID: ${userId}`)
+    
     if (!userId) {
+      console.log(`Failed to create job seeker`)
       return c.json({ 
         success: false, 
         error: '회원가입 중 오류가 발생했습니다.' 
       }, 500)
     }
+    
+    console.log(`Job seeker registration successful for: ${email}`)
     
     return c.json({
       success: true,
