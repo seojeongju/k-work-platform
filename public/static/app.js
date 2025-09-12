@@ -726,7 +726,11 @@ class JobPlatformApp {
     }
 
     formatNumber(num) {
-        return new Intl.NumberFormat('ko-KR').format(num);
+        // NaN, null, undefined 등을 안전하게 처리
+        if (num === null || num === undefined || isNaN(num)) {
+            return '0';
+        }
+        return new Intl.NumberFormat('ko-KR').format(Number(num));
     }
 
     formatSalary(amount) {
