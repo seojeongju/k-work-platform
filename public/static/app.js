@@ -3225,13 +3225,55 @@ async function loadMainPageData() {
     }
 }
 
-// 네비게이션 함수들
+// 네비게이션 함수들 - 인증 체크 추가
 function showJobListView() {
+    console.log('구인정보 상세보기 요청');
+    
+    // 인증 체크
+    if (typeof AuthUtils !== 'undefined') {
+        const permission = AuthUtils.checkDetailViewPermission('job');
+        if (!permission.hasPermission) {
+            console.log('구인정보 접근 권한 없음 - 로그인 모달 표시됨');
+            return; // AuthUtils에서 로그인 모달을 표시했으므로 여기서 중단
+        }
+        console.log('구인정보 접근 권한 확인됨 - 대시보드로 이동');
+    } else {
+        // AuthUtils가 없는 경우 기본 로그인 체크
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        if (!token) {
+            alert('로그인이 필요한 서비스입니다.');
+            window.location.href = '/static/login.html';
+            return;
+        }
+    }
+    
+    // 인증된 사용자만 여기까지 도달
     console.log('구인정보 대시보드로 이동');
     window.location.href = '/static/job-listings-dashboard.html';
 }
 
 function showJobSeekersView() {
+    console.log('구직자 상세보기 요청');
+    
+    // 인증 체크
+    if (typeof AuthUtils !== 'undefined') {
+        const permission = AuthUtils.checkDetailViewPermission('jobseeker');
+        if (!permission.hasPermission) {
+            console.log('구직자 정보 접근 권한 없음 - 로그인 모달 표시됨');
+            return; // AuthUtils에서 로그인 모달을 표시했으므로 여기서 중단
+        }
+        console.log('구직자 정보 접근 권한 확인됨 - 대시보드로 이동');
+    } else {
+        // AuthUtils가 없는 경우 기본 로그인 체크
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        if (!token) {
+            alert('로그인이 필요한 서비스입니다.');
+            window.location.href = '/static/login.html';
+            return;
+        }
+    }
+    
+    // 인증된 사용자만 여기까지 도달  
     console.log('구직자 대시보드로 이동');
     window.location.href = '/static/jobseeker-listings-dashboard.html';
 }

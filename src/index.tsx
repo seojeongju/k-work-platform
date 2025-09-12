@@ -1367,6 +1367,8 @@ app.get('/', async (c) => {
         <!-- Auth UI control script removed for normal operation -->
             (function(){
 
+        <!-- Authentication utilities -->
+        <script src="/static/auth-utils.js"></script>
         <script src="/static/app.js"></script>
     </body>
     </html>
