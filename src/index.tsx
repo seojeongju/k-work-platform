@@ -637,6 +637,7 @@ app.get('/', async (c) => {
                     </div>
                     
                     <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                        <!-- 구인구직 매칭 서비스 카드 -->
                         <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="showJobListView()">
                             <div class="w-16 h-16 bg-gradient-to-br from-wowcampus-blue to-secondary rounded-full flex items-center justify-center mx-auto mb-6">
                                 <i class="fas fa-briefcase text-white text-2xl"></i>
@@ -646,6 +647,7 @@ app.get('/', async (c) => {
                             <span class="text-wowcampus-blue font-semibold hover:underline">구인정보 보기 →</span>
                         </div>
                         
+                        <!-- 유학 지원 서비스 카드 -->
                         <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="window.location.href='/static/study-view.html'">
                             <div class="w-16 h-16 bg-gradient-to-br from-accent to-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <i class="fas fa-graduation-cap text-white text-2xl"></i>
@@ -655,6 +657,7 @@ app.get('/', async (c) => {
                             <span class="text-accent font-semibold hover:underline">유학정보 보기 →</span>
                         </div>
                         
+                        <!-- 에이전트 관리 서비스 카드 -->
                         <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="showJobSeekersView()">
                             <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <i class="fas fa-users text-white text-2xl"></i>
@@ -1087,7 +1090,7 @@ app.get('/', async (c) => {
                 // 로그인된 상태 - 사용자 유형 확인
                 if (user.type === 'agent' || user.type === 'admin') {
                     // 에이전트 또는 관리자인 경우 대시보드로 이동
-                    window.location.href = \\\`/static/agent-dashboard?agentId=\\\${user.id}\\\`;
+                    window.location.href = \`/static/agent-dashboard?agentId=\${user.id}\`;
                 } else {
                     // 일반 회원인 경우
                     const restrictMessage = "에이전트 전용 메뉴입니다\\\\n\\\\n죄송합니다. 이 기능은 에이전트 회원만 이용할 수 있습니다.\\\\n\\\\n현재 회원 유형: " + getUserTypeName(user.type) + "\\\\n\\\\n에이전트 기능을 이용하시려면:\\\\n- 에이전트 계정으로 새로 회원가입\\\\n- 또는 에이전트 계정으로 로그인\\\\n\\\\n에이전트 회원가입을 진행하시겠습니까?";
