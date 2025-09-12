@@ -638,7 +638,7 @@ app.get('/', async (c) => {
                     
                     <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                         <!-- 구인구직 매칭 서비스 카드 -->
-                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="window.location.href='/static/jobs-view.html'">
+                        <div class="text-center card-shadow bg-white p-8 rounded-xl cursor-pointer hover:transform hover:scale-105 transition-all duration-300" onclick="showJobListView()">
                             <div class="w-16 h-16 bg-gradient-to-br from-wowcampus-blue to-secondary rounded-full flex items-center justify-center mx-auto mb-6">
                                 <i class="fas fa-briefcase text-white text-2xl"></i>
                             </div>
@@ -1288,8 +1288,22 @@ app.get('/', async (c) => {
             
             // 구인정보 페이지로 이동 (로그인 필요)
             function showJobListView() {
-                console.log('구인정보 페이지로 이동');
-                window.location.href = '/static/jobs-view.html';
+                console.log('구인정보 보기 클릭 - 로그인 확인 중...');
+                
+                const token = localStorage.getItem('token');
+                const userStr = localStorage.getItem('currentUser');
+                
+                if (token && userStr) {
+                    // 로그인된 상태 - 구인정보 페이지로 이동
+                    console.log('로그인 확인됨 - 구인정보 페이지로 이동');
+                    window.location.href = '/static/jobs-view.html';
+                } else {
+                    // 로그인되지 않은 상태 - 인증 모달 표시
+                    console.log('로그인 필요 - 인증 모달 표시');
+                    if (confirm('🔐 구인정보를 보시려면 로그인이 필요합니다.\\n\\n로그인 페이지로 이동하시겠습니까?')) {
+                        goToLogin();
+                    }
+                }
             }
             
             // 구직정보 페이지로 이동 (로그인 필요)
