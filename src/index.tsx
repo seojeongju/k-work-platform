@@ -2222,19 +2222,24 @@ app.get('/static/jobs-view.html', async (c) => {
 
     <!-- 인증 실패 알림 -->
     <div id="authError" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 text-center max-w-md mx-4">
-            <div class="text-red-500 mb-4">
-                <i class="fas fa-lock text-4xl"></i>
+        <div class="bg-white rounded-lg p-8 text-center max-w-sm mx-4 shadow-xl">
+            <div class="text-yellow-500 mb-6">
+                <i class="fas fa-lock text-5xl"></i>
             </div>
-            <h3 class="text-xl font-semibold mb-2">로그인이 필요합니다</h3>
-            <p class="text-gray-600 mb-6">구인정보를 보려면 먼저 로그인해주세요.</p>
-            <div class="flex gap-3 justify-center">
-                <button onclick="goToLogin()" class="bg-wowcampus-blue text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-                    로그인하기
+            <h3 class="text-xl font-bold mb-2 text-gray-800">로그인이 필요합니다!</h3>
+            <p class="text-gray-600 mb-8 text-sm leading-relaxed">상세 정보를 보시려면 먼저 로그인해주세요</p>
+            <div class="flex flex-col gap-3">
+                <button onclick="goToLogin()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium w-full">
+                    👤 로그인 하기
                 </button>
-                <button onclick="goHome()" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400">
-                    홈으로
+                <button onclick="goHome()" class="bg-gray-200 text-gray-600 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors font-medium w-full">
+                    취소
                 </button>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm text-gray-500">계정이 없으신가요? 
+                    <a href="/static/register.html" class="text-blue-600 hover:text-blue-800 font-medium">회원가입</a>
+                </p>
             </div>
         </div>
     </div>
@@ -2494,19 +2499,24 @@ app.get('/static/jobseekers-view.html', async (c) => {
 
     <!-- 인증 실패 알림 -->
     <div id="authError" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 text-center max-w-md mx-4">
-            <div class="text-purple-500 mb-4">
-                <i class="fas fa-lock text-4xl"></i>
+        <div class="bg-white rounded-lg p-8 text-center max-w-sm mx-4 shadow-xl">
+            <div class="text-yellow-500 mb-6">
+                <i class="fas fa-lock text-5xl"></i>
             </div>
-            <h3 class="text-xl font-semibold mb-2">로그인이 필요합니다</h3>
-            <p class="text-gray-600 mb-6">구직정보를 보려면 먼저 로그인해주세요.</p>
-            <div class="flex gap-3 justify-center">
-                <button onclick="goToLogin()" class="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600">
-                    로그인하기
+            <h3 class="text-xl font-bold mb-2 text-gray-800">로그인이 필요합니다!</h3>
+            <p class="text-gray-600 mb-8 text-sm leading-relaxed">상세 정보를 보시려면 먼저 로그인해주세요</p>
+            <div class="flex flex-col gap-3">
+                <button onclick="goToLogin()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium w-full">
+                    👤 로그인 하기
                 </button>
-                <button onclick="goHome()" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400">
-                    홈으로
+                <button onclick="goHome()" class="bg-gray-200 text-gray-600 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors font-medium w-full">
+                    취소
                 </button>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm text-gray-500">계정이 없으신가요? 
+                    <a href="/static/register.html" class="text-blue-600 hover:text-blue-800 font-medium">회원가입</a>
+                </p>
             </div>
         </div>
     </div>
