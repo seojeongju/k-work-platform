@@ -2996,6 +2996,8 @@ app.get('/static/jobs-view.html', async (c) => {
 </html>`);
 })
 
+
+
 // 구직정보 보기 페이지 (로그인 필요)
 app.get('/static/jobseekers-view.html', async (c) => {
   return c.html(`<!DOCTYPE html>
@@ -6009,5 +6011,531 @@ app.post('/api/admin/seed-database', async (c) => {
   }
 })
 
+
+// 관리자 대시보드 - 실제 HTML 파일 내용 직접 서빙
+app.get('/static/admin-dashboard.html', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOW-CAMPUS 관리자 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+        .card-shadow:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-md border-b-2 border-blue-600">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user-shield text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-blue-600">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">관리자 대시보드</span>
+                    </div>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <span id="admin-name" class="text-sm text-gray-600">관리자님 환영합니다</span>
+                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container mx-auto px-6 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">총 사용자</p>
+                        <p id="total-users" class="text-2xl font-bold text-gray-900">로딩중...</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-users text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">구인기업</p>
+                        <p id="total-employers" class="text-2xl font-bold text-gray-900">로딩중...</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-building text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">구직자</p>
+                        <p id="total-jobseekers" class="text-2xl font-bold text-gray-900">로딩중...</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user-tie text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">에이전트</p>
+                        <p id="total-agents" class="text-2xl font-bold text-gray-900">로딩중...</p>
+                    </div>
+                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-handshake text-yellow-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl card-shadow p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">관리자 기능</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button class="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors">
+                    <i class="fas fa-users text-blue-600 text-xl mb-2"></i>
+                    <h3 class="font-semibold text-gray-800">사용자 관리</h3>
+                    <p class="text-sm text-gray-600">전체 사용자 계정 관리</p>
+                </button>
+                <button class="p-4 bg-green-50 hover:bg-green-100 rounded-lg text-left transition-colors">
+                    <i class="fas fa-briefcase text-green-600 text-xl mb-2"></i>
+                    <h3 class="font-semibold text-gray-800">구인공고 관리</h3>
+                    <p class="text-sm text-gray-600">구인공고 승인 및 관리</p>
+                </button>
+                <button class="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors">
+                    <i class="fas fa-chart-bar text-purple-600 text-xl mb-2"></i>
+                    <h3 class="font-semibold text-gray-800">통계 분석</h3>
+                    <p class="text-sm text-gray-600">시스템 사용 통계 확인</p>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 인증 확인
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
+            
+            if (!token || !user || user.userType !== 'admin') {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '/static/login.html';
+                return false;
+            }
+            
+            document.getElementById('admin-name').textContent = user.name ? user.name + '님 환영합니다' : '관리자님 환영합니다';
+            return true;
+        }
+        
+        // 통계 데이터 로드
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/admin/stats', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        document.getElementById('total-users').textContent = data.stats.totalUsers || '0';
+                        document.getElementById('total-employers').textContent = data.stats.totalEmployers || '0';
+                        document.getElementById('total-jobseekers').textContent = data.stats.totalJobseekers || '0';
+                        document.getElementById('total-agents').textContent = data.stats.totalAgents || '0';
+                    }
+                } else {
+                    console.error('Failed to load stats');
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                document.getElementById('total-users').textContent = '0';
+                document.getElementById('total-employers').textContent = '0';
+                document.getElementById('total-jobseekers').textContent = '0';
+                document.getElementById('total-agents').textContent = '0';
+            }
+        }
+        
+        // 로그아웃
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('currentUser');
+                window.location.href = '/';
+            }
+        });
+        
+        // 페이지 로드시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            if (checkAuth()) {
+                loadStats();
+            }
+        });
+    </script>
+</body>
+</html>`)
+})
+
+// 에이전트 대시보드
+app.get('/static/agent-dashboard.html', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOW-CAMPUS 에이전트 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-md border-b-2 border-purple-600">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-handshake text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-purple-600">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">에이전트 대시보드</span>
+                    </div>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <span id="agent-name" class="text-sm text-gray-600">에이전트님 환영합니다</span>
+                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container mx-auto px-6 py-8">
+        <div class="bg-white rounded-lg shadow p-6 text-center">
+            <h2 class="text-2xl font-bold mb-4">에이전트 대시보드</h2>
+            <p class="text-gray-600 mb-4">에이전트 관리 시스템에 오신 것을 환영합니다.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                <div class="p-6 bg-purple-50 rounded-lg">
+                    <i class="fas fa-users text-purple-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">구직자 관리</h3>
+                    <p class="text-gray-600 text-sm">등록된 구직자 현황 및 관리</p>
+                </div>
+                <div class="p-6 bg-blue-50 rounded-lg">
+                    <i class="fas fa-briefcase text-blue-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">매칭 현황</h3>
+                    <p class="text-gray-600 text-sm">구인-구직 매칭 진행상황</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 인증 확인
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
+            
+            if (!token || !user || user.userType !== 'agent') {
+                alert('에이전트 권한이 필요합니다.');
+                window.location.href = '/static/login.html';
+                return false;
+            }
+            
+            document.getElementById('agent-name').textContent = user.name ? user.name + '님 환영합니다' : '에이전트님 환영합니다';
+            return true;
+        }
+        
+        // 로그아웃
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('currentUser');
+                window.location.href = '/';
+            }
+        });
+        
+        // 페이지 로드시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+        });
+    </script>
+</body>
+</html>`)
+})
+
+// 기업 대시보드
+app.get('/static/employer-dashboard.html', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOW-CAMPUS 기업 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-md border-b-2 border-green-600">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-green-600 to-blue-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-building text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-green-600">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">기업 대시보드</span>
+                    </div>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <span id="employer-name" class="text-sm text-gray-600">기업 담당자님 환영합니다</span>
+                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container mx-auto px-6 py-8">
+        <div class="bg-white rounded-lg shadow p-6 text-center">
+            <h2 class="text-2xl font-bold mb-4">기업 대시보드</h2>
+            <p class="text-gray-600 mb-4">구인 관리 시스템에 오신 것을 환영합니다.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                <div class="p-6 bg-green-50 rounded-lg">
+                    <i class="fas fa-plus-circle text-green-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">구인공고 등록</h3>
+                    <p class="text-gray-600 text-sm">새로운 구인공고를 등록하세요</p>
+                </div>
+                <div class="p-6 bg-blue-50 rounded-lg">
+                    <i class="fas fa-list text-blue-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">등록된 공고</h3>
+                    <p class="text-gray-600 text-sm">현재 등록된 구인공고 관리</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 인증 확인
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
+            
+            if (!token || !user || user.userType !== 'employer') {
+                alert('기업 회원 권한이 필요합니다.');
+                window.location.href = '/static/login.html';
+                return false;
+            }
+            
+            document.getElementById('employer-name').textContent = user.name ? user.name + '님 환영합니다' : '기업 담당자님 환영합니다';
+            return true;
+        }
+        
+        // 로그아웃
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('currentUser');
+                window.location.href = '/';
+            }
+        });
+        
+        // 페이지 로드시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+        });
+    </script>
+</body>
+</html>`)
+})
+
+// 강사 대시보드
+app.get('/static/instructor-dashboard.html', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOW-CAMPUS 강사 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-md border-b-2 border-cyan-600">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-cyan-600 to-blue-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-chalkboard-teacher text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-cyan-600">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">강사 대시보드</span>
+                    </div>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <span id="instructor-name" class="text-sm text-gray-600">강사님 환영합니다</span>
+                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container mx-auto px-6 py-8">
+        <div class="bg-white rounded-lg shadow p-6 text-center">
+            <h2 class="text-2xl font-bold mb-4">강사 대시보드</h2>
+            <p class="text-gray-600 mb-4">교육 관리 시스템에 오신 것을 환영합니다.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                <div class="p-6 bg-cyan-50 rounded-lg">
+                    <i class="fas fa-book text-cyan-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">강의 관리</h3>
+                    <p class="text-gray-600 text-sm">개설된 강의 및 수강생 관리</p>
+                </div>
+                <div class="p-6 bg-blue-50 rounded-lg">
+                    <i class="fas fa-user-graduate text-blue-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">학생 현황</h3>
+                    <p class="text-gray-600 text-sm">수강 중인 학생 현황 확인</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 인증 확인
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
+            
+            if (!token || !user || user.userType !== 'instructor') {
+                alert('강사 권한이 필요합니다.');
+                window.location.href = '/static/login.html';
+                return false;
+            }
+            
+            document.getElementById('instructor-name').textContent = user.name ? user.name + '님 환영합니다' : '강사님 환영합니다';
+            return true;
+        }
+        
+        // 로그아웃
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('currentUser');
+                window.location.href = '/';
+            }
+        });
+        
+        // 페이지 로드시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+        });
+    </script>
+</body>
+</html>`)
+})
+
+// 구직자 프로필 페이지
+app.get('/static/jobseeker-profile.html', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOW-CAMPUS 구직자 프로필</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-md border-b-2 border-orange-600">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-orange-600 to-red-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user-graduate text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-orange-600">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">구직자 프로필</span>
+                    </div>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <span id="jobseeker-name" class="text-sm text-gray-600">구직자님 환영합니다</span>
+                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container mx-auto px-6 py-8">
+        <div class="bg-white rounded-lg shadow p-6 text-center">
+            <h2 class="text-2xl font-bold mb-4">구직자 프로필</h2>
+            <p class="text-gray-600 mb-4">구직 활동 관리 시스템에 오신 것을 환영합니다.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                <div class="p-6 bg-orange-50 rounded-lg">
+                    <i class="fas fa-user-edit text-orange-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">프로필 관리</h3>
+                    <p class="text-gray-600 text-sm">개인정보 및 이력서 관리</p>
+                </div>
+                <div class="p-6 bg-blue-50 rounded-lg">
+                    <i class="fas fa-search text-blue-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">구인정보 검색</h3>
+                    <p class="text-gray-600 text-sm">맞춤 구인정보 찾기</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 인증 확인
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
+            
+            if (!token || !user || (user.userType !== 'jobseeker' && user.userType !== 'student')) {
+                alert('구직자 권한이 필요합니다.');
+                window.location.href = '/static/login.html';
+                return false;
+            }
+            
+            document.getElementById('jobseeker-name').textContent = user.name ? user.name + '님 환영합니다' : '구직자님 환영합니다';
+            return true;
+        }
+        
+        // 로그아웃
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('currentUser');
+                window.location.href = '/';
+            }
+        });
+        
+        // 페이지 로드시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+        });
+    </script>
+</body>
+</html>`)
+})
 
 export default app
