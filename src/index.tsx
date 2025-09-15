@@ -2244,7 +2244,7 @@ app.get('/static/login.html', async (c) => {
                     
                     alert('로그인이 완료되었습니다!');
                     
-                    // 약간의 지연 후 리다이렉트 (localStorage 동기화 보장)
+                    // 지연 후 리다이렉트 (localStorage 동기화 + URL 토큰 전달)
                     setTimeout(function() {
                         console.log('리다이렉트 준비:', { selectedUserType, userType: data.user.userType });
                         
@@ -2252,19 +2252,19 @@ app.get('/static/login.html', async (c) => {
                         let dashboardUrl = '/';
                         
                         if (selectedUserType === 'admin' || data.user.userType === 'admin') {
-                            dashboardUrl = '/static/admin-dashboard.html';
+                            dashboardUrl = '/static/admin-dashboard.html?token=' + encodeURIComponent(data.token);
                             console.log('관리자 대시보드로 이동:', dashboardUrl);
                         } else if (selectedUserType === 'agent' || data.user.userType === 'agent') {
-                            dashboardUrl = '/static/agent-dashboard.html';
+                            dashboardUrl = '/static/agent-dashboard.html?token=' + encodeURIComponent(data.token);
                             console.log('에이전트 대시보드로 이동:', dashboardUrl);
                         } else if (selectedUserType === 'employer' || data.user.userType === 'employer') {
-                            dashboardUrl = '/static/employer-dashboard.html';
+                            dashboardUrl = '/static/employer-dashboard.html?token=' + encodeURIComponent(data.token);
                             console.log('기업 대시보드로 이동:', dashboardUrl);
                         } else if (selectedUserType === 'instructor' || data.user.userType === 'instructor') {
-                            dashboardUrl = '/static/instructor-dashboard.html';
+                            dashboardUrl = '/static/instructor-dashboard.html?token=' + encodeURIComponent(data.token);
                             console.log('강사 대시보드로 이동:', dashboardUrl);
                         } else if (selectedUserType === 'jobseeker' || selectedUserType === 'student' || data.user.userType === 'jobseeker' || data.user.userType === 'student') {
-                            dashboardUrl = '/static/jobseeker-profile.html';
+                            dashboardUrl = '/static/jobseeker-profile.html?token=' + encodeURIComponent(data.token);
                             console.log('구직자 프로필로 이동:', dashboardUrl);
                         } else {
                             console.log('기본 홈페이지로 이동');
@@ -2272,8 +2272,19 @@ app.get('/static/login.html', async (c) => {
                         }
                         
                         console.log('최종 리다이렉트 URL:', dashboardUrl);
-                        window.location.href = dashboardUrl;
-                    }, 500); // 500ms 지연
+                        
+                        // localStorage 강제 저장 후 이동
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        localStorage.setItem('currentUser', JSON.stringify(data.user));
+                        
+                        // 추가 지연으로 완전한 저장 보장
+                        setTimeout(function() {
+                            console.log('실제 페이지 이동 실행');
+                            window.location.href = dashboardUrl;
+                        }, 300);
+                        
+                    }, 800); // 800ms 지연으로 증가
                 } else {
                     // 로그인 실패
                     const errorMessage = data.error || '이메일 또는 비밀번호가 올바르지 않습니다.';
@@ -3610,6 +3621,214 @@ app.post('/api/auth/login', async (c) => {
     return c.json({ 
       success: false, 
       error: '로그인 중 오류가 발생했습니다. 다시 시도해주세요.' 
+    }, 500)
+  }
+})
+
+// JWT 토큰 검증 API - 대시보드용
+app.get('/api/auth/verify', async (c) => {
+  try {
+    console.log('🔍 Token verification request received')
+    
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ Missing or invalid Authorization header')
+      return c.json({ 
+        success: false, 
+        error: '인증 토큰이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    console.log('🎫 Extracting token:', token ? 'Present' : 'Missing')
+    
+    if (!token) {
+      return c.json({ 
+        success: false, 
+        error: '토큰이 없습니다.' 
+      }, 401)
+    }
+
+    // JWT 토큰 검증 시도 (production-secret-key 먼저)
+    let payload
+    try {
+      payload = await verify(token, 'production-secret-key')
+      console.log('✅ Token verified with production key')
+    } catch (prodError) {
+      console.log('🔄 Production key failed, trying test key...')
+      try {
+        payload = await verify(token, 'test-secret-key')
+        console.log('✅ Token verified with test key')
+      } catch (testError) {
+        console.log('❌ Both keys failed:', testError.message)
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+
+    // 토큰에서 사용자 정보 추출
+    const { id, email, userType, name, exp } = payload as any
+    
+    // 토큰 만료 검사
+    if (exp && exp < Math.floor(Date.now() / 1000)) {
+      console.log('❌ Token expired:', exp, 'vs', Math.floor(Date.now() / 1000))
+      return c.json({ 
+        success: false, 
+        error: '토큰이 만료되었습니다.' 
+      }, 401)
+    }
+
+    console.log('👤 Token payload:', { id, email, userType, name })
+
+    // 데이터베이스에서 사용자 현재 상태 확인
+    const userTables = {
+      'admin': { table: 'admins', nameField: 'name' },
+      'agent': { table: 'agents', nameField: 'company_name' },
+      'employer': { table: 'employers', nameField: 'company_name' },
+      'jobseeker': { table: 'job_seekers', nameField: 'name' },
+      'student': { table: 'job_seekers', nameField: 'name' },
+      'instructor': { table: 'job_seekers', nameField: 'name' }
+    }
+
+    const config = userTables[userType as keyof typeof userTables]
+    if (!config) {
+      console.log('❌ Unknown user type:', userType)
+      return c.json({ 
+        success: false, 
+        error: '알 수 없는 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    try {
+      const query = `
+        SELECT id, email, ${config.nameField} as name, status 
+        FROM ${config.table} 
+        WHERE id = ? AND email = ?
+      `
+      
+      const user = await c.env.DB.prepare(query).bind(id, email).first()
+      
+      if (!user) {
+        console.log('❌ User not found in database')
+        return c.json({ 
+          success: false, 
+          error: '사용자를 찾을 수 없습니다.' 
+        }, 404)
+      }
+
+      // 사용자 활성 상태 확인
+      if (user.status !== 'active' && user.status !== 'approved') {
+        console.log('❌ User not active:', user.status)
+        return c.json({ 
+          success: false, 
+          error: '계정이 비활성 상태입니다.' 
+        }, 403)
+      }
+
+      console.log('✅ User verification successful')
+      
+      return c.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          userType: userType,
+          user_type: userType, // 호환성
+          type: userType, // 호환성
+          status: user.status
+        },
+        message: '토큰 검증이 성공적으로 완료되었습니다.'
+      })
+      
+    } catch (dbError) {
+      console.error('❌ Database verification error:', dbError)
+      return c.json({ 
+        success: false, 
+        error: '사용자 정보 확인 중 오류가 발생했습니다.' 
+      }, 500)
+    }
+
+  } catch (error) {
+    console.error('🚫 Token verification error:', error)
+    return c.json({ 
+      success: false, 
+      error: '토큰 검증 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 관리자 통계 API
+app.get('/api/admin/stats', async (c) => {
+  try {
+    console.log('📊 관리자 통계 요청 시작')
+    
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '관리자 인증이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+    
+    if (payload.userType !== 'admin') {
+      return c.json({ 
+        success: false, 
+        error: '관리자만 이 기능을 사용할 수 있습니다.' 
+      }, 403)
+    }
+
+    // 데이터베이스에서 통계 수집
+    const totalUsers = await c.env.DB.prepare(`
+      SELECT 
+        (SELECT COUNT(*) FROM admins) as admins,
+        (SELECT COUNT(*) FROM employers) as employers,
+        (SELECT COUNT(*) FROM job_seekers) as jobseekers,
+        (SELECT COUNT(*) FROM agents) as agents
+    `).first()
+
+    const totalJobPostings = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM job_postings
+    `).first()
+
+    const stats = {
+      totalUsers: (totalUsers?.admins || 0) + (totalUsers?.employers || 0) + (totalUsers?.jobseekers || 0) + (totalUsers?.agents || 0),
+      totalEmployers: totalUsers?.employers || 0,
+      totalJobseekers: totalUsers?.jobseekers || 0,
+      totalAgents: totalUsers?.agents || 0,
+      totalJobPostings: totalJobPostings?.count || 0
+    }
+
+    console.log('📊 통계 수집 완료:', stats)
+
+    return c.json({
+      success: true,
+      stats
+    })
+    
+  } catch (error) {
+    console.error('❌ 관리자 통계 오류:', error)
+    return c.json({ 
+      success: false, 
+      error: '통계 데이터 조회 중 오류가 발생했습니다.' 
     }, 500)
   }
 })
@@ -6054,7 +6273,7 @@ app.post('/api/admin/seed-database', async (c) => {
 })
 
 
-// 관리자 대시보드 - 실제 HTML 파일 내용 직접 서빙
+// 관리자 대시보드 - 로딩 화면과 함께 안전한 인증 처리
 app.get('/static/admin-dashboard.html', async (c) => {
   return c.html(`<!DOCTYPE html>
 <html lang="ko">
@@ -6073,141 +6292,258 @@ app.get('/static/admin-dashboard.html', async (c) => {
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             transform: translateY(-2px);
         }
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <header class="bg-white shadow-md border-b-2 border-blue-600">
-        <div class="container mx-auto px-6 py-4">
-            <div class="flex justify-between items-center">
-                <a href="/" class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-user-shield text-white text-xl"></i>
+    <!-- 로딩 화면 -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">관리자 대시보드 로딩 중...</p>
+            <p id="loading-status" class="text-sm text-gray-400 mt-2">인증 확인 중</p>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 컨텐츠 (처음에는 숨김) -->
+    <div id="dashboard-content" class="hidden">
+        <header class="bg-white shadow-md border-b-2 border-blue-600">
+            <div class="container mx-auto px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <a href="/" class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-user-shield text-white text-xl"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <h1 class="text-2xl font-bold text-blue-600">WOW-CAMPUS</h1>
+                            <span class="text-xs text-gray-500">관리자 대시보드</span>
+                        </div>
+                    </a>
+                    <div class="flex items-center space-x-4">
+                        <span id="admin-name" class="text-sm text-gray-600">관리자님 환영합니다</span>
+                        <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                            <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                        </button>
                     </div>
-                    <div class="flex flex-col">
-                        <h1 class="text-2xl font-bold text-blue-600">WOW-CAMPUS</h1>
-                        <span class="text-xs text-gray-500">관리자 대시보드</span>
+                </div>
+            </div>
+        </header>
+        <div class="container mx-auto px-6 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl card-shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">총 사용자</p>
+                            <p id="total-users" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
                     </div>
-                </a>
-                <div class="flex items-center space-x-4">
-                    <span id="admin-name" class="text-sm text-gray-600">관리자님 환영합니다</span>
-                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
-                        <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                </div>
+                <div class="bg-white rounded-xl card-shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">구인기업</p>
+                            <p id="total-employers" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-building text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl card-shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">구직자</p>
+                            <p id="total-jobseekers" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-user-tie text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl card-shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">에이전트</p>
+                            <p id="total-agents" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-handshake text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">관리자 기능</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button class="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors">
+                        <i class="fas fa-users text-blue-600 text-xl mb-2"></i>
+                        <h3 class="font-semibold text-gray-800">사용자 관리</h3>
+                        <p class="text-sm text-gray-600">전체 사용자 계정 관리</p>
                     </button>
-                </div>
-            </div>
-        </div>
-    </header>
-    <div class="container mx-auto px-6 py-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white rounded-xl card-shadow p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">총 사용자</p>
-                        <p id="total-users" class="text-2xl font-bold text-gray-900">로딩중...</p>
-                    </div>
-                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-users text-blue-600 text-xl"></i>
+                    <button class="p-4 bg-green-50 hover:bg-green-100 rounded-lg text-left transition-colors">
+                        <i class="fas fa-briefcase text-green-600 text-xl mb-2"></i>
+                        <h3 class="font-semibold text-gray-800">구인공고 관리</h3>
+                        <p class="text-sm text-gray-600">구인공고 승인 및 관리</p>
+                    </button>
+                    <button class="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors">
+                        <i class="fas fa-chart-bar text-purple-600 text-xl mb-2"></i>
+                        <h3 class="font-semibold text-gray-800">통계 분석</h3>
+                        <p class="text-sm text-gray-600">시스템 사용 통계 확인</p>
                     </div>
                 </div>
-            </div>
-            <div class="bg-white rounded-xl card-shadow p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">구인기업</p>
-                        <p id="total-employers" class="text-2xl font-bold text-gray-900">로딩중...</p>
-                    </div>
-                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-building text-green-600 text-xl"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white rounded-xl card-shadow p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">구직자</p>
-                        <p id="total-jobseekers" class="text-2xl font-bold text-gray-900">로딩중...</p>
-                    </div>
-                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-user-tie text-purple-600 text-xl"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white rounded-xl card-shadow p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">에이전트</p>
-                        <p id="total-agents" class="text-2xl font-bold text-gray-900">로딩중...</p>
-                    </div>
-                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-handshake text-yellow-600 text-xl"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl card-shadow p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">관리자 기능</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button class="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors">
-                    <i class="fas fa-users text-blue-600 text-xl mb-2"></i>
-                    <h3 class="font-semibold text-gray-800">사용자 관리</h3>
-                    <p class="text-sm text-gray-600">전체 사용자 계정 관리</p>
-                </button>
-                <button class="p-4 bg-green-50 hover:bg-green-100 rounded-lg text-left transition-colors">
-                    <i class="fas fa-briefcase text-green-600 text-xl mb-2"></i>
-                    <h3 class="font-semibold text-gray-800">구인공고 관리</h3>
-                    <p class="text-sm text-gray-600">구인공고 승인 및 관리</p>
-                </button>
-                <button class="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors">
-                    <i class="fas fa-chart-bar text-purple-600 text-xl mb-2"></i>
-                    <h3 class="font-semibold text-gray-800">통계 분석</h3>
-                    <p class="text-sm text-gray-600">시스템 사용 통계 확인</p>
-                </button>
             </div>
         </div>
     </div>
     
     <script>
-        console.log('관리자 대시보드 페이지 로드 시작');
+        console.log('🔵 관리자 대시보드 페이지 시작');
+        let authCheckComplete = false;
         
-        // 인증 확인 (더 강화된 버전)
-        function checkAuth() {
-            console.log('인증 확인 시작');
-            
-            const token = localStorage.getItem('token');
-            const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
-            
-            console.log('토큰:', token);
-            console.log('사용자:', user);
-            
-            if (!token) {
-                console.log('토큰이 없음 - 로그인 페이지로 이동');
-                alert('로그인이 필요합니다.');
-                window.location.href = '/static/login.html';
-                return false;
+        // 로딩 상태 업데이트
+        function updateLoadingStatus(message) {
+            const statusEl = document.getElementById('loading-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+                console.log('📱 로딩 상태:', message);
             }
-            
-            if (!user || !user.userType) {
-                console.log('사용자 정보가 없음 - 로그인 페이지로 이동');
-                alert('사용자 정보가 없습니다. 다시 로그인해주세요.');
+        }
+        
+        // 대시보드 표시
+        function showDashboard() {
+            updateLoadingStatus('대시보드 준비 완료');
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('dashboard-content').classList.remove('hidden');
+                console.log('✅ 관리자 대시보드 표시 완료');
+            }, 500);
+        }
+        
+        // 로그인 페이지로 리다이렉트 (천천히)
+        function redirectToLogin(reason) {
+            console.log('❌ 로그인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('로그인이 필요합니다. 잠시 후 이동...');
+            setTimeout(() => {
                 window.location.href = '/static/login.html';
-                return false;
-            }
-            
-            if (user.userType !== 'admin') {
-                console.log('관리자 권한이 없음:', user.userType);
+            }, 2000);
+        }
+        
+        // 메인 페이지로 리다이렉트 (권한 없음)
+        function redirectToHome(reason) {
+            console.log('🏠 메인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('권한이 없습니다. 잠시 후 이동...');
+            setTimeout(() => {
                 alert('관리자 권한이 필요합니다.');
                 window.location.href = '/';
-                return false;
+            }, 2000);
+        }
+        
+        // URL에서 토큰 추출 및 저장
+        function handleURLToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                console.log('🔗 URL에서 토큰 발견, localStorage에 저장');
+                localStorage.setItem('token', urlToken);
+                // URL에서 토큰 파라미터 제거 (보안상)
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // 종합적인 인증 검사
+        async function performAuthCheck() {
+            updateLoadingStatus('토큰 확인 중...');
+            
+            // 1단계: URL 토큰 처리
+            handleURLToken();
+            
+            // 2단계: localStorage에서 토큰 확인
+            const token = localStorage.getItem('token');
+            if (!token) {
+                redirectToLogin('토큰이 없음');
+                return;
             }
             
-            console.log('인증 성공 - 관리자 대시보드 표시');
-            document.getElementById('admin-name').textContent = user.name ? user.name + '님 환영합니다' : '관리자님 환영합니다';
-            return true;
+            console.log('🔑 토큰 확인됨');
+            updateLoadingStatus('사용자 정보 확인 중...');
+            
+            // 3단계: 서버에서 토큰 검증 및 사용자 정보 확인
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.log('🚫 서버 토큰 검증 실패:', response.status);
+                    redirectToLogin('토큰 검증 실패');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    console.log('🚫 사용자 정보 없음:', data);
+                    redirectToLogin('사용자 정보 확인 실패');
+                    return;
+                }
+                
+                const user = data.user;
+                console.log('👤 사용자 정보 확인됨:', user);
+                
+                // 4단계: 관리자 권한 확인
+                const isAdmin = user.user_type === 'admin' || user.userType === 'admin' || user.type === 'admin';
+                if (!isAdmin) {
+                    console.log('🚫 관리자 권한 없음:', user);
+                    redirectToHome('관리자 권한 필요');
+                    return;
+                }
+                
+                // 5단계: localStorage에 사용자 정보 저장
+                console.log('✅ 관리자 권한 확인됨');
+                updateLoadingStatus('대시보드 로딩 중...');
+                
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // 6단계: UI 업데이트 및 대시보드 표시
+                const adminNameEl = document.getElementById('admin-name');
+                if (adminNameEl) {
+                    adminNameEl.textContent = user.name ? user.name + '님 환영합니다' : '관리자님 환영합니다';
+                }
+                
+                // 7단계: 통계 데이터 로드 후 대시보드 표시
+                await loadStats();
+                authCheckComplete = true;
+                showDashboard();
+                
+            } catch (error) {
+                console.error('🚨 인증 검사 중 오류:', error);
+                updateLoadingStatus('네트워크 오류 발생...');
+                redirectToLogin('네트워크 오류');
+            }
         }
         
         // 통계 데이터 로드
         async function loadStats() {
             try {
+                updateLoadingStatus('통계 데이터 로딩 중...');
                 const response = await fetch('/api/admin/stats', {
                     headers: {
                         'Authorization': 'Bearer ' + localStorage.getItem('token')
@@ -6221,51 +6557,47 @@ app.get('/static/admin-dashboard.html', async (c) => {
                         document.getElementById('total-employers').textContent = data.stats.totalEmployers || '0';
                         document.getElementById('total-jobseekers').textContent = data.stats.totalJobseekers || '0';
                         document.getElementById('total-agents').textContent = data.stats.totalAgents || '0';
+                        console.log('📊 통계 데이터 로드 완료');
                     }
-                } else {
-                    console.error('Failed to load stats');
                 }
             } catch (error) {
-                console.error('Error loading stats:', error);
-                document.getElementById('total-users').textContent = '0';
-                document.getElementById('total-employers').textContent = '0';
-                document.getElementById('total-jobseekers').textContent = '0';
-                document.getElementById('total-agents').textContent = '0';
+                console.error('📊 통계 로드 오류:', error);
+                // 오류가 있어도 계속 진행
             }
         }
         
         // 로그아웃
-        document.getElementById('logout-btn').addEventListener('click', function() {
-            if (confirm('로그아웃 하시겠습니까?')) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                localStorage.removeItem('currentUser');
-                window.location.href = '/';
+        function setupLogoutHandler() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (confirm('로그아웃 하시겠습니까?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = '/';
+                    }
+                });
             }
-        });
+        }
         
-        // 페이지 로드시 실행 - 약간의 지연 추가
+        // 페이지 로드 시 실행
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM 로드 완료, 인증 확인 시작');
-            // 약간의 지연을 주어 localStorage가 완전히 설정되도록 함
+            console.log('🎯 관리자 대시보드 DOM 로드 완료');
+            setupLogoutHandler();
+            
+            // 충분한 지연 후 인증 검사 시작
             setTimeout(function() {
-                if (checkAuth()) {
-                    loadStats();
-                }
-            }, 100);
+                console.log('🚀 인증 검사 시작 (2초 지연)');
+                performAuthCheck();
+            }, 2000);
         });
         
-        // 추가 안전장치 - window load 이벤트
-        window.addEventListener('load', function() {
-            console.log('Window 로드 완료, 추가 인증 확인');
-            setTimeout(function() {
-                const token = localStorage.getItem('token');
-                const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
-                if (!token || !user || user.userType !== 'admin') {
-                    console.log('Window 로드 시 인증 실패 감지');
-                    window.location.href = '/static/login.html';
-                }
-            }, 200);
+        // 페이지를 떠나기 전에 인증이 완료되지 않았다면 경고
+        window.addEventListener('beforeunload', function(e) {
+            if (!authCheckComplete) {
+                console.log('⚠️ 인증이 완료되지 않은 상태에서 페이지를 떠남');
+            }
         });
     </script>
 </body>
@@ -6282,9 +6614,34 @@ app.get('/static/agent-dashboard.html', async (c) => {
     <title>WOW-CAMPUS 에이전트 대시보드</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #9333ea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <header class="bg-white shadow-md border-b-2 border-purple-600">
+    <!-- 로딩 화면 -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">에이전트 대시보드 로딩 중...</p>
+            <p id="loading-status" class="text-sm text-gray-400 mt-2">인증 확인 중</p>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 컨텐츠 (처음에는 숨김) -->
+    <div id="dashboard-content" class="hidden">
+        <header class="bg-white shadow-md border-b-2 border-purple-600">
         <div class="container mx-auto px-6 py-4">
             <div class="flex justify-between items-center">
                 <a href="/" class="flex items-center space-x-3">
@@ -6322,75 +6679,169 @@ app.get('/static/agent-dashboard.html', async (c) => {
                 </div>
             </div>
         </div>
+        </div>
     </div>
     
     <script>
-        console.log('에이전트 대시보드 페이지 로드 시작');
+        console.log('🔵 에이전트 대시보드 페이지 시작');
+        let authCheckComplete = false;
         
-        // 강화된 인증 확인
-        function checkAuth() {
-            console.log('에이전트 인증 확인 시작');
-            
-            const token = localStorage.getItem('token');
-            const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
-            
-            console.log('토큰:', token ? '있음' : '없음');
-            console.log('사용자:', user);
-            
-            if (!token) {
-                console.log('토큰이 없음 - 로그인 페이지로 이동');
-                alert('로그인이 필요합니다.');
-                window.location.href = '/static/login.html';
-                return false;
+        // 로딩 상태 업데이트
+        function updateLoadingStatus(message) {
+            const statusEl = document.getElementById('loading-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+                console.log('📱 로딩 상태:', message);
             }
-            
-            if (!user || !user.userType) {
-                console.log('사용자 정보가 없음 - 로그인 페이지로 이동');
-                alert('사용자 정보가 없습니다. 다시 로그인해주세요.');
+        }
+        
+        // 대시보드 표시
+        function showDashboard() {
+            updateLoadingStatus('대시보드 준비 완료');
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('dashboard-content').classList.remove('hidden');
+                console.log('✅ 에이전트 대시보드 표시 완료');
+            }, 500);
+        }
+        
+        // 로그인 페이지로 리다이렉트
+        function redirectToLogin(reason) {
+            console.log('❌ 로그인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('로그인이 필요합니다. 잠시 후 이동...');
+            setTimeout(() => {
                 window.location.href = '/static/login.html';
-                return false;
-            }
-            
-            if (user.userType !== 'agent') {
-                console.log('에이전트 권한이 없음:', user.userType);
+            }, 2000);
+        }
+        
+        // 메인 페이지로 리다이렉트 (권한 없음)
+        function redirectToHome(reason) {
+            console.log('🏠 메인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('권한이 없습니다. 잠시 후 이동...');
+            setTimeout(() => {
                 alert('에이전트 권한이 필요합니다.');
                 window.location.href = '/';
-                return false;
+            }, 2000);
+        }
+        
+        // URL에서 토큰 추출 및 저장
+        function handleURLToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                console.log('🔗 URL에서 토큰 발견, localStorage에 저장');
+                localStorage.setItem('token', urlToken);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // 종합적인 인증 검사
+        async function performAuthCheck() {
+            updateLoadingStatus('토큰 확인 중...');
+            
+            // 1단계: URL 토큰 처리
+            handleURLToken();
+            
+            // 2단계: localStorage에서 토큰 확인
+            const token = localStorage.getItem('token');
+            if (!token) {
+                redirectToLogin('토큰이 없음');
+                return;
             }
             
-            console.log('에이전트 인증 성공');
-            document.getElementById('agent-name').textContent = user.name ? user.name + '님 환영합니다' : '에이전트님 환영합니다';
-            return true;
+            console.log('🔑 토큰 확인됨');
+            updateLoadingStatus('사용자 정보 확인 중...');
+            
+            // 3단계: 서버에서 토큰 검증 및 사용자 정보 확인
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.log('🚫 서버 토큰 검증 실패:', response.status);
+                    redirectToLogin('토큰 검증 실패');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    console.log('🚫 사용자 정보 없음:', data);
+                    redirectToLogin('사용자 정보 확인 실패');
+                    return;
+                }
+                
+                const user = data.user;
+                console.log('👤 사용자 정보 확인됨:', user);
+                
+                // 4단계: 에이전트 권한 확인
+                const isAgent = user.user_type === 'agent' || user.userType === 'agent' || user.type === 'agent';
+                if (!isAgent) {
+                    console.log('🚫 에이전트 권한 없음:', user);
+                    redirectToHome('에이전트 권한 필요');
+                    return;
+                }
+                
+                // 5단계: localStorage에 사용자 정보 저장
+                console.log('✅ 에이전트 권한 확인됨');
+                updateLoadingStatus('대시보드 로딩 중...');
+                
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // 6단계: UI 업데이트 및 대시보드 표시
+                const agentNameEl = document.getElementById('agent-name');
+                if (agentNameEl) {
+                    agentNameEl.textContent = user.name ? user.name + '님 환영합니다' : '에이전트님 환영합니다';
+                }
+                
+                authCheckComplete = true;
+                showDashboard();
+                
+            } catch (error) {
+                console.error('🚨 인증 검사 중 오류:', error);
+                updateLoadingStatus('네트워크 오류 발생...');
+                redirectToLogin('네트워크 오류');
+            }
         }
         
         // 로그아웃
-        document.getElementById('logout-btn').addEventListener('click', function() {
-            if (confirm('로그아웃 하시겠습니까?')) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                localStorage.removeItem('currentUser');
-                window.location.href = '/';
+        function setupLogoutHandler() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (confirm('로그아웃 하시겠습니까?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = '/';
+                    }
+                });
             }
-        });
+        }
         
-        // 페이지 로드시 실행 - 지연 추가
+        // 페이지 로드 시 실행
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('에이전트 DOM 로드 완료');
+            console.log('🎯 에이전트 대시보드 DOM 로드 완료');
+            setupLogoutHandler();
+            
+            // 충분한 지연 후 인증 검사 시작
             setTimeout(function() {
-                checkAuth();
-            }, 100);
+                console.log('🚀 인증 검사 시작 (2초 지연)');
+                performAuthCheck();
+            }, 2000);
         });
         
-        // 추가 안전장치
-        window.addEventListener('load', function() {
-            setTimeout(function() {
-                const token = localStorage.getItem('token');
-                const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
-                if (!token || !user || user.userType !== 'agent') {
-                    console.log('Window 로드 시 에이전트 인증 실패');
-                    window.location.href = '/static/login.html';
-                }
-            }, 200);
+        // 페이지를 떠나기 전에 인증이 완료되지 않았다면 경고
+        window.addEventListener('beforeunload', function(e) {
+            if (!authCheckComplete) {
+                console.log('⚠️ 인증이 완료되지 않은 상태에서 페이지를 떠남');
+            }
         });
     </script>
 </body>
@@ -6407,9 +6858,34 @@ app.get('/static/employer-dashboard.html', async (c) => {
     <title>WOW-CAMPUS 기업 대시보드</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #059669;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <header class="bg-white shadow-md border-b-2 border-green-600">
+    <!-- 로딩 화면 -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">기업 대시보드 로딩 중...</p>
+            <p id="loading-status" class="text-sm text-gray-400 mt-2">인증 확인 중</p>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 컨텐츠 (처음에는 숨김) -->
+    <div id="dashboard-content" class="hidden">
+        <header class="bg-white shadow-md border-b-2 border-green-600">
         <div class="container mx-auto px-6 py-4">
             <div class="flex justify-between items-center">
                 <a href="/" class="flex items-center space-x-3">
@@ -6446,38 +6922,170 @@ app.get('/static/employer-dashboard.html', async (c) => {
                     <p class="text-gray-600 text-sm">현재 등록된 구인공고 관리</p>
                 </div>
             </div>
+            </div>
         </div>
     </div>
     
     <script>
-        // 인증 확인
-        function checkAuth() {
-            const token = localStorage.getItem('token');
-            const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
-            
-            if (!token || !user || user.userType !== 'employer') {
-                alert('기업 회원 권한이 필요합니다.');
+        console.log('🔵 기업 대시보드 페이지 시작');
+        let authCheckComplete = false;
+        
+        // 로딩 상태 업데이트
+        function updateLoadingStatus(message) {
+            const statusEl = document.getElementById('loading-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+                console.log('📱 로딩 상태:', message);
+            }
+        }
+        
+        // 대시보드 표시
+        function showDashboard() {
+            updateLoadingStatus('대시보드 준비 완료');
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('dashboard-content').classList.remove('hidden');
+                console.log('✅ 기업 대시보드 표시 완료');
+            }, 500);
+        }
+        
+        // 로그인 페이지로 리다이렉트
+        function redirectToLogin(reason) {
+            console.log('❌ 로그인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('로그인이 필요합니다. 잠시 후 이동...');
+            setTimeout(() => {
                 window.location.href = '/static/login.html';
-                return false;
+            }, 2000);
+        }
+        
+        // 메인 페이지로 리다이렉트 (권한 없음)
+        function redirectToHome(reason) {
+            console.log('🏠 메인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('권한이 없습니다. 잠시 후 이동...');
+            setTimeout(() => {
+                alert('기업 회원 권한이 필요합니다.');
+                window.location.href = '/';
+            }, 2000);
+        }
+        
+        // URL에서 토큰 추출 및 저장
+        function handleURLToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                console.log('🔗 URL에서 토큰 발견, localStorage에 저장');
+                localStorage.setItem('token', urlToken);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // 종합적인 인증 검사
+        async function performAuthCheck() {
+            updateLoadingStatus('토큰 확인 중...');
+            
+            // 1단계: URL 토큰 처리
+            handleURLToken();
+            
+            // 2단계: localStorage에서 토큰 확인
+            const token = localStorage.getItem('token');
+            if (!token) {
+                redirectToLogin('토큰이 없음');
+                return;
             }
             
-            document.getElementById('employer-name').textContent = user.name ? user.name + '님 환영합니다' : '기업 담당자님 환영합니다';
-            return true;
+            console.log('🔑 토큰 확인됨');
+            updateLoadingStatus('사용자 정보 확인 중...');
+            
+            // 3단계: 서버에서 토큰 검증 및 사용자 정보 확인
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.log('🚫 서버 토큰 검증 실패:', response.status);
+                    redirectToLogin('토큰 검증 실패');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    console.log('🚫 사용자 정보 없음:', data);
+                    redirectToLogin('사용자 정보 확인 실패');
+                    return;
+                }
+                
+                const user = data.user;
+                console.log('👤 사용자 정보 확인됨:', user);
+                
+                // 4단계: 기업 권한 확인
+                const isEmployer = user.user_type === 'employer' || user.userType === 'employer' || user.type === 'employer';
+                if (!isEmployer) {
+                    console.log('🚫 기업 권한 없음:', user);
+                    redirectToHome('기업 권한 필요');
+                    return;
+                }
+                
+                // 5단계: localStorage에 사용자 정보 저장
+                console.log('✅ 기업 권한 확인됨');
+                updateLoadingStatus('대시보드 로딩 중...');
+                
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // 6단계: UI 업데이트 및 대시보드 표시
+                const employerNameEl = document.getElementById('employer-name');
+                if (employerNameEl) {
+                    employerNameEl.textContent = user.name ? user.name + '님 환영합니다' : '기업 담당자님 환영합니다';
+                }
+                
+                authCheckComplete = true;
+                showDashboard();
+                
+            } catch (error) {
+                console.error('🚨 인증 검사 중 오류:', error);
+                updateLoadingStatus('네트워크 오류 발생...');
+                redirectToLogin('네트워크 오류');
+            }
         }
         
         // 로그아웃
-        document.getElementById('logout-btn').addEventListener('click', function() {
-            if (confirm('로그아웃 하시겠습니까?')) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                localStorage.removeItem('currentUser');
-                window.location.href = '/';
+        function setupLogoutHandler() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (confirm('로그아웃 하시겠습니까?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = '/';
+                    }
+                });
             }
+        }
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 기업 대시보드 DOM 로드 완료');
+            setupLogoutHandler();
+            
+            // 충분한 지연 후 인증 검사 시작
+            setTimeout(function() {
+                console.log('🚀 인증 검사 시작 (2초 지연)');
+                performAuthCheck();
+            }, 2000);
         });
         
-        // 페이지 로드시 실행
-        document.addEventListener('DOMContentLoaded', function() {
-            checkAuth();
+        // 페이지를 떠나기 전에 인증이 완료되지 않았다면 경고
+        window.addEventListener('beforeunload', function(e) {
+            if (!authCheckComplete) {
+                console.log('⚠️ 인증이 완료되지 않은 상태에서 페이지를 떠남');
+            }
         });
     </script>
 </body>
@@ -6494,9 +7102,34 @@ app.get('/static/instructor-dashboard.html', async (c) => {
     <title>WOW-CAMPUS 강사 대시보드</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #0891b2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <header class="bg-white shadow-md border-b-2 border-cyan-600">
+    <!-- 로딩 화면 -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">강사 대시보드 로딩 중...</p>
+            <p id="loading-status" class="text-sm text-gray-400 mt-2">인증 확인 중</p>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 컨텐츠 (처음에는 숨김) -->
+    <div id="dashboard-content" class="hidden">
+        <header class="bg-white shadow-md border-b-2 border-cyan-600">
         <div class="container mx-auto px-6 py-4">
             <div class="flex justify-between items-center">
                 <a href="/" class="flex items-center space-x-3">
@@ -6533,38 +7166,170 @@ app.get('/static/instructor-dashboard.html', async (c) => {
                     <p class="text-gray-600 text-sm">수강 중인 학생 현황 확인</p>
                 </div>
             </div>
+            </div>
         </div>
     </div>
     
     <script>
-        // 인증 확인
-        function checkAuth() {
-            const token = localStorage.getItem('token');
-            const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
-            
-            if (!token || !user || user.userType !== 'instructor') {
-                alert('강사 권한이 필요합니다.');
+        console.log('🔵 강사 대시보드 페이지 시작');
+        let authCheckComplete = false;
+        
+        // 로딩 상태 업데이트
+        function updateLoadingStatus(message) {
+            const statusEl = document.getElementById('loading-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+                console.log('📱 로딩 상태:', message);
+            }
+        }
+        
+        // 대시보드 표시
+        function showDashboard() {
+            updateLoadingStatus('대시보드 준비 완료');
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('dashboard-content').classList.remove('hidden');
+                console.log('✅ 강사 대시보드 표시 완료');
+            }, 500);
+        }
+        
+        // 로그인 페이지로 리다이렉트
+        function redirectToLogin(reason) {
+            console.log('❌ 로그인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('로그인이 필요합니다. 잠시 후 이동...');
+            setTimeout(() => {
                 window.location.href = '/static/login.html';
-                return false;
+            }, 2000);
+        }
+        
+        // 메인 페이지로 리다이렉트 (권한 없음)
+        function redirectToHome(reason) {
+            console.log('🏠 메인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('권한이 없습니다. 잠시 후 이동...');
+            setTimeout(() => {
+                alert('강사 권한이 필요합니다.');
+                window.location.href = '/';
+            }, 2000);
+        }
+        
+        // URL에서 토큰 추출 및 저장
+        function handleURLToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                console.log('🔗 URL에서 토큰 발견, localStorage에 저장');
+                localStorage.setItem('token', urlToken);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // 종합적인 인증 검사
+        async function performAuthCheck() {
+            updateLoadingStatus('토큰 확인 중...');
+            
+            // 1단계: URL 토큰 처리
+            handleURLToken();
+            
+            // 2단계: localStorage에서 토큰 확인
+            const token = localStorage.getItem('token');
+            if (!token) {
+                redirectToLogin('토큰이 없음');
+                return;
             }
             
-            document.getElementById('instructor-name').textContent = user.name ? user.name + '님 환영합니다' : '강사님 환영합니다';
-            return true;
+            console.log('🔑 토큰 확인됨');
+            updateLoadingStatus('사용자 정보 확인 중...');
+            
+            // 3단계: 서버에서 토큰 검증 및 사용자 정보 확인
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.log('🚫 서버 토큰 검증 실패:', response.status);
+                    redirectToLogin('토큰 검증 실패');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    console.log('🚫 사용자 정보 없음:', data);
+                    redirectToLogin('사용자 정보 확인 실패');
+                    return;
+                }
+                
+                const user = data.user;
+                console.log('👤 사용자 정보 확인됨:', user);
+                
+                // 4단계: 강사 권한 확인
+                const isInstructor = user.user_type === 'instructor' || user.userType === 'instructor' || user.type === 'instructor';
+                if (!isInstructor) {
+                    console.log('🚫 강사 권한 없음:', user);
+                    redirectToHome('강사 권한 필요');
+                    return;
+                }
+                
+                // 5단계: localStorage에 사용자 정보 저장
+                console.log('✅ 강사 권한 확인됨');
+                updateLoadingStatus('대시보드 로딩 중...');
+                
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // 6단계: UI 업데이트 및 대시보드 표시
+                const instructorNameEl = document.getElementById('instructor-name');
+                if (instructorNameEl) {
+                    instructorNameEl.textContent = user.name ? user.name + '님 환영합니다' : '강사님 환영합니다';
+                }
+                
+                authCheckComplete = true;
+                showDashboard();
+                
+            } catch (error) {
+                console.error('🚨 인증 검사 중 오류:', error);
+                updateLoadingStatus('네트워크 오류 발생...');
+                redirectToLogin('네트워크 오류');
+            }
         }
         
         // 로그아웃
-        document.getElementById('logout-btn').addEventListener('click', function() {
-            if (confirm('로그아웃 하시겠습니까?')) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                localStorage.removeItem('currentUser');
-                window.location.href = '/';
+        function setupLogoutHandler() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (confirm('로그아웃 하시겠습니까?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = '/';
+                    }
+                });
             }
+        }
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 강사 대시보드 DOM 로드 완료');
+            setupLogoutHandler();
+            
+            // 충분한 지연 후 인증 검사 시작
+            setTimeout(function() {
+                console.log('🚀 인증 검사 시작 (2초 지연)');
+                performAuthCheck();
+            }, 2000);
         });
         
-        // 페이지 로드시 실행
-        document.addEventListener('DOMContentLoaded', function() {
-            checkAuth();
+        // 페이지를 떠나기 전에 인증이 완료되지 않았다면 경고
+        window.addEventListener('beforeunload', function(e) {
+            if (!authCheckComplete) {
+                console.log('⚠️ 인증이 완료되지 않은 상태에서 페이지를 떠남');
+            }
         });
     </script>
 </body>
@@ -6581,9 +7346,34 @@ app.get('/static/jobseeker-profile.html', async (c) => {
     <title>WOW-CAMPUS 구직자 프로필</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #f97316;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <header class="bg-white shadow-md border-b-2 border-orange-600">
+    <!-- 로딩 화면 -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">구직자 프로필 로딩 중...</p>
+            <p id="loading-status" class="text-sm text-gray-400 mt-2">인증 확인 중</p>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 컨텐츠 (처음에는 숨김) -->
+    <div id="dashboard-content" class="hidden">
+        <header class="bg-white shadow-md border-b-2 border-orange-600">
         <div class="container mx-auto px-6 py-4">
             <div class="flex justify-between items-center">
                 <a href="/" class="flex items-center space-x-3">
@@ -6620,38 +7410,171 @@ app.get('/static/jobseeker-profile.html', async (c) => {
                     <p class="text-gray-600 text-sm">맞춤 구인정보 찾기</p>
                 </div>
             </div>
+            </div>
         </div>
     </div>
     
     <script>
-        // 인증 확인
-        function checkAuth() {
-            const token = localStorage.getItem('token');
-            const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
-            
-            if (!token || !user || (user.userType !== 'jobseeker' && user.userType !== 'student')) {
-                alert('구직자 권한이 필요합니다.');
+        console.log('🔵 구직자 프로필 페이지 시작');
+        let authCheckComplete = false;
+        
+        // 로딩 상태 업데이트
+        function updateLoadingStatus(message) {
+            const statusEl = document.getElementById('loading-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+                console.log('📱 로딩 상태:', message);
+            }
+        }
+        
+        // 대시보드 표시
+        function showDashboard() {
+            updateLoadingStatus('프로필 준비 완료');
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('dashboard-content').classList.remove('hidden');
+                console.log('✅ 구직자 프로필 표시 완료');
+            }, 500);
+        }
+        
+        // 로그인 페이지로 리다이렉트
+        function redirectToLogin(reason) {
+            console.log('❌ 로그인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('로그인이 필요합니다. 잠시 후 이동...');
+            setTimeout(() => {
                 window.location.href = '/static/login.html';
-                return false;
+            }, 2000);
+        }
+        
+        // 메인 페이지로 리다이렉트 (권한 없음)
+        function redirectToHome(reason) {
+            console.log('🏠 메인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('권한이 없습니다. 잠시 후 이동...');
+            setTimeout(() => {
+                alert('구직자 권한이 필요합니다.');
+                window.location.href = '/';
+            }, 2000);
+        }
+        
+        // URL에서 토큰 추출 및 저장
+        function handleURLToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                console.log('🔗 URL에서 토큰 발견, localStorage에 저장');
+                localStorage.setItem('token', urlToken);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // 종합적인 인증 검사
+        async function performAuthCheck() {
+            updateLoadingStatus('토큰 확인 중...');
+            
+            // 1단계: URL 토큰 처리
+            handleURLToken();
+            
+            // 2단계: localStorage에서 토큰 확인
+            const token = localStorage.getItem('token');
+            if (!token) {
+                redirectToLogin('토큰이 없음');
+                return;
             }
             
-            document.getElementById('jobseeker-name').textContent = user.name ? user.name + '님 환영합니다' : '구직자님 환영합니다';
-            return true;
+            console.log('🔑 토큰 확인됨');
+            updateLoadingStatus('사용자 정보 확인 중...');
+            
+            // 3단계: 서버에서 토큰 검증 및 사용자 정보 확인
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.log('🚫 서버 토큰 검증 실패:', response.status);
+                    redirectToLogin('토큰 검증 실패');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    console.log('🚫 사용자 정보 없음:', data);
+                    redirectToLogin('사용자 정보 확인 실패');
+                    return;
+                }
+                
+                const user = data.user;
+                console.log('👤 사용자 정보 확인됨:', user);
+                
+                // 4단계: 구직자/학생 권한 확인
+                const isJobseeker = user.user_type === 'jobseeker' || user.userType === 'jobseeker' || user.type === 'jobseeker' ||
+                                   user.user_type === 'student' || user.userType === 'student' || user.type === 'student';
+                if (!isJobseeker) {
+                    console.log('🚫 구직자 권한 없음:', user);
+                    redirectToHome('구직자 권한 필요');
+                    return;
+                }
+                
+                // 5단계: localStorage에 사용자 정보 저장
+                console.log('✅ 구직자 권한 확인됨');
+                updateLoadingStatus('프로필 로딩 중...');
+                
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // 6단계: UI 업데이트 및 대시보드 표시
+                const jobseekerNameEl = document.getElementById('jobseeker-name');
+                if (jobseekerNameEl) {
+                    jobseekerNameEl.textContent = user.name ? user.name + '님 환영합니다' : '구직자님 환영합니다';
+                }
+                
+                authCheckComplete = true;
+                showDashboard();
+                
+            } catch (error) {
+                console.error('🚨 인증 검사 중 오류:', error);
+                updateLoadingStatus('네트워크 오류 발생...');
+                redirectToLogin('네트워크 오류');
+            }
         }
         
         // 로그아웃
-        document.getElementById('logout-btn').addEventListener('click', function() {
-            if (confirm('로그아웃 하시겠습니까?')) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                localStorage.removeItem('currentUser');
-                window.location.href = '/';
+        function setupLogoutHandler() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (confirm('로그아웃 하시겠습니까?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = '/';
+                    }
+                });
             }
+        }
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 구직자 프로필 DOM 로드 완료');
+            setupLogoutHandler();
+            
+            // 충분한 지연 후 인증 검사 시작
+            setTimeout(function() {
+                console.log('🚀 인증 검사 시작 (2초 지연)');
+                performAuthCheck();
+            }, 2000);
         });
         
-        // 페이지 로드시 실행
-        document.addEventListener('DOMContentLoaded', function() {
-            checkAuth();
+        // 페이지를 떠나기 전에 인증이 완료되지 않았다면 경고
+        window.addEventListener('beforeunload', function(e) {
+            if (!authCheckComplete) {
+                console.log('⚠️ 인증이 완료되지 않은 상태에서 페이지를 떠남');
+            }
         });
     </script>
 </body>
