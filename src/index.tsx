@@ -3501,7 +3501,7 @@ app.post('/api/auth/login', async (c) => {
         userType: dbUser.userType,
         name: dbUser.name,
         exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24시간
-      }, 'w-campus-production-secret-2025')
+      }, 'production-secret-key')
 
       return c.json({
         success: true,
@@ -3796,7 +3796,7 @@ app.post('/api/auth/register', async (c) => {
       email: email,
       userType: userType,
       exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
-    }, 'registration-secret-key')
+    }, 'production-secret-key')
 
     return c.json({
       success: true,
