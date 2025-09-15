@@ -3290,8 +3290,15 @@ app.post('/api/auth/login', async (c) => {
 
     const testAccount = testAccounts[email as keyof typeof testAccounts]
     
+    console.log(`=== Test Account Check ===`)
+    console.log(`Email: ${email}, UserType: ${userType}, Password: ${password}`)
+    console.log(`Test Account Found:`, testAccount)
+    console.log(`Password Match:`, testAccount && testAccount.password === password)
+    console.log(`UserType Match:`, testAccount && testAccount.userType === userType)
+    
     if (testAccount && testAccount.password === password && testAccount.userType === userType) {
       // 테스트 계정 로그인 성공
+      console.log('✅ Test account login SUCCESS')
       const token = await sign({
         id: testAccount.id,
         email: email,
@@ -3312,6 +3319,8 @@ app.post('/api/auth/login', async (c) => {
         message: '로그인 성공'
       })
     }
+    
+    console.log('❌ Test account login FAILED, trying database...')
 
     // 실제 데이터베이스에서 사용자 조회 (우선 처리)
     try {
@@ -3320,13 +3329,21 @@ app.post('/api/auth/login', async (c) => {
       console.log(`UserType: ${userType}`)
       
       // 먼저 평문 비밀번호로 시도 (신규 가입자)
+      console.log(`📊 Trying plain password authentication...`)
       let dbUser = await authenticateUserWithPlainPassword(c.env.DB, email, password, userType)
       console.log(`Plain password auth result:`, dbUser ? 'SUCCESS' : 'FAILED')
+      if (dbUser) {
+        console.log(`Plain password user data:`, JSON.stringify(dbUser, null, 2))
+      }
       
       // 평문 비밀번호로 찾지 못하면 해시된 비밀번호로 시도
       if (!dbUser) {
+        console.log(`📊 Trying hashed password authentication...`)
         dbUser = await authenticateUser(c.env.DB, email, password, userType)
         console.log(`Hashed password auth result:`, dbUser ? 'SUCCESS' : 'FAILED')
+        if (dbUser) {
+          console.log(`Hashed password user data:`, JSON.stringify(dbUser, null, 2))
+        }
       }
       
       if (dbUser) {
@@ -3729,6 +3746,8 @@ async function createAgent(db: D1Database, data: any): Promise<number | null> {
 
 // 평문 비밀번호로 인증하는 함수 (신규 가입자용)
 async function authenticateUserWithPlainPassword(db: D1Database, email: string, password: string, userType: string) {
+  console.log(`🔑 Plain password auth - Email: ${email}, UserType: ${userType}, Password: ${password.substring(0, 5)}...`)
+  
   const tables = {
     'jobseeker': 'job_seekers',
     'employer': 'employers', 
@@ -3737,7 +3756,11 @@ async function authenticateUserWithPlainPassword(db: D1Database, email: string, 
   }
   
   const tableName = tables[userType as keyof typeof tables]
-  if (!tableName) return null
+  console.log(`📊 Table name for ${userType}:`, tableName)
+  if (!tableName) {
+    console.log(`❌ No table found for userType: ${userType}`)
+    return null
+  }
   
   try {
     let query: string
@@ -3750,7 +3773,19 @@ async function authenticateUserWithPlainPassword(db: D1Database, email: string, 
       query = `SELECT id, email, company_name as name FROM ${tableName} WHERE email = ? AND password = ? AND status IN ('approved', 'active')`
     }
     
+    console.log(`📊 Query:`, query)
+    console.log(`📊 Parameters:`, [email, password])
+    
+    console.log(`📊 Executing query with bind parameters: [${email}, ${password}]`)
     const user = await db.prepare(query).bind(email, password).first()
+    console.log(`📊 Query result:`, user)
+    
+    if (user) {
+      console.log(`✅ Plain password authentication SUCCESS for ${email}`)
+    } else {
+      console.log(`❌ Plain password authentication FAILED for ${email}`)
+    }
+    
     return user
   } catch (error) {
     console.error(`Plain password authentication error for ${userType}:`, error)
