@@ -435,6 +435,19 @@ app.get('/', async (c) => {
             pointer-events: auto !important;
           }
           
+          /* 대시보드 버튼 스타일 */
+          #dashboard-btn {
+            transition: all 0.3s ease;
+            border: none;
+            color: white;
+          }
+          
+          #dashboard-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            filter: brightness(1.1);
+          }
+          
           /* 로그아웃 상태에서는 user-menu 완전히 숨기기 */
           html body:not(.auth-logged-in) header div.container div.flex div#user-menu,
           html body:not(.auth-logged-in) div#user-menu {
@@ -549,8 +562,14 @@ app.get('/', async (c) => {
                         </div>
                         
                         <!-- User Menu (Hidden by default) -->
-                        <div id="user-menu" class="hidden flex items-center space-x-4">
+                        <div id="user-menu" class="hidden flex items-center space-x-3">
                             <span class="text-sm text-gray-600 hidden sm:inline">환영합니다, <span id="user-name" class="font-medium">사용자님</span></span>
+                            
+                            <!-- 사용자 유형별 대시보드 버튼 -->
+                            <button id="dashboard-btn" class="btn-secondary px-3 md:px-4 py-2 rounded-full font-medium text-sm hidden" onclick="goToDashboard()">
+                                <i id="dashboard-icon" class="fas fa-tachometer-alt mr-1"></i><span id="dashboard-text">대시보드</span>
+                            </button>
+                            
                             <button id="logout-btn" class="btn-primary px-3 md:px-4 py-2 rounded-full font-medium text-sm" style="background-color: #ef4444;">
                                 <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
                             </button>
@@ -587,10 +606,15 @@ app.get('/', async (c) => {
                         </button>
                     </div>
                     
-                    <div id="mobile-agent-menu" class="hidden">
-                        <a href="/static/agent-dashboard?agentId=1" class="block w-full text-left py-2 text-gray-700 hover:text-wowcampus-blue font-medium">
-                            <i class="fas fa-handshake mr-3"></i>에이전트
-                        </a>
+                    <!-- 모바일 사용자 대시보드 메뉴 (로그인 상태에서만 표시) -->
+                    <div id="mobile-dashboard-menu" class="hidden border-t border-gray-200 pt-4 mt-4">
+                        <button onclick="goToDashboard(); closeMobileMenu();" class="block w-full text-left py-3 px-4 text-white font-medium rounded-lg transition-colors" id="mobile-dashboard-btn">
+                            <i id="mobile-dashboard-icon" class="fas fa-tachometer-alt mr-3"></i><span id="mobile-dashboard-text">대시보드</span>
+                        </button>
+                        
+                        <button onclick="logout(); closeMobileMenu();" class="block w-full text-left py-3 px-4 text-red-600 hover:bg-red-50 font-medium rounded-lg transition-colors mt-2">
+                            <i class="fas fa-sign-out-alt mr-3"></i>로그아웃
+                        </button>
                     </div>
                 </nav>
             </div>
@@ -1151,6 +1175,10 @@ app.get('/', async (c) => {
                         userNameSpan.textContent = user.name;
                     }
                     
+                    // 사용자 유형별 대시보드 버튼 설정
+                    updateDashboardButton(user.userType);
+                    updateMobileDashboardMenu(user.userType);
+                    
                     // 로그인된 상태일 때 body에 클래스 추가
                     document.body.classList.add('auth-logged-in');
                 } else {
@@ -1159,17 +1187,171 @@ app.get('/', async (c) => {
                     authButtons.classList.remove('hidden');
                     userMenu.classList.add('hidden');
                     document.body.classList.remove('auth-logged-in');
+                    
+                    // 모바일 대시보드 메뉴 숨김
+                    const mobileDashboardMenu = document.getElementById('mobile-dashboard-menu');
+                    if (mobileDashboardMenu) {
+                        mobileDashboardMenu.classList.add('hidden');
+                    }
                 }
             }
 
+            // 사용자 유형별 대시보드 버튼 업데이트 함수
+            function updateDashboardButton(userType) {
+                const dashboardBtn = document.getElementById('dashboard-btn');
+                const dashboardIcon = document.getElementById('dashboard-icon');
+                const dashboardText = document.getElementById('dashboard-text');
+                
+                if (!dashboardBtn || !dashboardIcon || !dashboardText) return;
+                
+                console.log('대시보드 버튼 업데이트:', userType);
+                
+                // 사용자 유형별 아이콘과 텍스트 설정
+                switch(userType) {
+                    case 'admin':
+                        dashboardIcon.className = 'fas fa-shield-alt mr-1';
+                        dashboardText.textContent = '관리자';
+                        dashboardBtn.style.backgroundColor = '#dc2626';
+                        break;
+                    case 'agent':
+                        dashboardIcon.className = 'fas fa-handshake mr-1';
+                        dashboardText.textContent = '에이전트';
+                        dashboardBtn.style.backgroundColor = '#7c3aed';
+                        break;
+                    case 'employer':
+                        dashboardIcon.className = 'fas fa-building mr-1';
+                        dashboardText.textContent = '기업';
+                        dashboardBtn.style.backgroundColor = '#059669';
+                        break;
+                    case 'instructor':
+                        dashboardIcon.className = 'fas fa-chalkboard-teacher mr-1';
+                        dashboardText.textContent = '강사';
+                        dashboardBtn.style.backgroundColor = '#0891b2';
+                        break;
+                    case 'jobseeker':
+                    case 'student':
+                        dashboardIcon.className = 'fas fa-user-graduate mr-1';
+                        dashboardText.textContent = userType === 'student' ? '학생' : '구직자';
+                        dashboardBtn.style.backgroundColor = '#ea580c';
+                        break;
+                    default:
+                        dashboardIcon.className = 'fas fa-tachometer-alt mr-1';
+                        dashboardText.textContent = '대시보드';
+                        dashboardBtn.style.backgroundColor = '#3b82f6';
+                        break;
+                }
+                
+                // 대시보드 버튼 보이기
+                dashboardBtn.classList.remove('hidden');
+            }
+            
+            // 모바일 대시보드 메뉴 업데이트 함수
+            function updateMobileDashboardMenu(userType) {
+                const mobileDashboardMenu = document.getElementById('mobile-dashboard-menu');
+                const mobileDashboardBtn = document.getElementById('mobile-dashboard-btn');
+                const mobileDashboardIcon = document.getElementById('mobile-dashboard-icon');
+                const mobileDashboardText = document.getElementById('mobile-dashboard-text');
+                
+                if (!mobileDashboardMenu || !mobileDashboardBtn || !mobileDashboardIcon || !mobileDashboardText) return;
+                
+                console.log('모바일 대시보드 메뉴 업데이트:', userType);
+                
+                // 사용자 유형별 아이콘과 텍스트, 색상 설정
+                switch(userType) {
+                    case 'admin':
+                        mobileDashboardIcon.className = 'fas fa-shield-alt mr-3';
+                        mobileDashboardText.textContent = '관리자 대시보드';
+                        mobileDashboardBtn.style.backgroundColor = '#dc2626';
+                        break;
+                    case 'agent':
+                        mobileDashboardIcon.className = 'fas fa-handshake mr-3';
+                        mobileDashboardText.textContent = '에이전트 대시보드';
+                        mobileDashboardBtn.style.backgroundColor = '#7c3aed';
+                        break;
+                    case 'employer':
+                        mobileDashboardIcon.className = 'fas fa-building mr-3';
+                        mobileDashboardText.textContent = '기업 대시보드';
+                        mobileDashboardBtn.style.backgroundColor = '#059669';
+                        break;
+                    case 'instructor':
+                        mobileDashboardIcon.className = 'fas fa-chalkboard-teacher mr-3';
+                        mobileDashboardText.textContent = '강사 대시보드';
+                        mobileDashboardBtn.style.backgroundColor = '#0891b2';
+                        break;
+                    case 'jobseeker':
+                    case 'student':
+                        mobileDashboardIcon.className = 'fas fa-user-graduate mr-3';
+                        mobileDashboardText.textContent = (userType === 'student' ? '학생' : '구직자') + ' 프로필';
+                        mobileDashboardBtn.style.backgroundColor = '#ea580c';
+                        break;
+                    default:
+                        mobileDashboardIcon.className = 'fas fa-tachometer-alt mr-3';
+                        mobileDashboardText.textContent = '대시보드';
+                        mobileDashboardBtn.style.backgroundColor = '#3b82f6';
+                        break;
+                }
+                
+                // 모바일 대시보드 메뉴 보이기
+                mobileDashboardMenu.classList.remove('hidden');
+            }
+
+            // 사용자 유형별 대시보드로 이동
+            function goToDashboard() {
+                const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
+                
+                if (!user.userType) {
+                    console.error('사용자 유형 정보를 찾을 수 없습니다.');
+                    alert('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+                    return;
+                }
+                
+                console.log('대시보드 이동:', user.userType);
+                
+                // 사용자 유형별 대시보드 URL
+                let dashboardUrl = '/';
+                
+                switch(user.userType) {
+                    case 'admin':
+                        dashboardUrl = '/static/admin-dashboard.html';
+                        break;
+                    case 'agent':
+                        dashboardUrl = '/static/agent-dashboard.html';
+                        break;
+                    case 'employer':
+                        dashboardUrl = '/static/employer-dashboard.html';
+                        break;
+                    case 'instructor':
+                        dashboardUrl = '/static/instructor-dashboard.html';
+                        break;
+                    case 'jobseeker':
+                    case 'student':
+                        dashboardUrl = '/static/jobseeker-profile.html';
+                        break;
+                    default:
+                        console.warn('알 수 없는 사용자 유형:', user.userType);
+                        dashboardUrl = '/';
+                        break;
+                }
+                
+                console.log('대시보드 URL 이동:', dashboardUrl);
+                window.location.href = dashboardUrl;
+            }
+
             // 로그아웃 함수
-            document.getElementById('logout-btn')?.addEventListener('click', function() {
+            function logout() {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
+                localStorage.removeItem('currentUser');
+                
+                // UI 업데이트
                 checkLoginStatus();
+                
                 alert('로그아웃 되었습니다.');
                 window.location.reload();
-            });
+            }
+            
+            // 로그아웃 버튼 이벤트 리스너
+            document.getElementById('logout-btn')?.addEventListener('click', logout);
             
             // 메인페이지 실시간 데이터 로딩 함수
             async function loadMainPageData() {
