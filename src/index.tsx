@@ -4100,6 +4100,826 @@ function convertKoreanLevel(level: string): string {
 
 
 
+// 🔄 비밀번호 마이그레이션 함수들
+async function migrateUserPasswords(db: D1Database, tableName: string, batchSize: number = 100): Promise<{total: number, migrated: number, errors: number}> {
+  console.log(`🔄 Starting password migration for table: ${tableName}`)
+  
+  let total = 0
+  let migrated = 0 
+  let errors = 0
+  let offset = 0
+  
+  try {
+    // 전체 사용자 수 확인
+    const countResult = await db.prepare(`SELECT COUNT(*) as count FROM ${tableName}`).first()
+    total = countResult?.count || 0
+    console.log(`📊 Total users in ${tableName}: ${total}`)
+    
+    if (total === 0) return { total, migrated, errors }
+    
+    while (offset < total) {
+      try {
+        // 배치 단위로 사용자 조회 (PBKDF2 형식이 아닌 비밀번호만)
+        const users = await db.prepare(`
+          SELECT id, email, password 
+          FROM ${tableName} 
+          WHERE password NOT LIKE '$pbkdf2$%'
+          LIMIT ? OFFSET ?
+        `).bind(batchSize, offset).all()
+        
+        if (!users.results || users.results.length === 0) {
+          console.log(`✅ No more users to migrate in ${tableName}`)
+          break
+        }
+        
+        console.log(`🔄 Processing batch: ${users.results.length} users from ${tableName}`)
+        
+        // 각 사용자의 비밀번호를 PBKDF2로 해시
+        for (const user of users.results) {
+          try {
+            const plainPassword = user.password as string
+            if (!plainPassword || plainPassword.startsWith('$pbkdf2$')) {
+              continue // 이미 마이그레이션된 비밀번호는 스킵
+            }
+            
+            // 새로운 PBKDF2 해시 생성
+            const newHashedPassword = await hashPassword(plainPassword)
+            
+            // 데이터베이스 업데이트
+            await db.prepare(`
+              UPDATE ${tableName} 
+              SET password = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?
+            `).bind(newHashedPassword, user.id).run()
+            
+            migrated++
+            console.log(`✅ Migrated user ${user.email} in ${tableName}`)
+            
+          } catch (userError) {
+            console.error(`❌ Error migrating user ${user.email}:`, userError)
+            errors++
+          }
+        }
+        
+        offset += batchSize
+        
+      } catch (batchError) {
+        console.error(`❌ Batch processing error for ${tableName}:`, batchError)
+        errors++
+        offset += batchSize
+      }
+    }
+    
+  } catch (error) {
+    console.error(`❌ Migration error for ${tableName}:`, error)
+    errors++
+  }
+  
+  console.log(`📈 Migration complete for ${tableName}: ${migrated}/${total} users migrated, ${errors} errors`)
+  return { total, migrated, errors }
+}
+
+// 관리자 전용 비밀번호 마이그레이션 API
+app.post('/api/admin/migrate-passwords', async (c) => {
+  try {
+    console.log('🚀 Password migration started')
+    
+    // 관리자 권한 확인
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '관리자 인증이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+    
+    // 관리자 권한 확인
+    if (payload.userType !== 'admin') {
+      return c.json({ 
+        success: false, 
+        error: '관리자만 이 기능을 사용할 수 있습니다.' 
+      }, 403)
+    }
+
+    // 모든 테이블에서 비밀번호 마이그레이션 실행
+    const tables = ['admins', 'agents', 'employers', 'job_seekers']
+    const results = {}
+    let totalMigrated = 0
+    let totalErrors = 0
+    
+    for (const table of tables) {
+      try {
+        console.log(`🔄 Migrating ${table}...`)
+        const result = await migrateUserPasswords(c.env.DB, table)
+        results[table] = result
+        totalMigrated += result.migrated
+        totalErrors += result.errors
+        
+        // 테이블 간 잠시 대기 (부하 분산)
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+      } catch (tableError) {
+        console.error(`❌ Error migrating table ${table}:`, tableError)
+        results[table] = { total: 0, migrated: 0, errors: 1 }
+        totalErrors++
+      }
+    }
+    
+    console.log(`✅ Password migration completed. Total migrated: ${totalMigrated}, Total errors: ${totalErrors}`)
+    
+    return c.json({
+      success: true,
+      message: '비밀번호 마이그레이션이 완료되었습니다.',
+      results: results,
+      summary: {
+        totalMigrated,
+        totalErrors,
+        timestamp: new Date().toISOString()
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Migration API error:', error)
+    return c.json({ 
+      success: false, 
+      error: '마이그레이션 중 오류가 발생했습니다.',
+      details: error.message
+    }, 500)
+  }
+})
+
+// 비밀번호 마이그레이션 상태 확인 API
+app.get('/api/admin/migration-status', async (c) => {
+  try {
+    // 관리자 권한 확인
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '관리자 인증이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+    
+    if (payload.userType !== 'admin') {
+      return c.json({ 
+        success: false, 
+        error: '관리자만 이 기능을 사용할 수 있습니다.' 
+      }, 403)
+    }
+
+    // 각 테이블의 마이그레이션 상태 확인
+    const tables = ['admins', 'agents', 'employers', 'job_seekers']
+    const status = {}
+    
+    for (const table of tables) {
+      try {
+        const totalResult = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM ${table}`).first()
+        const migratedResult = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM ${table} WHERE password LIKE '$pbkdf2$%'`).first()
+        const pendingResult = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM ${table} WHERE password NOT LIKE '$pbkdf2$%'`).first()
+        
+        status[table] = {
+          total: totalResult?.count || 0,
+          migrated: migratedResult?.count || 0,
+          pending: pendingResult?.count || 0,
+          percentage: totalResult?.count > 0 ? Math.round((migratedResult?.count / totalResult?.count) * 100) : 0
+        }
+        
+      } catch (tableError) {
+        console.error(`Error checking ${table}:`, tableError)
+        status[table] = { total: 0, migrated: 0, pending: 0, percentage: 0, error: tableError.message }
+      }
+    }
+    
+    return c.json({
+      success: true,
+      status: status,
+      timestamp: new Date().toISOString()
+    })
+    
+  } catch (error) {
+    console.error('Migration status error:', error)
+    return c.json({ 
+      success: false, 
+      error: '마이그레이션 상태 확인 중 오류가 발생했습니다.',
+      details: error.message
+    }, 500)
+  }
+})
+
+// 🔐 추가 보안 기능들
+
+// 6자리 OTP 생성 함수
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+// 비밀번호 재설정 토큰 생성 함수
+function generateResetToken(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let token = ''
+  for (let i = 0; i < 32; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return token
+}
+
+// 이메일 발송 시뮬레이션 함수 (실제로는 SendGrid, AWS SES 등 사용)
+async function sendEmail(to: string, subject: string, content: string): Promise<boolean> {
+  try {
+    // 실제 환경에서는 이메일 서비스 API 호출
+    console.log(`📧 Email sent to ${to}:`)
+    console.log(`Subject: ${subject}`)
+    console.log(`Content: ${content}`)
+    
+    // 시뮬레이션: 성공으로 처리
+    return true
+  } catch (error) {
+    console.error('Email sending error:', error)
+    return false
+  }
+}
+
+// 2FA 활성화 API
+app.post('/api/auth/enable-2fa', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '로그인이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+
+    const { email, userType } = payload
+    const { phone } = await c.req.json()
+
+    if (!phone || phone.length < 10) {
+      return c.json({ 
+        success: false, 
+        error: '유효한 휴대폰 번호가 필요합니다.' 
+      }, 400)
+    }
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    // 2FA 설정 업데이트
+    const result = await c.env.DB.prepare(`
+      UPDATE ${tableName} 
+      SET two_factor_enabled = 1, 
+          two_factor_phone = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE email = ?
+    `).bind(phone, email).run()
+
+    if (result.success) {
+      console.log(`✅ 2FA enabled for user: ${email}`)
+      
+      return c.json({
+        success: true,
+        message: '2단계 인증이 활성화되었습니다.',
+        twoFactorEnabled: true
+      })
+    } else {
+      return c.json({ 
+        success: false, 
+        error: '2단계 인증 활성화에 실패했습니다.' 
+      }, 500)
+    }
+
+  } catch (error) {
+    console.error('2FA enable error:', error)
+    return c.json({ 
+      success: false, 
+      error: '2단계 인증 설정 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 2FA 비활성화 API
+app.post('/api/auth/disable-2fa', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '로그인이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+
+    const { email, userType } = payload
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    // 2FA 설정 제거
+    const result = await c.env.DB.prepare(`
+      UPDATE ${tableName} 
+      SET two_factor_enabled = 0, 
+          two_factor_phone = NULL,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE email = ?
+    `).bind(email).run()
+
+    if (result.success) {
+      console.log(`✅ 2FA disabled for user: ${email}`)
+      
+      return c.json({
+        success: true,
+        message: '2단계 인증이 비활성화되었습니다.',
+        twoFactorEnabled: false
+      })
+    } else {
+      return c.json({ 
+        success: false, 
+        error: '2단계 인증 비활성화에 실패했습니다.' 
+      }, 500)
+    }
+
+  } catch (error) {
+    console.error('2FA disable error:', error)
+    return c.json({ 
+      success: false, 
+      error: '2단계 인증 설정 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// OTP 전송 API (로그인 시 사용)
+app.post('/api/auth/send-otp', async (c) => {
+  try {
+    const { email, userType } = await c.req.json()
+
+    if (!email || !userType) {
+      return c.json({ 
+        success: false, 
+        error: '이메일과 사용자 유형이 필요합니다.' 
+      }, 400)
+    }
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    // 사용자 2FA 설정 확인
+    const user = await c.env.DB.prepare(`
+      SELECT email, two_factor_enabled, two_factor_phone 
+      FROM ${tableName} 
+      WHERE email = ? AND two_factor_enabled = 1
+    `).bind(email).first()
+
+    if (!user) {
+      return c.json({ 
+        success: false, 
+        error: '2단계 인증이 설정되지 않은 사용자입니다.' 
+      }, 404)
+    }
+
+    // OTP 생성 및 저장
+    const otp = generateOTP()
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000) // 5분 후 만료
+
+    // OTP를 임시 저장 (실제로는 Redis 등 사용)
+    await c.env.DB.prepare(`
+      INSERT OR REPLACE INTO otp_tokens (email, userType, otp_code, expires_at, created_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).bind(email, userType, otp, expiresAt.toISOString()).run()
+
+    // SMS 발송 시뮬레이션 (실제로는 Twilio, AWS SNS 등 사용)
+    console.log(`📱 SMS sent to ${user.two_factor_phone}: Your OTP is ${otp}`)
+
+    return c.json({
+      success: true,
+      message: 'OTP 코드가 전송되었습니다.',
+      expiresIn: 300 // 5분
+    })
+
+  } catch (error) {
+    console.error('OTP send error:', error)
+    return c.json({ 
+      success: false, 
+      error: 'OTP 전송 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// OTP 검증 API
+app.post('/api/auth/verify-otp', async (c) => {
+  try {
+    const { email, userType, otp } = await c.req.json()
+
+    if (!email || !userType || !otp) {
+      return c.json({ 
+        success: false, 
+        error: '이메일, 사용자 유형, OTP 코드가 필요합니다.' 
+      }, 400)
+    }
+
+    // OTP 검증
+    const otpRecord = await c.env.DB.prepare(`
+      SELECT * FROM otp_tokens 
+      WHERE email = ? AND userType = ? AND otp_code = ? 
+      AND datetime(expires_at) > datetime('now')
+    `).bind(email, userType, otp).first()
+
+    if (!otpRecord) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않거나 만료된 OTP 코드입니다.' 
+      }, 400)
+    }
+
+    // OTP 사용 처리
+    await c.env.DB.prepare(`
+      DELETE FROM otp_tokens 
+      WHERE email = ? AND userType = ? AND otp_code = ?
+    `).bind(email, userType, otp).run()
+
+    console.log(`✅ OTP verified for user: ${email}`)
+
+    return c.json({
+      success: true,
+      message: 'OTP 인증이 완료되었습니다.'
+    })
+
+  } catch (error) {
+    console.error('OTP verify error:', error)
+    return c.json({ 
+      success: false, 
+      error: 'OTP 검증 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 비밀번호 재설정 요청 API
+app.post('/api/auth/request-password-reset', async (c) => {
+  try {
+    const { email, userType } = await c.req.json()
+
+    if (!email || !userType) {
+      return c.json({ 
+        success: false, 
+        error: '이메일과 사용자 유형이 필요합니다.' 
+      }, 400)
+    }
+
+    if (!validateEmail(email)) {
+      return c.json({ 
+        success: false, 
+        error: '올바른 이메일 형식이 아닙니다.' 
+      }, 400)
+    }
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    // 사용자 존재 여부 확인
+    const user = await c.env.DB.prepare(`
+      SELECT email FROM ${tableName} WHERE email = ?
+    `).bind(email).first()
+
+    if (!user) {
+      // 보안상 사용자 존재 여부를 노출하지 않음
+      return c.json({
+        success: true,
+        message: '비밀번호 재설정 링크가 이메일로 전송되었습니다.'
+      })
+    }
+
+    // 재설정 토큰 생성
+    const resetToken = generateResetToken()
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1시간 후 만료
+
+    // 토큰 저장
+    await c.env.DB.prepare(`
+      INSERT OR REPLACE INTO password_reset_tokens (email, userType, reset_token, expires_at, created_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).bind(email, userType, resetToken, expiresAt.toISOString()).run()
+
+    // 이메일 발송
+    const resetLink = `https://b2c2d104.w-campus.pages.dev/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}&type=${userType}`
+    const emailContent = `
+      안녕하세요,
+      
+      비밀번호 재설정을 요청하셨습니다.
+      아래 링크를 클릭하여 새 비밀번호를 설정해주세요:
+      
+      ${resetLink}
+      
+      이 링크는 1시간 후에 만료됩니다.
+      만약 비밀번호 재설정을 요청하지 않으셨다면, 이 이메일을 무시해주세요.
+      
+      감사합니다.
+      WOW-CAMPUS K-Work Platform
+    `
+
+    const emailSent = await sendEmail(email, 'WOW-CAMPUS 비밀번호 재설정', emailContent)
+    
+    console.log(`🔒 Password reset requested for: ${email}, Token: ${resetToken}`)
+
+    return c.json({
+      success: true,
+      message: '비밀번호 재설정 링크가 이메일로 전송되었습니다.',
+      // 개발 환경에서만 토큰 노출 (실제 운영에서는 제거)
+      ...(process.env.NODE_ENV === 'development' && { resetToken, resetLink })
+    })
+
+  } catch (error) {
+    console.error('Password reset request error:', error)
+    return c.json({ 
+      success: false, 
+      error: '비밀번호 재설정 요청 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 비밀번호 재설정 확인 API
+app.post('/api/auth/reset-password', async (c) => {
+  try {
+    const { token, email, userType, newPassword } = await c.req.json()
+
+    if (!token || !email || !userType || !newPassword) {
+      return c.json({ 
+        success: false, 
+        error: '모든 필드가 필요합니다.' 
+      }, 400)
+    }
+
+    // 비밀번호 강도 검증
+    if (newPassword.length < 8 || !/(?=.*[a-zA-Z])(?=.*\d)/.test(newPassword)) {
+      return c.json({ 
+        success: false, 
+        error: '비밀번호는 8자 이상, 영문자와 숫자를 포함해야 합니다.' 
+      }, 400)
+    }
+
+    // 토큰 검증
+    const tokenRecord = await c.env.DB.prepare(`
+      SELECT * FROM password_reset_tokens 
+      WHERE email = ? AND userType = ? AND reset_token = ?
+      AND datetime(expires_at) > datetime('now')
+    `).bind(email, userType, token).first()
+
+    if (!tokenRecord) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않거나 만료된 재설정 토큰입니다.' 
+      }, 400)
+    }
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    // 새 비밀번호 해싱
+    const hashedPassword = await hashPassword(newPassword)
+
+    // 비밀번호 업데이트
+    const result = await c.env.DB.prepare(`
+      UPDATE ${tableName} 
+      SET password = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE email = ?
+    `).bind(hashedPassword, email).run()
+
+    if (result.success) {
+      // 사용된 토큰 삭제
+      await c.env.DB.prepare(`
+        DELETE FROM password_reset_tokens 
+        WHERE email = ? AND userType = ? AND reset_token = ?
+      `).bind(email, userType, token).run()
+
+      console.log(`✅ Password reset completed for: ${email}`)
+
+      return c.json({
+        success: true,
+        message: '비밀번호가 성공적으로 재설정되었습니다.'
+      })
+    } else {
+      return c.json({ 
+        success: false, 
+        error: '비밀번호 재설정에 실패했습니다.' 
+      }, 500)
+    }
+
+  } catch (error) {
+    console.error('Password reset error:', error)
+    return c.json({ 
+      success: false, 
+      error: '비밀번호 재설정 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 보안 설정 조회 API
+app.get('/api/auth/security-settings', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '로그인이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+
+    const { email, userType } = payload
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    // 보안 설정 조회
+    const user = await c.env.DB.prepare(`
+      SELECT 
+        email,
+        two_factor_enabled,
+        two_factor_phone,
+        updated_at
+      FROM ${tableName} 
+      WHERE email = ?
+    `).bind(email).first()
+
+    if (!user) {
+      return c.json({ 
+        success: false, 
+        error: '사용자를 찾을 수 없습니다.' 
+      }, 404)
+    }
+
+    return c.json({
+      success: true,
+      settings: {
+        email: user.email,
+        twoFactorEnabled: !!user.two_factor_enabled,
+        twoFactorPhone: user.two_factor_phone ? 
+          user.two_factor_phone.replace(/(\d{3})-?(\d{4})-?(\d{4})/, '$1-****-$3') : null,
+        lastUpdated: user.updated_at
+      }
+    })
+
+  } catch (error) {
+    console.error('Security settings error:', error)
+    return c.json({ 
+      success: false, 
+      error: '보안 설정 조회 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
 // 헬스체크 엔드포인트
 app.get('/health', async (c) => {
   try {
