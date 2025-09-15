@@ -1130,23 +1130,35 @@ app.get('/', async (c) => {
             // 로그인 상태 확인 함수
             function checkLoginStatus() {
                 const token = localStorage.getItem('token');
-                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                // 두 개의 키를 모두 확인하여 호환성 유지
+                let user = JSON.parse(localStorage.getItem('user') || '{}');
+                if (!user.id) {
+                    user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                }
                 
                 const authButtons = document.getElementById('auth-buttons');
                 const userMenu = document.getElementById('user-menu');
                 const userNameSpan = document.getElementById('user-name');
                 
+                console.log('checkLoginStatus:', { token: !!token, user, hasId: !!user.id });
+                
                 if (token && user.id) {
                     // 로그인된 상태
+                    console.log('로그인 상태 확인됨 - UI 업데이트');
                     authButtons.classList.add('hidden');
                     userMenu.classList.remove('hidden');
                     if (userNameSpan && user.name) {
                         userNameSpan.textContent = user.name;
                     }
+                    
+                    // 로그인된 상태일 때 body에 클래스 추가
+                    document.body.classList.add('auth-logged-in');
                 } else {
                     // 로그아웃 상태
+                    console.log('로그아웃 상태 - UI 업데이트');
                     authButtons.classList.remove('hidden');
                     userMenu.classList.add('hidden');
+                    document.body.classList.remove('auth-logged-in');
                 }
             }
 
@@ -1779,20 +1791,28 @@ app.get('/static/login.html', async (c) => {
                 if (data.success && data.token) {
                     // 로그인 성공
                     localStorage.setItem('token', data.token);
-                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    localStorage.setItem('user', JSON.stringify(data.user)); // 일관성 있게 'user'로 변경
+                    localStorage.setItem('currentUser', JSON.stringify(data.user)); // 기존 코드 호환성 유지
                     
                     alert('로그인이 완료되었습니다!');
                     
-                    // 사용자 유형별 리다이렉트
+                    // 사용자 유형별 리다이렉트 (더 상세한 처리)
+                    console.log('리다이렉트 준비:', { selectedUserType, user: data.user });
+                    
                     if (selectedUserType === 'agent') {
                         window.location.href = '/static/agent-dashboard.html';
                     } else if (selectedUserType === 'admin') {
+                        console.log('관리자 대시보드로 이동');
                         window.location.href = '/static/admin-dashboard.html';
                     } else if (selectedUserType === 'employer') {
                         window.location.href = '/static/employer-dashboard.html';
-                    } else if (selectedUserType === 'jobseeker') {
+                    } else if (selectedUserType === 'jobseeker' || selectedUserType === 'student') {
                         window.location.href = '/static/jobseeker-profile.html';
+                    } else if (selectedUserType === 'instructor') {
+                        window.location.href = '/static/instructor-dashboard.html';
                     } else {
+                        // 기본적으로 메인 페이지로 이동 후 인증된 상태로 업데이트
+                        console.log('기본 리다이렉트: 메인 페이지');
                         window.location.href = '/';
                     }
                 } else {
@@ -3076,7 +3096,12 @@ app.post('/api/auth/login', async (c) => {
       'employer@test.com': { userType: 'employer', password: 'test123', name: '박기업', id: 2 },
       'agent@test.com': { userType: 'agent', password: 'test123', name: '이에이전트', id: 3 },
       'admin@test.com': { userType: 'admin', password: 'admin123', name: '최관리자', id: 4 },
-      // 실제 테스트를 위한 계정들 추가
+      // 실제 w-campus.com 계정들 추가
+      'admin@w-campus.com': { userType: 'admin', password: 'admin123!', name: 'System Administrator', id: 1001 },
+      'instructor@w-campus.com': { userType: 'instructor', password: 'instructor123!', name: 'W-Campus Instructor', id: 1002 },
+      'student@w-campus.com': { userType: 'student', password: 'student123!', name: 'W-Campus Student', id: 1003 },
+      'user@w-campus.com': { userType: 'jobseeker', password: 'user123!', name: 'W-Campus User', id: 1004 },
+      // 기존 테스트 계정들
       'wow3d7@naver.com': { userType: 'jobseeker', password: 'wow3d7144', name: '테스트 사용자', id: 100 },
       'test@test.com': { userType: 'jobseeker', password: 'test1234', name: '테스트 구직자', id: 101 }
     }
