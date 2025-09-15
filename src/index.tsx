@@ -9,7 +9,90 @@ type Bindings = {
   DB: D1Database;
 }
 
-// 간단한 해시 함수 (실제 운영환경에서는 더 강력한 해시 함수 사용 권장)
+// bcrypt 유사 해시 함수 (Cloudflare Workers 환경에서 사용 가능)
+async function hashPassword(password: string): Promise<string> {
+  // 솔트 생성
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+  const saltHex = Array.from(salt, byte => byte.toString(16).padStart(2, '0')).join('')
+  
+  // PBKDF2를 사용한 강력한 해시
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password + saltHex)
+  
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  )
+  
+  const hashBuffer = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 100000, // 10만번 반복
+      hash: 'SHA-256'
+    },
+    key,
+    256
+  )
+  
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  
+  // 솔트와 해시를 결합하여 저장
+  return `$pbkdf2$${saltHex}$${hashHex}`
+}
+
+// 비밀번호 검증 함수
+async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  try {
+    if (!hashedPassword.startsWith('$pbkdf2$')) {
+      // 기존 평문 비밀번호 호환성
+      return password === hashedPassword
+    }
+    
+    const parts = hashedPassword.split('$')
+    if (parts.length !== 4) return false
+    
+    const saltHex = parts[2]
+    const storedHashHex = parts[3]
+    
+    // 솔트를 바이트 배열로 변환
+    const salt = new Uint8Array(saltHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)))
+    
+    const encoder = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(password),
+      { name: 'PBKDF2' },
+      false,
+      ['deriveBits']
+    )
+    
+    const hashBuffer = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      key,
+      256
+    )
+    
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    
+    return hashHex === storedHashHex
+  } catch (error) {
+    console.error('Password verification error:', error)
+    return false
+  }
+}
+
+// 기존 SHA-256 해시 함수 (호환성을 위해 유지)
 async function hash(password: string): Promise<string> {
   const encoder = new TextEncoder()
   const data = encoder.encode(password)
@@ -17,6 +100,158 @@ async function hash(password: string): Promise<string> {
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
   return hashHex
+}
+
+// 이메일 중복 검사 함수 (강화된 버전)
+async function checkEmailExists(db: D1Database, email: string, userType?: string): Promise<boolean> {
+  const tables = ['admins', 'agents', 'employers', 'job_seekers']
+  
+  try {
+    for (const table of tables) {
+      const result = await db.prepare(`SELECT id FROM ${table} WHERE email = ?`).bind(email).first()
+      if (result) {
+        console.log(`⚠️ Email ${email} already exists in ${table}`)
+        return true
+      }
+    }
+    return false
+  } catch (error) {
+    console.error('❌ Email check error:', error)
+    return false
+  }
+}
+
+// 강화된 관리자 생성 함수
+async function createAdmin(db: D1Database, data: any): Promise<number | null> {
+  try {
+    const { email, password, name = 'Administrator', role = 'admin' } = data
+    
+    const result = await db.prepare(`
+      INSERT INTO admins (email, password, name, role, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
+    `).bind(email, password, name, role).run()
+    
+    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
+  } catch (error) {
+    console.error('❌ Admin creation error:', error)
+    return null
+  }
+}
+
+// 강화된 에이전트 생성 함수
+async function createAgent(db: D1Database, data: any): Promise<number | null> {
+  try {
+    const { 
+      email, password, company_name, country, 
+      contact_person, phone, address, license_number 
+    } = data
+    
+    // 필수 필드 검증
+    if (!company_name) {
+      throw new Error('회사명이 필요합니다.')
+    }
+    if (!country) {
+      throw new Error('국가 정보가 필요합니다.')
+    }
+    if (!contact_person) {
+      throw new Error('담당자명이 필요합니다.')
+    }
+    
+    console.log(`🏢 Creating agent: ${company_name} (${country})`)
+    
+    const result = await db.prepare(`
+      INSERT INTO agents (
+        email, password, company_name, country, contact_person, 
+        phone, address, license_number, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+    `).bind(
+      email, password, company_name, country, contact_person,
+      phone || null, address || null, license_number || null
+    ).run()
+    
+    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
+  } catch (error) {
+    console.error('❌ Agent creation error:', error.message)
+    throw error
+  }
+}
+
+// 강화된 기업 생성 함수
+async function createEmployer(db: D1Database, data: any): Promise<number | null> {
+  try {
+    const { 
+      email, password, company_name, business_number, industry,
+      contact_person, phone, address, region, website 
+    } = data
+    
+    // 필수 필드 검증
+    if (!company_name) {
+      throw new Error('회사명이 필요합니다.')
+    }
+    if (!business_number) {
+      throw new Error('사업자등록번호가 필요합니다.')
+    }
+    if (!industry) {
+      throw new Error('업종 정보가 필요합니다.')
+    }
+    if (!contact_person) {
+      throw new Error('담당자명이 필요합니다.')
+    }
+    if (!phone) {
+      throw new Error('연락처가 필요합니다.')
+    }
+    if (!address) {
+      throw new Error('주소가 필요합니다.')
+    }
+    if (!region) {
+      throw new Error('지역 정보가 필요합니다.')
+    }
+    
+    console.log(`🏭 Creating employer: ${company_name} (${business_number})`)
+    
+    const result = await db.prepare(`
+      INSERT INTO employers (
+        email, password, company_name, business_number, industry, 
+        contact_person, phone, address, region, website, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+    `).bind(
+      email, password, company_name, business_number, industry,
+      contact_person, phone, address, region, website || null
+    ).run()
+    
+    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
+  } catch (error) {
+    console.error('❌ Employer creation error:', error.message)
+    throw error
+  }
+}
+
+// 강화된 구직자 생성 함수 (학생, 강사 포함)
+async function createJobSeeker(db: D1Database, data: any): Promise<number | null> {
+  try {
+    const { 
+      email, password, name, birth_date, gender = 'unknown', nationality = 'Unknown',
+      phone, current_address, korean_level = 'beginner', education_level = 'unknown',
+      current_visa = 'none', desired_visa = 'none'
+    } = data
+    
+    const result = await db.prepare(`
+      INSERT INTO job_seekers (
+        email, password, name, birth_date, gender, nationality, 
+        phone, current_address, korean_level, education_level,
+        current_visa, desired_visa, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
+    `).bind(
+      email, password, name || 'User', birth_date || null, gender, nationality,
+      phone || null, current_address || null, korean_level, education_level,
+      current_visa, desired_visa
+    ).run()
+    
+    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
+  } catch (error) {
+    console.error('❌ JobSeeker creation error:', error)
+    return null
+  }
 }
 
 // 입력 검증 함수들
@@ -435,6 +670,19 @@ app.get('/', async (c) => {
             pointer-events: auto !important;
           }
           
+          /* 대시보드 버튼 스타일 */
+          #dashboard-btn {
+            transition: all 0.3s ease;
+            border: none;
+            color: white;
+          }
+          
+          #dashboard-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            filter: brightness(1.1);
+          }
+          
           /* 로그아웃 상태에서는 user-menu 완전히 숨기기 */
           html body:not(.auth-logged-in) header div.container div.flex div#user-menu,
           html body:not(.auth-logged-in) div#user-menu {
@@ -549,8 +797,14 @@ app.get('/', async (c) => {
                         </div>
                         
                         <!-- User Menu (Hidden by default) -->
-                        <div id="user-menu" class="hidden flex items-center space-x-4">
+                        <div id="user-menu" class="hidden flex items-center space-x-3">
                             <span class="text-sm text-gray-600 hidden sm:inline">환영합니다, <span id="user-name" class="font-medium">사용자님</span></span>
+                            
+                            <!-- 사용자 유형별 대시보드 버튼 -->
+                            <button id="dashboard-btn" class="btn-secondary px-3 md:px-4 py-2 rounded-full font-medium text-sm hidden" onclick="goToDashboard()">
+                                <i id="dashboard-icon" class="fas fa-tachometer-alt mr-1"></i><span id="dashboard-text">대시보드</span>
+                            </button>
+                            
                             <button id="logout-btn" class="btn-primary px-3 md:px-4 py-2 rounded-full font-medium text-sm" style="background-color: #ef4444;">
                                 <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
                             </button>
@@ -587,10 +841,15 @@ app.get('/', async (c) => {
                         </button>
                     </div>
                     
-                    <div id="mobile-agent-menu" class="hidden">
-                        <a href="/static/agent-dashboard?agentId=1" class="block w-full text-left py-2 text-gray-700 hover:text-wowcampus-blue font-medium">
-                            <i class="fas fa-handshake mr-3"></i>에이전트
-                        </a>
+                    <!-- 모바일 사용자 대시보드 메뉴 (로그인 상태에서만 표시) -->
+                    <div id="mobile-dashboard-menu" class="hidden border-t border-gray-200 pt-4 mt-4">
+                        <button onclick="goToDashboard(); closeMobileMenu();" class="block w-full text-left py-3 px-4 text-white font-medium rounded-lg transition-colors" id="mobile-dashboard-btn">
+                            <i id="mobile-dashboard-icon" class="fas fa-tachometer-alt mr-3"></i><span id="mobile-dashboard-text">대시보드</span>
+                        </button>
+                        
+                        <button onclick="logout(); closeMobileMenu();" class="block w-full text-left py-3 px-4 text-red-600 hover:bg-red-50 font-medium rounded-lg transition-colors mt-2">
+                            <i class="fas fa-sign-out-alt mr-3"></i>로그아웃
+                        </button>
                     </div>
                 </nav>
             </div>
@@ -1130,34 +1389,230 @@ app.get('/', async (c) => {
             // 로그인 상태 확인 함수
             function checkLoginStatus() {
                 const token = localStorage.getItem('token');
-                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                // 두 개의 키를 모두 확인하여 호환성 유지
+                let user = JSON.parse(localStorage.getItem('user') || '{}');
+                if (!user.id) {
+                    user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                }
                 
                 const authButtons = document.getElementById('auth-buttons');
                 const userMenu = document.getElementById('user-menu');
                 const userNameSpan = document.getElementById('user-name');
                 
+                console.log('checkLoginStatus:', { token: !!token, user, hasId: !!user.id });
+                
                 if (token && user.id) {
                     // 로그인된 상태
+                    console.log('로그인 상태 확인됨 - UI 업데이트');
                     authButtons.classList.add('hidden');
                     userMenu.classList.remove('hidden');
                     if (userNameSpan && user.name) {
                         userNameSpan.textContent = user.name;
                     }
+                    
+                    // 사용자 유형별 대시보드 버튼 설정
+                    updateDashboardButton(user.userType);
+                    updateMobileDashboardMenu(user.userType);
+                    
+                    // 로그인된 상태일 때 body에 클래스 추가
+                    document.body.classList.add('auth-logged-in');
                 } else {
                     // 로그아웃 상태
+                    console.log('로그아웃 상태 - UI 업데이트');
                     authButtons.classList.remove('hidden');
                     userMenu.classList.add('hidden');
+                    document.body.classList.remove('auth-logged-in');
+                    
+                    // 모바일 대시보드 메뉴 숨김
+                    const mobileDashboardMenu = document.getElementById('mobile-dashboard-menu');
+                    if (mobileDashboardMenu) {
+                        mobileDashboardMenu.classList.add('hidden');
+                    }
                 }
             }
 
+            // 사용자 유형별 대시보드 버튼 업데이트 함수
+            function updateDashboardButton(userType) {
+                const dashboardBtn = document.getElementById('dashboard-btn');
+                const dashboardIcon = document.getElementById('dashboard-icon');
+                const dashboardText = document.getElementById('dashboard-text');
+                
+                if (!dashboardBtn || !dashboardIcon || !dashboardText) return;
+                
+                console.log('대시보드 버튼 업데이트:', userType);
+                
+                // 사용자 유형별 아이콘과 텍스트 설정
+                switch(userType) {
+                    case 'admin':
+                        dashboardIcon.className = 'fas fa-shield-alt mr-1';
+                        dashboardText.textContent = '관리자';
+                        dashboardBtn.style.backgroundColor = '#dc2626';
+                        break;
+                    case 'agent':
+                        dashboardIcon.className = 'fas fa-handshake mr-1';
+                        dashboardText.textContent = '에이전트';
+                        dashboardBtn.style.backgroundColor = '#7c3aed';
+                        break;
+                    case 'employer':
+                        dashboardIcon.className = 'fas fa-building mr-1';
+                        dashboardText.textContent = '기업';
+                        dashboardBtn.style.backgroundColor = '#059669';
+                        break;
+                    case 'instructor':
+                        dashboardIcon.className = 'fas fa-chalkboard-teacher mr-1';
+                        dashboardText.textContent = '강사';
+                        dashboardBtn.style.backgroundColor = '#0891b2';
+                        break;
+                    case 'jobseeker':
+                    case 'student':
+                        dashboardIcon.className = 'fas fa-user-graduate mr-1';
+                        dashboardText.textContent = userType === 'student' ? '학생' : '구직자';
+                        dashboardBtn.style.backgroundColor = '#ea580c';
+                        break;
+                    default:
+                        dashboardIcon.className = 'fas fa-tachometer-alt mr-1';
+                        dashboardText.textContent = '대시보드';
+                        dashboardBtn.style.backgroundColor = '#3b82f6';
+                        break;
+                }
+                
+                // 대시보드 버튼 보이기
+                dashboardBtn.classList.remove('hidden');
+            }
+            
+            // 모바일 대시보드 메뉴 업데이트 함수
+            function updateMobileDashboardMenu(userType) {
+                const mobileDashboardMenu = document.getElementById('mobile-dashboard-menu');
+                const mobileDashboardBtn = document.getElementById('mobile-dashboard-btn');
+                const mobileDashboardIcon = document.getElementById('mobile-dashboard-icon');
+                const mobileDashboardText = document.getElementById('mobile-dashboard-text');
+                
+                if (!mobileDashboardMenu || !mobileDashboardBtn || !mobileDashboardIcon || !mobileDashboardText) return;
+                
+                console.log('모바일 대시보드 메뉴 업데이트:', userType);
+                
+                // 사용자 유형별 아이콘과 텍스트, 색상 설정
+                switch(userType) {
+                    case 'admin':
+                        mobileDashboardIcon.className = 'fas fa-shield-alt mr-3';
+                        mobileDashboardText.textContent = '관리자 대시보드';
+                        mobileDashboardBtn.style.backgroundColor = '#dc2626';
+                        break;
+                    case 'agent':
+                        mobileDashboardIcon.className = 'fas fa-handshake mr-3';
+                        mobileDashboardText.textContent = '에이전트 대시보드';
+                        mobileDashboardBtn.style.backgroundColor = '#7c3aed';
+                        break;
+                    case 'employer':
+                        mobileDashboardIcon.className = 'fas fa-building mr-3';
+                        mobileDashboardText.textContent = '기업 대시보드';
+                        mobileDashboardBtn.style.backgroundColor = '#059669';
+                        break;
+                    case 'instructor':
+                        mobileDashboardIcon.className = 'fas fa-chalkboard-teacher mr-3';
+                        mobileDashboardText.textContent = '강사 대시보드';
+                        mobileDashboardBtn.style.backgroundColor = '#0891b2';
+                        break;
+                    case 'jobseeker':
+                    case 'student':
+                        mobileDashboardIcon.className = 'fas fa-user-graduate mr-3';
+                        mobileDashboardText.textContent = (userType === 'student' ? '학생' : '구직자') + ' 프로필';
+                        mobileDashboardBtn.style.backgroundColor = '#ea580c';
+                        break;
+                    default:
+                        mobileDashboardIcon.className = 'fas fa-tachometer-alt mr-3';
+                        mobileDashboardText.textContent = '대시보드';
+                        mobileDashboardBtn.style.backgroundColor = '#3b82f6';
+                        break;
+                }
+                
+                // 모바일 대시보드 메뉴 보이기
+                mobileDashboardMenu.classList.remove('hidden');
+            }
+
+            // 사용자 유형별 대시보드로 이동 (강화된 버전)
+            function goToDashboard() {
+                console.log('대시보드 이동 함수 호출됨');
+                
+                const token = localStorage.getItem('token');
+                const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
+                
+                console.log('토큰:', token ? '있음' : '없음');
+                console.log('사용자 정보:', user);
+                
+                // 인증 확인
+                if (!token) {
+                    console.log('토큰이 없어서 로그인 페이지로 이동');
+                    alert('로그인이 필요합니다.');
+                    window.location.href = '/static/login.html';
+                    return;
+                }
+                
+                if (!user || !user.userType) {
+                    console.error('사용자 유형 정보를 찾을 수 없습니다.');
+                    alert('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+                    window.location.href = '/static/login.html';
+                    return;
+                }
+                
+                console.log('대시보드 이동 준비:', user.userType);
+                
+                // 사용자 유형별 대시보드 URL
+                let dashboardUrl = '/';
+                
+                switch(user.userType) {
+                    case 'admin':
+                        dashboardUrl = '/static/admin-dashboard.html';
+                        console.log('관리자 대시보드로 이동');
+                        break;
+                    case 'agent':
+                        dashboardUrl = '/static/agent-dashboard.html';
+                        console.log('에이전트 대시보드로 이동');
+                        break;
+                    case 'employer':
+                        dashboardUrl = '/static/employer-dashboard.html';
+                        console.log('기업 대시보드로 이동');
+                        break;
+                    case 'instructor':
+                        dashboardUrl = '/static/instructor-dashboard.html';
+                        console.log('강사 대시보드로 이동');
+                        break;
+                    case 'jobseeker':
+                    case 'student':
+                        dashboardUrl = '/static/jobseeker-profile.html';
+                        console.log('구직자 프로필로 이동');
+                        break;
+                    default:
+                        console.warn('알 수 없는 사용자 유형:', user.userType);
+                        alert('알 수 없는 사용자 유형입니다: ' + user.userType);
+                        dashboardUrl = '/';
+                        break;
+                }
+                
+                console.log('최종 대시보드 URL:', dashboardUrl);
+                
+                // 확실한 리다이렉트를 위해 약간의 지연 추가
+                setTimeout(function() {
+                    console.log('실제 페이지 이동 실행:', dashboardUrl);
+                    window.location.href = dashboardUrl;
+                }, 100);
+            }
+
             // 로그아웃 함수
-            document.getElementById('logout-btn')?.addEventListener('click', function() {
+            function logout() {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
+                localStorage.removeItem('currentUser');
+                
+                // UI 업데이트
                 checkLoginStatus();
+                
                 alert('로그아웃 되었습니다.');
                 window.location.reload();
-            });
+            }
+            
+            // 로그아웃 버튼 이벤트 리스너
+            document.getElementById('logout-btn')?.addEventListener('click', logout);
             
             // 메인페이지 실시간 데이터 로딩 함수
             async function loadMainPageData() {
@@ -1750,33 +2205,104 @@ app.get('/static/login.html', async (c) => {
             showLoading();
 
             try {
-                const response = await axios.post('/api/auth/login', loginData);
+                console.log('로그인 시도:', loginData);
                 
-                if (response.data.success || response.data.token) {
-                    // 로그인 성공
-                    localStorage.setItem('token', response.data.token);
-                    localStorage.setItem('user', JSON.stringify(response.data.user));
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(loginData)
+                });
+                
+                // HTTP 상태 코드 체크
+                if (!response.ok) {
+                    let errorMessage = '로그인 중 오류가 발생했습니다.';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (parseError) {
+                        console.error('Error response parsing failed:', parseError);
+                        errorMessage = 'HTTP ' + response.status + ': ' + response.statusText;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const data = await response.json();
+                console.log('로그인 응답:', data);
+                
+                if (data.success && data.token) {
+                    console.log('로그인 성공, 토큰 저장 시작');
+                    
+                    // 로그인 성공 - 토큰과 사용자 정보 저장
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem('currentUser', JSON.stringify(data.user)); // 호환성 유지
+                    
+                    console.log('저장된 사용자 정보:', data.user);
+                    console.log('저장된 토큰:', data.token.substring(0, 20) + '...');
                     
                     alert('로그인이 완료되었습니다!');
                     
-                    // 사용자 유형별 리다이렉트
-                    if (selectedUserType === 'agent') {
-                        window.location.href = '/static/agent-dashboard.html';
-                    } else if (selectedUserType === 'admin') {
-                        window.location.href = '/static/admin-dashboard.html';
-                    } else if (selectedUserType === 'employer') {
-                        window.location.href = '/static/employer-dashboard.html';
-                    } else if (selectedUserType === 'jobseeker') {
-                        window.location.href = '/static/jobseeker-profile.html';
-                    } else {
-                        window.location.href = '/';
-                    }
+                    // 지연 후 리다이렉트 (localStorage 동기화 + URL 토큰 전달)
+                    setTimeout(function() {
+                        console.log('리다이렉트 준비:', { selectedUserType, userType: data.user.userType });
+                        
+                        // 사용자 유형별 리다이렉트 (강화된 로직)
+                        let dashboardUrl = '/';
+                        
+                        if (selectedUserType === 'admin' || data.user.userType === 'admin') {
+                            dashboardUrl = '/static/admin-dashboard.html?token=' + encodeURIComponent(data.token);
+                            console.log('관리자 대시보드로 이동:', dashboardUrl);
+                        } else if (selectedUserType === 'agent' || data.user.userType === 'agent') {
+                            dashboardUrl = '/static/agent-dashboard.html?token=' + encodeURIComponent(data.token);
+                            console.log('에이전트 대시보드로 이동:', dashboardUrl);
+                        } else if (selectedUserType === 'employer' || data.user.userType === 'employer') {
+                            dashboardUrl = '/static/employer-dashboard.html?token=' + encodeURIComponent(data.token);
+                            console.log('기업 대시보드로 이동:', dashboardUrl);
+                        } else if (selectedUserType === 'instructor' || data.user.userType === 'instructor') {
+                            dashboardUrl = '/static/instructor-dashboard.html?token=' + encodeURIComponent(data.token);
+                            console.log('강사 대시보드로 이동:', dashboardUrl);
+                        } else if (selectedUserType === 'jobseeker' || selectedUserType === 'student' || data.user.userType === 'jobseeker' || data.user.userType === 'student') {
+                            dashboardUrl = '/static/jobseeker-profile.html?token=' + encodeURIComponent(data.token);
+                            console.log('구직자 프로필로 이동:', dashboardUrl);
+                        } else {
+                            console.log('기본 홈페이지로 이동');
+                            dashboardUrl = '/';
+                        }
+                        
+                        console.log('최종 리다이렉트 URL:', dashboardUrl);
+                        
+                        // localStorage 강제 저장 후 이동
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        localStorage.setItem('currentUser', JSON.stringify(data.user));
+                        
+                        // 추가 지연으로 완전한 저장 보장
+                        setTimeout(function() {
+                            console.log('실제 페이지 이동 실행');
+                            window.location.href = dashboardUrl;
+                        }, 300);
+                        
+                    }, 800); // 800ms 지연으로 증가
                 } else {
-                    throw new Error(response.data.error || '로그인에 실패했습니다.');
+                    // 로그인 실패
+                    const errorMessage = data.error || '이메일 또는 비밀번호가 올바르지 않습니다.';
+                    alert(errorMessage);
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                alert(error.response?.data?.error || '로그인 중 오류가 발생했습니다.');
+                let userMessage = '로그인 중 오류가 발생했습니다.';
+                
+                if (error.message) {
+                    userMessage = error.message;
+                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    userMessage = '네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인해주세요.';
+                } else if (error.name === 'SyntaxError') {
+                    userMessage = '서버 응답 처리 중 오류가 발생했습니다.';
+                }
+                
+                alert(userMessage);
             } finally {
                 hideLoading();
             }
@@ -2164,41 +2690,77 @@ app.get('/static/register.html', async (c) => {
             document.getElementById('loadingOverlay').classList.remove('hidden');
             
             try {
-                let endpoint = '';
                 let requestData = {
-                    firstName: data.firstName,
-                    lastName: data.lastName,
+                    userType: selectedUserType,
                     email: data.email,
                     password: data.password,
-                    phone: data.phone
+                    confirmPassword: data.confirmPassword
                 };
                 
-                // 회원 유형별 API 엔드포인트 및 데이터 설정
+                // 사용자 유형별 추가 데이터 설정
                 if (selectedUserType === 'jobseeker') {
-                    endpoint = '/api/auth/register/jobseeker';
-                    requestData.nationality = data.nationality;
-                    requestData.visaType = data.visaType;
+                    requestData.name = data.firstName + ' ' + data.lastName;
+                    requestData.phone = data.phone;
+                    requestData.nationality = data.nationality || '대한민국';
+                    requestData.visa_type = data.visaType || 'E-9';
+                    requestData.korean_level = data.koreanLevel || '초급';
                 } else if (selectedUserType === 'employer') {
-                    endpoint = '/api/auth/register/employer';
-                    requestData.companyName = data.companyName;
-                    requestData.businessNumber = data.businessNumber;
+                    requestData.company_name = data.companyName;
+                    requestData.business_number = data.businessNumber;
+                    requestData.phone = data.phone;
+                    requestData.address = data.address || '';
                 } else if (selectedUserType === 'agent') {
-                    endpoint = '/api/auth/register/agent';
-                    requestData.agencyName = data.agencyName;
-                    requestData.licenseNumber = data.licenseNumber;
+                    requestData.company_name = data.agencyName;
+                    requestData.license_number = data.licenseNumber;
+                    requestData.phone = data.phone;
+                    requestData.address = data.address || '';
                 }
                 
-                const response = await axios.post(endpoint, requestData);
+                console.log('회원가입 요청 데이터:', requestData);
                 
-                if (response.data.success) {
-                    alert(response.data.message || '회원가입이 완료되었습니다!');
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                // HTTP 상태 코드 체크
+                if (!response.ok) {
+                    let errorMessage = '회원가입 중 오류가 발생했습니다.';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (parseError) {
+                        console.error('Error response parsing failed:', parseError);
+                        errorMessage = 'HTTP ' + response.status + ': ' + response.statusText;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const responseData = await response.json();
+                console.log('회원가입 응답:', responseData);
+                
+                if (responseData.success) {
+                    alert(responseData.message || '회원가입이 완료되었습니다!');
                     window.location.href = '/static/login.html';
                 } else {
-                    throw new Error(response.data.error || '회원가입에 실패했습니다.');
+                    throw new Error(responseData.error || '회원가입에 실패했습니다.');
                 }
             } catch (error) {
                 console.error('회원가입 오류:', error);
-                alert(error.response?.data?.error || '회원가입 중 오류가 발생했습니다.');
+                let userMessage = '회원가입 중 오류가 발생했습니다.';
+                
+                if (error.message) {
+                    userMessage = error.message;
+                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    userMessage = '네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인해주세요.';
+                } else if (error.name === 'SyntaxError') {
+                    userMessage = '서버 응답 처리 중 오류가 발생했습니다.';
+                }
+                
+                alert(userMessage);
             } finally {
                 // 로딩 숨기기
                 document.getElementById('loadingOverlay').classList.add('hidden');
@@ -2486,6 +3048,8 @@ app.get('/static/jobs-view.html', async (c) => {
 </body>
 </html>`);
 })
+
+
 
 // 구직정보 보기 페이지 (로그인 필요)
 app.get('/static/jobseekers-view.html', async (c) => {
@@ -2810,48 +3374,7 @@ async function verifyToken(c: any, next: any) {
   }
 }
 
-// 로그인 상태 확인 API
-app.get('/api/auth/verify', async (c) => {
-  const authHeader = c.req.header('Authorization');
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ authenticated: false, error: '토큰이 없습니다.' }, 401);
-  }
-  
-  const token = authHeader.substring(7);
-  
-  // 실제 JWT 토큰이 아닌 간단한 토큰 형식인 경우 처리
-  if (!token.startsWith('token_')) {
-    try {
-      const decoded = await verify(token, JWT_SECRET);
-      return c.json({ 
-        authenticated: true, 
-        user: {
-          id: decoded.id,
-          email: decoded.email,
-          userType: decoded.userType,
-          name: decoded.name
-        }
-      });
-    } catch (error) {
-      return c.json({ authenticated: false, error: '유효하지 않은 토큰입니다.' }, 401);
-    }
-  } else {
-    // 기존 간단한 토큰 형식 검증 및 반환
-    const tokenParts = token.split('_');
-    if (tokenParts.length < 3) {
-      return c.json({ authenticated: false, error: '유효하지 않은 토큰입니다.' }, 401);
-    }
-    
-    return c.json({ 
-      authenticated: true, 
-      user: {
-        id: tokenParts[1],
-        userType: tokenParts[2]
-      }
-    });
-  }
-});
+
 
 // 인증 상태 확인 API (쿠키 기반)
 app.get('/api/auth/status', async (c) => {
@@ -2979,8 +3502,67 @@ app.post('/api/auth/logout', async (c) => {
 // ===============================
 
 // 로그인 API
+// 통합된 사용자 인증 함수
+async function authenticateUser(db: D1Database, email: string, password: string, userType: string) {
+  console.log(`🔑 Authenticating user: ${email}, type: ${userType}`)
+  
+  const userTables = {
+    'admin': { table: 'admins', nameField: 'name' },
+    'agent': { table: 'agents', nameField: 'company_name' },
+    'employer': { table: 'employers', nameField: 'company_name' },
+    'jobseeker': { table: 'job_seekers', nameField: 'name' },
+    'student': { table: 'job_seekers', nameField: 'name' }, // 학생도 job_seekers 테이블 사용
+    'instructor': { table: 'job_seekers', nameField: 'name' } // 강사도 job_seekers 테이블 사용
+  }
+  
+  const config = userTables[userType as keyof typeof userTables]
+  if (!config) {
+    console.log(`❌ Unknown user type: ${userType}`)
+    return null
+  }
+  
+  try {
+    const query = `
+      SELECT id, email, ${config.nameField} as name, password
+      FROM ${config.table} 
+      WHERE email = ? AND status IN ('active', 'approved')
+    `
+    
+    console.log(`📊 Query: ${query}`)
+    const user = await db.prepare(query).bind(email).first()
+    
+    if (!user) {
+      console.log(`❌ User not found in ${config.table}`)
+      return null
+    }
+    
+    console.log(`📊 Found user:`, { id: user.id, email: user.email, name: user.name })
+    
+    // 비밀번호 검증
+    const isPasswordValid = await verifyPassword(password, user.password as string)
+    console.log(`🔒 Password verification:`, isPasswordValid)
+    
+    if (isPasswordValid) {
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        userType: userType
+      }
+    }
+    
+    return null
+  } catch (error) {
+    console.error(`❌ Authentication error for ${userType}:`, error)
+    return null
+  }
+}
+
+// 새로운 로그인 API
+// 새로운 통합 로그인 API
 app.post('/api/auth/login', async (c) => {
   try {
+    console.log('🚀 Login attempt started')
     const { email, password, userType } = await c.req.json()
     
     // 입력 검증
@@ -2998,188 +3580,356 @@ app.post('/api/auth/login', async (c) => {
       }, 400)
     }
 
-    // 테스트 계정 로그인 처리 (실제 사용자도 포함)
-    const testAccounts = {
-      'jobseeker@test.com': { userType: 'jobseeker', password: 'test123', name: '김구직', id: 1 },
-      'employer@test.com': { userType: 'employer', password: 'test123', name: '박기업', id: 2 },
-      'agent@test.com': { userType: 'agent', password: 'test123', name: '이에이전트', id: 3 },
-      'admin@test.com': { userType: 'admin', password: 'admin123', name: '최관리자', id: 4 },
-      // 실제 테스트를 위한 계정들 추가
-      'wow3d7@naver.com': { userType: 'jobseeker', password: 'wow3d7144', name: '테스트 사용자', id: 100 },
-      'test@test.com': { userType: 'jobseeker', password: 'test1234', name: '테스트 구직자', id: 101 }
-    }
+    console.log(`📊 Login request: ${email} as ${userType}`)
 
-    const testAccount = testAccounts[email as keyof typeof testAccounts]
+    // 데이터베이스에서 사용자 인증
+    const dbUser = await authenticateUser(c.env.DB, email, password, userType)
     
-    if (testAccount && testAccount.password === password && testAccount.userType === userType) {
-      // 테스트 계정 로그인 성공
+    if (dbUser) {
+      console.log(`✅ Authentication successful for:`, dbUser)
+      
       const token = await sign({
-        id: testAccount.id,
-        email: email,
-        userType: userType,
-        name: testAccount.name,
+        id: dbUser.id,
+        email: dbUser.email,
+        userType: dbUser.userType,
+        name: dbUser.name,
         exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24시간
-      }, 'test-secret-key')
+      }, 'production-secret-key')
 
       return c.json({
         success: true,
         token,
         user: {
-          id: testAccount.id,
-          email: email,
-          name: testAccount.name,
-          userType: userType
-        },
-        message: '로그인 성공'
-      })
-    }
-
-    // 실제 데이터베이스에서 사용자 조회 (우선 처리)
-    try {
-      console.log(`=== Login attempt ===`)
-      console.log(`Email: ${email}`)
-      console.log(`UserType: ${userType}`)
-      
-      // 먼저 평문 비밀번호로 시도 (신규 가입자)
-      let dbUser = await authenticateUserWithPlainPassword(c.env.DB, email, password, userType)
-      console.log(`Plain password auth result:`, dbUser ? 'SUCCESS' : 'FAILED')
-      
-      // 평문 비밀번호로 찾지 못하면 해시된 비밀번호로 시도
-      if (!dbUser) {
-        dbUser = await authenticateUser(c.env.DB, email, password, userType)
-        console.log(`Hashed password auth result:`, dbUser ? 'SUCCESS' : 'FAILED')
-      }
-      
-      if (dbUser) {
-        console.log(`Found user in DB:`, dbUser)
-        const token = await sign({
           id: dbUser.id,
           email: dbUser.email,
-          userType: userType,
-          name: dbUser.name || dbUser.company_name || 'Unknown',
-          exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
-        }, 'production-secret-key')
-
-        return c.json({
-          success: true,
-          token,
-          user: {
-            id: dbUser.id,
-            email: dbUser.email,
-            name: dbUser.name || dbUser.company_name || 'Unknown',
-            userType: userType
-          },
-          message: '로그인 성공'
-        })
-      }
+          name: dbUser.name,
+          userType: dbUser.userType
+        },
+        message: '로그인이 성공적으로 완료되었습니다.'
+      })
+    } else {
+      console.log(`❌ Authentication failed for: ${email}`)
       
-      console.log(`No user found in DB for email: ${email}, userType: ${userType}`)
-      
-      // DB에서 찾지 못한 경우, 일반적인 DB 조회도 시도 (userType 무관)
-      console.log(`Attempting generic database search for: ${email}`)
-      const genericUser = await searchUserInAllTables(c.env.DB, email, password)
-      
-      if (genericUser) {
-        console.log(`Found user in generic search:`, genericUser)
-        const token = await sign({
-          id: genericUser.id,
-          email: genericUser.email,
-          userType: genericUser.userType || userType,
-          name: genericUser.name || 'Unknown',
-          exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
-        }, 'production-secret-key')
-
-        return c.json({
-          success: true,
-          token,
-          user: {
-            id: genericUser.id,
-            email: genericUser.email,
-            name: genericUser.name || 'Unknown',
-            userType: genericUser.userType || userType
-          },
-          message: '로그인 성공'
-        })
-      }
-      
-    } catch (dbError) {
-      console.log('실제 DB 조회 실패, 테스트 계정으로 폴백:', dbError)
+      return c.json({
+        success: false,
+        error: '이메일 또는 비밀번호가 올바르지 않습니다.'
+      }, 401)
     }
-    
-    // 로그인 실패
-    console.log(`Login failed for: ${email}`)
-    return c.json({ 
-      success: false, 
-      error: '이메일 또는 비밀번호가 올바르지 않습니다.' 
-    }, 401)
 
   } catch (error) {
-    console.error('Login API error:', error)
+    console.error('🚫 Login error:', error)
     return c.json({ 
       success: false, 
-      error: '로그인 처리 중 오류가 발생했습니다.' 
+      error: '로그인 중 오류가 발생했습니다. 다시 시도해주세요.' 
     }, 500)
   }
 })
 
-// 토큰 검증 API
+// JWT 토큰 검증 API - 대시보드용
 app.get('/api/auth/verify', async (c) => {
   try {
-    const authHeader = c.req.header('Authorization')
+    console.log('🔍 Token verification request received')
     
+    const authHeader = c.req.header('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ Missing or invalid Authorization header')
       return c.json({ 
         success: false, 
-        error: '인증 토큰이 없습니다.' 
+        error: '인증 토큰이 필요합니다.' 
       }, 401)
     }
 
-    const token = authHeader.substring(7) // "Bearer " 제거
+    const token = authHeader.substring(7)
+    console.log('🎫 Extracting token:', token ? 'Present' : 'Missing')
     
+    if (!token) {
+      return c.json({ 
+        success: false, 
+        error: '토큰이 없습니다.' 
+      }, 401)
+    }
+
+    // JWT 토큰 검증 시도 (production-secret-key 먼저)
+    let payload
     try {
-      // 토큰 검증
-      let payload
+      payload = await verify(token, 'production-secret-key')
+      console.log('✅ Token verified with production key')
+    } catch (prodError) {
+      console.log('🔄 Production key failed, trying test key...')
       try {
-        // 먼저 production 키로 검증 시도
-        payload = await verify(token, 'production-secret-key')
-      } catch (prodError) {
-        // production 키 실패 시 test 키로 검증
         payload = await verify(token, 'test-secret-key')
-      }
-      
-      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        console.log('✅ Token verified with test key')
+      } catch (testError) {
+        console.log('❌ Both keys failed:', testError.message)
         return c.json({ 
           success: false, 
-          error: '토큰이 만료되었습니다.' 
+          error: '유효하지 않은 토큰입니다.' 
         }, 401)
       }
+    }
 
+    // 토큰에서 사용자 정보 추출
+    const { id, email, userType, name, exp } = payload as any
+    
+    // 토큰 만료 검사
+    if (exp && exp < Math.floor(Date.now() / 1000)) {
+      console.log('❌ Token expired:', exp, 'vs', Math.floor(Date.now() / 1000))
+      return c.json({ 
+        success: false, 
+        error: '토큰이 만료되었습니다.' 
+      }, 401)
+    }
+
+    console.log('👤 Token payload:', { id, email, userType, name })
+
+    // 데이터베이스에서 사용자 현재 상태 확인
+    const userTables = {
+      'admin': { table: 'admins', nameField: 'name' },
+      'agent': { table: 'agents', nameField: 'company_name' },
+      'employer': { table: 'employers', nameField: 'company_name' },
+      'jobseeker': { table: 'job_seekers', nameField: 'name' },
+      'student': { table: 'job_seekers', nameField: 'name' },
+      'instructor': { table: 'job_seekers', nameField: 'name' }
+    }
+
+    const config = userTables[userType as keyof typeof userTables]
+    if (!config) {
+      console.log('❌ Unknown user type:', userType)
+      return c.json({ 
+        success: false, 
+        error: '알 수 없는 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    try {
+      const query = `
+        SELECT id, email, ${config.nameField} as name, status 
+        FROM ${config.table} 
+        WHERE id = ? AND email = ?
+      `
+      
+      const user = await c.env.DB.prepare(query).bind(id, email).first()
+      
+      if (!user) {
+        console.log('❌ User not found in database')
+        return c.json({ 
+          success: false, 
+          error: '사용자를 찾을 수 없습니다.' 
+        }, 404)
+      }
+
+      // 사용자 활성 상태 확인
+      if (user.status !== 'active' && user.status !== 'approved') {
+        console.log('❌ User not active:', user.status)
+        return c.json({ 
+          success: false, 
+          error: '계정이 비활성 상태입니다.' 
+        }, 403)
+      }
+
+      console.log('✅ User verification successful')
+      
       return c.json({
         success: true,
         user: {
-          id: payload.id,
-          email: payload.email,
-          user_type: payload.userType,
-          name: payload.name
-        }
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          userType: userType,
+          user_type: userType, // 호환성
+          type: userType, // 호환성
+          status: user.status
+        },
+        message: '토큰 검증이 성공적으로 완료되었습니다.'
       })
       
-    } catch (verifyError) {
-      console.error('Token verification failed:', verifyError)
+    } catch (dbError) {
+      console.error('❌ Database verification error:', dbError)
       return c.json({ 
         success: false, 
-        error: '유효하지 않은 토큰입니다.' 
-      }, 401)
+        error: '사용자 정보 확인 중 오류가 발생했습니다.' 
+      }, 500)
     }
 
   } catch (error) {
-    console.error('Token verify API error:', error)
+    console.error('🚫 Token verification error:', error)
     return c.json({ 
       success: false, 
       error: '토큰 검증 중 오류가 발생했습니다.' 
     }, 500)
   }
 })
+
+// 관리자 통계 API
+app.get('/api/admin/stats', async (c) => {
+  try {
+    console.log('📊 관리자 통계 요청 시작')
+    
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '관리자 인증이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+    
+    if (payload.userType !== 'admin') {
+      return c.json({ 
+        success: false, 
+        error: '관리자만 이 기능을 사용할 수 있습니다.' 
+      }, 403)
+    }
+
+    // 데이터베이스에서 통계 수집
+    const totalUsers = await c.env.DB.prepare(`
+      SELECT 
+        (SELECT COUNT(*) FROM admins) as admins,
+        (SELECT COUNT(*) FROM employers) as employers,
+        (SELECT COUNT(*) FROM job_seekers) as jobseekers,
+        (SELECT COUNT(*) FROM agents) as agents
+    `).first()
+
+    const totalJobPostings = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM job_postings
+    `).first()
+
+    const stats = {
+      totalUsers: (totalUsers?.admins || 0) + (totalUsers?.employers || 0) + (totalUsers?.jobseekers || 0) + (totalUsers?.agents || 0),
+      totalEmployers: totalUsers?.employers || 0,
+      totalJobseekers: totalUsers?.jobseekers || 0,
+      totalAgents: totalUsers?.agents || 0,
+      totalJobPostings: totalJobPostings?.count || 0
+    }
+
+    console.log('📊 통계 수집 완료:', stats)
+
+    return c.json({
+      success: true,
+      stats
+    })
+    
+  } catch (error) {
+    console.error('❌ 관리자 통계 오류:', error)
+    return c.json({ 
+      success: false, 
+      error: '통계 데이터 조회 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 통합 회원가입 API
+app.post('/api/auth/register', async (c) => {
+  try {
+    console.log('📝 Registration attempt started')
+    const requestData = await c.req.json()
+    const { email, password, userType, ...userData } = requestData
+    
+    // 기본 입력 검증
+    if (!email || !password || !userType) {
+      return c.json({ 
+        success: false, 
+        error: '이메일, 비밀번호, 사용자 유형은 필수입니다.' 
+      }, 400)
+    }
+
+    if (!validateEmail(email)) {
+      return c.json({ 
+        success: false, 
+        error: '올바른 이메일 형식을 입력해주세요.' 
+      }, 400)
+    }
+
+    if (!validatePassword(password)) {
+      return c.json({ 
+        success: false, 
+        error: '비밀번호는 8자 이상, 영문자와 숫자를 포함해야 합니다.' 
+      }, 400)
+    }
+
+    console.log(`📊 Registration request: ${email} as ${userType}`)
+
+    // 이메일 중복 검사
+    const emailExists = await checkEmailExists(c.env.DB, email)
+    if (emailExists) {
+      return c.json({ 
+        success: false, 
+        error: '이미 등록된 이메일입니다.' 
+      }, 409)
+    }
+
+    // 비밀번호 해시
+    const hashedPassword = await hashPassword(password)
+    console.log(`🔒 Password hashed successfully`)
+
+    // 사용자 유형별 회원가입 처리
+    let userId: number | null = null
+    
+    switch (userType) {
+      case 'admin':
+        userId = await createAdmin(c.env.DB, { email, password: hashedPassword, ...userData })
+        break
+      case 'agent':
+        userId = await createAgent(c.env.DB, { email, password: hashedPassword, ...userData })
+        break
+      case 'employer':
+        userId = await createEmployer(c.env.DB, { email, password: hashedPassword, ...userData })
+        break
+      case 'jobseeker':
+      case 'student':
+      case 'instructor':
+        userId = await createJobSeeker(c.env.DB, { email, password: hashedPassword, ...userData })
+        break
+      default:
+        return c.json({ 
+          success: false, 
+          error: '올바르지 않은 사용자 유형입니다.' 
+        }, 400)
+    }
+
+    if (userId) {
+      console.log(`✅ User registered successfully: ${email} (ID: ${userId})`)
+      
+      return c.json({
+        success: true,
+        message: '회원가입이 성공적으로 완료되었습니다.',
+        userId: userId
+      })
+    } else {
+      console.log(`❌ Registration failed for: ${email}`)
+      
+      return c.json({ 
+        success: false, 
+        error: '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.' 
+      }, 500)
+    }
+
+  } catch (error) {
+    console.error('🚫 Registration error:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    }, 500)
+  }
+})
+
+// 중복 토큰 검증 API 제거됨 - 라인 3629의 더 포괄적인 구현을 사용
 
 // 로그아웃 API
 app.post('/api/auth/logout', async (c) => {
@@ -3205,14 +3955,15 @@ app.post('/api/auth/register', async (c) => {
     const { userType, email, password, confirmPassword, ...additionalData } = requestData
     
     // 기본 검증
-    if (!email || !password || !userType || !confirmPassword) {
+    if (!email || !password || !userType) {
       return c.json({ 
         success: false, 
         error: '필수 정보가 누락되었습니다.' 
       }, 400)
     }
 
-    if (password !== confirmPassword) {
+    // confirmPassword가 있으면 검증
+    if (confirmPassword && password !== confirmPassword) {
       return c.json({ 
         success: false, 
         error: '비밀번호가 일치하지 않습니다.' 
@@ -3242,8 +3993,8 @@ app.post('/api/auth/register', async (c) => {
       }, 400)
     }
 
-    // 비밀번호 해시
-    const hashedPassword = await hash(password)
+    // 비밀번호 평문 저장 (개발/테스트 환경용 - 운영 시 해시 필요)
+    // const hashedPassword = await hash(password)
     
     // 사용자 유형별 회원가입 처리
     let userId: number | null = null
@@ -3252,21 +4003,21 @@ app.post('/api/auth/register', async (c) => {
       case 'jobseeker':
         userId = await createJobSeeker(c.env.DB, { 
           email, 
-          password: hashedPassword, 
+          password: password, // 평문으로 저장
           ...additionalData 
         })
         break
       case 'employer':
         userId = await createEmployer(c.env.DB, { 
           email, 
-          password: hashedPassword, 
+          password: password, // 평문으로 저장
           ...additionalData 
         })
         break
       case 'agent':
         userId = await createAgent(c.env.DB, { 
           email, 
-          password: hashedPassword, 
+          password: password, // 평문으로 저장
           ...additionalData 
         })
         break
@@ -3290,7 +4041,7 @@ app.post('/api/auth/register', async (c) => {
       email: email,
       userType: userType,
       exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
-    }, 'registration-secret-key')
+    }, 'production-secret-key')
 
     return c.json({
       success: true,
@@ -3312,144 +4063,18 @@ app.post('/api/auth/register', async (c) => {
   }
 })
 
-// 이메일 중복 확인 함수
-async function checkEmailExists(db: D1Database, email: string, userType: string): Promise<boolean> {
-  const tables = {
-    'jobseeker': 'job_seekers',
-    'employer': 'employers', 
-    'agent': 'agents',
-    'admin': 'admins'
-  }
-  
-  const tableName = tables[userType as keyof typeof tables]
-  if (!tableName) return false
-  
-  try {
-    const result = await db.prepare(`SELECT id FROM ${tableName} WHERE email = ?`).bind(email).first()
-    return !!result
-  } catch (error) {
-    console.error(`Email check error for ${userType}:`, error)
-    return false
-  }
-}
 
-// 구직자 생성 함수
-async function createJobSeeker(db: D1Database, data: any): Promise<number | null> {
-  try {
-    const { 
-      email, 
-      password, 
-      name, 
-      birth_date, 
-      gender, 
-      nationality, 
-      phone, 
-      current_address, 
-      korean_level = 'beginner',
-      education_level,
-      current_visa,
-      desired_visa
-    } = data
-    
-    if (!name || !nationality) {
-      throw new Error('구직자 필수 정보가 누락되었습니다.')
-    }
-    
-    console.log(`Creating job seeker with email: ${email}, password length: ${password?.length}`)
-    
-    const result = await db.prepare(`
-      INSERT INTO job_seekers (
-        email, password, name, birth_date, gender, nationality, 
-        phone, current_address, korean_level, education_level,
-        current_visa, desired_visa, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
-    `).bind(
-      email, password, name, birth_date || null, gender || null, nationality,
-      phone || null, current_address || null, korean_level, education_level || null,
-      current_visa || null, desired_visa || null
-    ).run()
-    
-    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
-  } catch (error) {
-    console.error('Create job seeker error:', error)
-    return null
-  }
-}
 
-// 기업 생성 함수
-async function createEmployer(db: D1Database, data: any): Promise<number | null> {
-  try {
-    const { 
-      email, 
-      password, 
-      company_name, 
-      business_number, 
-      industry, 
-      contact_person, 
-      phone, 
-      address, 
-      region, 
-      website 
-    } = data
-    
-    if (!company_name || !business_number || !industry || !contact_person || !phone || !address || !region) {
-      throw new Error('기업 필수 정보가 누락되었습니다.')
-    }
-    
-    const result = await db.prepare(`
-      INSERT INTO employers (
-        email, password, company_name, business_number, industry, 
-        contact_person, phone, address, region, website, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-    `).bind(
-      email, password, company_name, business_number, industry,
-      contact_person, phone, address, region, website || null
-    ).run()
-    
-    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
-  } catch (error) {
-    console.error('Create employer error:', error)
-    return null
-  }
-}
 
-// 에이전트 생성 함수
-async function createAgent(db: D1Database, data: any): Promise<number | null> {
-  try {
-    const { 
-      email, 
-      password, 
-      company_name, 
-      country, 
-      contact_person, 
-      phone, 
-      address, 
-      license_number 
-    } = data
-    
-    if (!company_name || !country || !contact_person) {
-      throw new Error('에이전트 필수 정보가 누락되었습니다.')
-    }
-    
-    const result = await db.prepare(`
-      INSERT INTO agents (
-        email, password, company_name, country, contact_person, 
-        phone, address, license_number, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-    `).bind(
-      email, password, company_name, country, contact_person,
-      phone || null, address || null, license_number || null
-    ).run()
-    
-    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
-  } catch (error) {
-    console.error('Create agent error:', error)
-    return null
-  }
-}
+
+
+
+
 
 // 평문 비밀번호로 인증하는 함수 (신규 가입자용)
 async function authenticateUserWithPlainPassword(db: D1Database, email: string, password: string, userType: string) {
+  console.log(`🔑 Plain password auth - Email: ${email}, UserType: ${userType}, Password: ${password.substring(0, 5)}...`)
+  
   const tables = {
     'jobseeker': 'job_seekers',
     'employer': 'employers', 
@@ -3458,7 +4083,11 @@ async function authenticateUserWithPlainPassword(db: D1Database, email: string, 
   }
   
   const tableName = tables[userType as keyof typeof tables]
-  if (!tableName) return null
+  console.log(`📊 Table name for ${userType}:`, tableName)
+  if (!tableName) {
+    console.log(`❌ No table found for userType: ${userType}`)
+    return null
+  }
   
   try {
     let query: string
@@ -3471,7 +4100,19 @@ async function authenticateUserWithPlainPassword(db: D1Database, email: string, 
       query = `SELECT id, email, company_name as name FROM ${tableName} WHERE email = ? AND password = ? AND status IN ('approved', 'active')`
     }
     
+    console.log(`📊 Query:`, query)
+    console.log(`📊 Parameters:`, [email, password])
+    
+    console.log(`📊 Executing query with bind parameters: [${email}, ${password}]`)
     const user = await db.prepare(query).bind(email, password).first()
+    console.log(`📊 Query result:`, user)
+    
+    if (user) {
+      console.log(`✅ Plain password authentication SUCCESS for ${email}`)
+    } else {
+      console.log(`❌ Plain password authentication FAILED for ${email}`)
+    }
+    
     return user
   } catch (error) {
     console.error(`Plain password authentication error for ${userType}:`, error)
@@ -3516,37 +4157,7 @@ async function searchUserInAllTables(db: D1Database, email: string, password: st
   return null
 }
 
-// 실제 데이터베이스 로그인 검증 개선
-async function authenticateUser(db: D1Database, email: string, password: string, userType: string) {
-  const tables = {
-    'jobseeker': 'job_seekers',
-    'employer': 'employers', 
-    'agent': 'agents',
-    'admin': 'admins'
-  }
-  
-  const tableName = tables[userType as keyof typeof tables]
-  if (!tableName) return null
-  
-  try {
-    const hashedPassword = await hash(password)
-    let query: string
-    
-    if (tableName === 'admins') {
-      query = `SELECT id, email, name, role as userType FROM ${tableName} WHERE email = ? AND password = ? AND status = 'active'`
-    } else if (tableName === 'job_seekers') {
-      query = `SELECT id, email, name, nationality, korean_level FROM ${tableName} WHERE email = ? AND password = ? AND status = 'active'`
-    } else {
-      query = `SELECT id, email, company_name as name FROM ${tableName} WHERE email = ? AND password = ? AND status IN ('approved', 'active')`
-    }
-    
-    const user = await db.prepare(query).bind(email, hashedPassword).first()
-    return user
-  } catch (error) {
-    console.error(`Authentication error for ${userType}:`, error)
-    return null
-  }
-}
+
 
 // 구직자 등록 API (별도 엔드포인트) 
 app.post('/api/job-seekers/register', async (c) => {
@@ -3693,6 +4304,1325 @@ function convertKoreanLevel(level: string): string {
 }
 
 
+
+// 🔄 비밀번호 마이그레이션 함수들
+async function migrateUserPasswords(db: D1Database, tableName: string, batchSize: number = 100): Promise<{total: number, migrated: number, errors: number}> {
+  console.log(`🔄 Starting password migration for table: ${tableName}`)
+  
+  let total = 0
+  let migrated = 0 
+  let errors = 0
+  let offset = 0
+  
+  try {
+    // 전체 사용자 수 확인
+    const countResult = await db.prepare(`SELECT COUNT(*) as count FROM ${tableName}`).first()
+    total = countResult?.count || 0
+    console.log(`📊 Total users in ${tableName}: ${total}`)
+    
+    if (total === 0) return { total, migrated, errors }
+    
+    while (offset < total) {
+      try {
+        // 배치 단위로 사용자 조회 (PBKDF2 형식이 아닌 비밀번호만)
+        const users = await db.prepare(`
+          SELECT id, email, password 
+          FROM ${tableName} 
+          WHERE password NOT LIKE '$pbkdf2$%'
+          LIMIT ? OFFSET ?
+        `).bind(batchSize, offset).all()
+        
+        if (!users.results || users.results.length === 0) {
+          console.log(`✅ No more users to migrate in ${tableName}`)
+          break
+        }
+        
+        console.log(`🔄 Processing batch: ${users.results.length} users from ${tableName}`)
+        
+        // 각 사용자의 비밀번호를 PBKDF2로 해시
+        for (const user of users.results) {
+          try {
+            const plainPassword = user.password as string
+            if (!plainPassword || plainPassword.startsWith('$pbkdf2$')) {
+              continue // 이미 마이그레이션된 비밀번호는 스킵
+            }
+            
+            // 새로운 PBKDF2 해시 생성
+            const newHashedPassword = await hashPassword(plainPassword)
+            
+            // 데이터베이스 업데이트
+            await db.prepare(`
+              UPDATE ${tableName} 
+              SET password = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?
+            `).bind(newHashedPassword, user.id).run()
+            
+            migrated++
+            console.log(`✅ Migrated user ${user.email} in ${tableName}`)
+            
+          } catch (userError) {
+            console.error(`❌ Error migrating user ${user.email}:`, userError)
+            errors++
+          }
+        }
+        
+        offset += batchSize
+        
+      } catch (batchError) {
+        console.error(`❌ Batch processing error for ${tableName}:`, batchError)
+        errors++
+        offset += batchSize
+      }
+    }
+    
+  } catch (error) {
+    console.error(`❌ Migration error for ${tableName}:`, error)
+    errors++
+  }
+  
+  console.log(`📈 Migration complete for ${tableName}: ${migrated}/${total} users migrated, ${errors} errors`)
+  return { total, migrated, errors }
+}
+
+// 데이터베이스 스키마 마이그레이션 API
+app.post('/api/admin/run-migration', async (c) => {
+  try {
+    console.log('🚀 Database migration started')
+    
+    // 관리자 권한 확인
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '관리자 인증이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+    
+    if (payload.userType !== 'admin') {
+      return c.json({ 
+        success: false, 
+        error: '관리자만 이 기능을 사용할 수 있습니다.' 
+      }, 403)
+    }
+
+    // 2FA 컬럼 추가 마이그레이션
+    const migrations = []
+    
+    try {
+      // 관리자 테이블에 2FA 컬럼 추가
+      await c.env.DB.prepare(`
+        ALTER TABLE admins ADD COLUMN two_factor_enabled INTEGER DEFAULT 0
+      `).run()
+      migrations.push('admins.two_factor_enabled')
+    } catch (e) {
+      console.log('admins.two_factor_enabled already exists or error:', e.message)
+    }
+    
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE admins ADD COLUMN two_factor_phone TEXT
+      `).run()
+      migrations.push('admins.two_factor_phone')
+    } catch (e) {
+      console.log('admins.two_factor_phone already exists or error:', e.message)
+    }
+
+    // 에이전트 테이블
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE agents ADD COLUMN two_factor_enabled INTEGER DEFAULT 0
+      `).run()
+      migrations.push('agents.two_factor_enabled')
+    } catch (e) {
+      console.log('agents.two_factor_enabled already exists or error:', e.message)
+    }
+    
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE agents ADD COLUMN two_factor_phone TEXT
+      `).run()
+      migrations.push('agents.two_factor_phone')
+    } catch (e) {
+      console.log('agents.two_factor_phone already exists or error:', e.message)
+    }
+
+    // 기업 테이블
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE employers ADD COLUMN two_factor_enabled INTEGER DEFAULT 0
+      `).run()
+      migrations.push('employers.two_factor_enabled')
+    } catch (e) {
+      console.log('employers.two_factor_enabled already exists or error:', e.message)
+    }
+    
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE employers ADD COLUMN two_factor_phone TEXT
+      `).run()
+      migrations.push('employers.two_factor_phone')
+    } catch (e) {
+      console.log('employers.two_factor_phone already exists or error:', e.message)
+    }
+
+    // 구직자 테이블
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE job_seekers ADD COLUMN two_factor_enabled INTEGER DEFAULT 0
+      `).run()
+      migrations.push('job_seekers.two_factor_enabled')
+    } catch (e) {
+      console.log('job_seekers.two_factor_enabled already exists or error:', e.message)
+    }
+    
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE job_seekers ADD COLUMN two_factor_phone TEXT
+      `).run()
+      migrations.push('job_seekers.two_factor_phone')
+    } catch (e) {
+      console.log('job_seekers.two_factor_phone already exists or error:', e.message)
+    }
+
+    // OTP 토큰 테이블 생성
+    try {
+      await c.env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS otp_tokens (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT NOT NULL,
+          userType TEXT NOT NULL,
+          otp_code TEXT NOT NULL,
+          expires_at DATETIME NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run()
+      migrations.push('otp_tokens table')
+    } catch (e) {
+      console.log('otp_tokens table creation error:', e.message)
+    }
+
+    // 비밀번호 재설정 테이블 생성
+    try {
+      await c.env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT NOT NULL,
+          userType TEXT NOT NULL,
+          reset_token TEXT NOT NULL UNIQUE,
+          expires_at DATETIME NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          used_at DATETIME NULL
+        )
+      `).run()
+      migrations.push('password_reset_tokens table')
+    } catch (e) {
+      console.log('password_reset_tokens table creation error:', e.message)
+    }
+
+    // 인덱스 생성
+    try {
+      await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_otp_email_usertype ON otp_tokens(email, userType)`).run()
+      await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(reset_token)`).run()
+      migrations.push('security indices')
+    } catch (e) {
+      console.log('Index creation error:', e.message)
+    }
+
+    console.log(`✅ Migration completed. Applied: ${migrations.join(', ')}`)
+    
+    return c.json({
+      success: true,
+      message: '데이터베이스 마이그레이션이 완료되었습니다.',
+      migrations: migrations,
+      timestamp: new Date().toISOString()
+    })
+
+  } catch (error) {
+    console.error('❌ Migration error:', error)
+    return c.json({ 
+      success: false, 
+      error: '마이그레이션 중 오류가 발생했습니다.',
+      details: error.message
+    }, 500)
+  }
+})
+
+// 관리자 전용 비밀번호 마이그레이션 API
+app.post('/api/admin/migrate-passwords', async (c) => {
+  try {
+    console.log('🚀 Password migration started')
+    
+    // 관리자 권한 확인
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '관리자 인증이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+    
+    // 관리자 권한 확인
+    if (payload.userType !== 'admin') {
+      return c.json({ 
+        success: false, 
+        error: '관리자만 이 기능을 사용할 수 있습니다.' 
+      }, 403)
+    }
+
+    // 모든 테이블에서 비밀번호 마이그레이션 실행
+    const tables = ['admins', 'agents', 'employers', 'job_seekers']
+    const results = {}
+    let totalMigrated = 0
+    let totalErrors = 0
+    
+    for (const table of tables) {
+      try {
+        console.log(`🔄 Migrating ${table}...`)
+        const result = await migrateUserPasswords(c.env.DB, table)
+        results[table] = result
+        totalMigrated += result.migrated
+        totalErrors += result.errors
+        
+        // 테이블 간 잠시 대기 (부하 분산)
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+      } catch (tableError) {
+        console.error(`❌ Error migrating table ${table}:`, tableError)
+        results[table] = { total: 0, migrated: 0, errors: 1 }
+        totalErrors++
+      }
+    }
+    
+    console.log(`✅ Password migration completed. Total migrated: ${totalMigrated}, Total errors: ${totalErrors}`)
+    
+    return c.json({
+      success: true,
+      message: '비밀번호 마이그레이션이 완료되었습니다.',
+      results: results,
+      summary: {
+        totalMigrated,
+        totalErrors,
+        timestamp: new Date().toISOString()
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Migration API error:', error)
+    return c.json({ 
+      success: false, 
+      error: '마이그레이션 중 오류가 발생했습니다.',
+      details: error.message
+    }, 500)
+  }
+})
+
+// 비밀번호 마이그레이션 상태 확인 API
+app.get('/api/admin/migration-status', async (c) => {
+  try {
+    // 관리자 권한 확인
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '관리자 인증이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+    
+    if (payload.userType !== 'admin') {
+      return c.json({ 
+        success: false, 
+        error: '관리자만 이 기능을 사용할 수 있습니다.' 
+      }, 403)
+    }
+
+    // 각 테이블의 마이그레이션 상태 확인
+    const tables = ['admins', 'agents', 'employers', 'job_seekers']
+    const status = {}
+    
+    for (const table of tables) {
+      try {
+        const totalResult = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM ${table}`).first()
+        const migratedResult = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM ${table} WHERE password LIKE '$pbkdf2$%'`).first()
+        const pendingResult = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM ${table} WHERE password NOT LIKE '$pbkdf2$%'`).first()
+        
+        status[table] = {
+          total: totalResult?.count || 0,
+          migrated: migratedResult?.count || 0,
+          pending: pendingResult?.count || 0,
+          percentage: totalResult?.count > 0 ? Math.round((migratedResult?.count / totalResult?.count) * 100) : 0
+        }
+        
+      } catch (tableError) {
+        console.error(`Error checking ${table}:`, tableError)
+        status[table] = { total: 0, migrated: 0, pending: 0, percentage: 0, error: tableError.message }
+      }
+    }
+    
+    return c.json({
+      success: true,
+      status: status,
+      timestamp: new Date().toISOString()
+    })
+    
+  } catch (error) {
+    console.error('Migration status error:', error)
+    return c.json({ 
+      success: false, 
+      error: '마이그레이션 상태 확인 중 오류가 발생했습니다.',
+      details: error.message
+    }, 500)
+  }
+})
+
+// 🔐 추가 보안 기능들
+
+// 6자리 OTP 생성 함수
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+// 비밀번호 재설정 토큰 생성 함수
+function generateResetToken(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let token = ''
+  for (let i = 0; i < 32; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return token
+}
+
+// 이메일 발송 시뮬레이션 함수 (실제로는 SendGrid, AWS SES 등 사용)
+async function sendEmail(to: string, subject: string, content: string): Promise<boolean> {
+  try {
+    // 실제 환경에서는 이메일 서비스 API 호출
+    console.log(`📧 Email sent to ${to}:`)
+    console.log(`Subject: ${subject}`)
+    console.log(`Content: ${content}`)
+    
+    // 시뮬레이션: 성공으로 처리
+    return true
+  } catch (error) {
+    console.error('Email sending error:', error)
+    return false
+  }
+}
+
+// 2FA 활성화 API
+app.post('/api/auth/enable-2fa', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '로그인이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+
+    const { email, userType } = payload
+    const { phone } = await c.req.json()
+
+    if (!phone || phone.length < 10) {
+      return c.json({ 
+        success: false, 
+        error: '유효한 휴대폰 번호가 필요합니다.' 
+      }, 400)
+    }
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    // 먼저 사용자 존재 여부 확인
+    const userCheck = await c.env.DB.prepare(`
+      SELECT id, email FROM ${tableName} WHERE email = ?
+    `).bind(email).first()
+
+    if (!userCheck) {
+      return c.json({ 
+        success: false, 
+        error: '사용자를 찾을 수 없습니다.' 
+      }, 404)
+    }
+
+    // 2FA 컬럼 존재 여부 확인 후 업데이트
+    try {
+      const result = await c.env.DB.prepare(`
+        UPDATE ${tableName} 
+        SET two_factor_enabled = 1, 
+            two_factor_phone = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE email = ?
+      `).bind(phone, email).run()
+
+      if (result.success && result.changes > 0) {
+        console.log(`✅ 2FA enabled for user: ${email}`)
+        
+        return c.json({
+          success: true,
+          message: '2단계 인증이 활성화되었습니다.',
+          twoFactorEnabled: true,
+          phone: phone.replace(/(\d{3})-?(\d{4})-?(\d{4})/, '$1-****-$3')
+        })
+      } else {
+        return c.json({ 
+          success: false, 
+          error: '사용자 업데이트에 실패했습니다.' 
+        }, 500)
+      }
+    } catch (dbError) {
+      console.error('2FA database error:', dbError)
+      
+      // 컬럼이 없는 경우 자동으로 추가 시도
+      if (dbError.message.includes('no such column')) {
+        try {
+          await c.env.DB.prepare(`ALTER TABLE ${tableName} ADD COLUMN two_factor_enabled INTEGER DEFAULT 0`).run()
+          await c.env.DB.prepare(`ALTER TABLE ${tableName} ADD COLUMN two_factor_phone TEXT`).run()
+          
+          // 다시 시도
+          const retryResult = await c.env.DB.prepare(`
+            UPDATE ${tableName} 
+            SET two_factor_enabled = 1, 
+                two_factor_phone = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE email = ?
+          `).bind(phone, email).run()
+
+          if (retryResult.success) {
+            console.log(`✅ 2FA enabled for user after column creation: ${email}`)
+            return c.json({
+              success: true,
+              message: '2단계 인증이 활성화되었습니다.',
+              twoFactorEnabled: true,
+              phone: phone.replace(/(\d{3})-?(\d{4})-?(\d{4})/, '$1-****-$3')
+            })
+          }
+        } catch (alterError) {
+          console.error('Column creation error:', alterError)
+        }
+      }
+      
+      return c.json({ 
+        success: false, 
+        error: '2단계 인증 활성화 중 데이터베이스 오류가 발생했습니다.',
+        details: dbError.message
+      }, 500)
+    }
+
+  } catch (error) {
+    console.error('2FA enable error:', error)
+    return c.json({ 
+      success: false, 
+      error: '2단계 인증 설정 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 2FA 비활성화 API
+app.post('/api/auth/disable-2fa', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '로그인이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+
+    const { email, userType } = payload
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    // 2FA 설정 제거
+    const result = await c.env.DB.prepare(`
+      UPDATE ${tableName} 
+      SET two_factor_enabled = 0, 
+          two_factor_phone = NULL,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE email = ?
+    `).bind(email).run()
+
+    if (result.success) {
+      console.log(`✅ 2FA disabled for user: ${email}`)
+      
+      return c.json({
+        success: true,
+        message: '2단계 인증이 비활성화되었습니다.',
+        twoFactorEnabled: false
+      })
+    } else {
+      return c.json({ 
+        success: false, 
+        error: '2단계 인증 비활성화에 실패했습니다.' 
+      }, 500)
+    }
+
+  } catch (error) {
+    console.error('2FA disable error:', error)
+    return c.json({ 
+      success: false, 
+      error: '2단계 인증 설정 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// OTP 전송 API (로그인 시 사용)
+app.post('/api/auth/send-otp', async (c) => {
+  try {
+    const { email, userType } = await c.req.json()
+
+    if (!email || !userType) {
+      return c.json({ 
+        success: false, 
+        error: '이메일과 사용자 유형이 필요합니다.' 
+      }, 400)
+    }
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    // 사용자 2FA 설정 확인
+    const user = await c.env.DB.prepare(`
+      SELECT email, two_factor_enabled, two_factor_phone 
+      FROM ${tableName} 
+      WHERE email = ? AND two_factor_enabled = 1
+    `).bind(email).first()
+
+    if (!user) {
+      return c.json({ 
+        success: false, 
+        error: '2단계 인증이 설정되지 않은 사용자입니다.' 
+      }, 404)
+    }
+
+    // OTP 생성 및 저장
+    const otp = generateOTP()
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000) // 5분 후 만료
+
+    // OTP를 임시 저장 (실제로는 Redis 등 사용)
+    await c.env.DB.prepare(`
+      INSERT OR REPLACE INTO otp_tokens (email, userType, otp_code, expires_at, created_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).bind(email, userType, otp, expiresAt.toISOString()).run()
+
+    // SMS 발송 시뮬레이션 (실제로는 Twilio, AWS SNS 등 사용)
+    console.log(`📱 SMS sent to ${user.two_factor_phone}: Your OTP is ${otp}`)
+
+    return c.json({
+      success: true,
+      message: 'OTP 코드가 전송되었습니다.',
+      expiresIn: 300 // 5분
+    })
+
+  } catch (error) {
+    console.error('OTP send error:', error)
+    return c.json({ 
+      success: false, 
+      error: 'OTP 전송 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// OTP 검증 API
+app.post('/api/auth/verify-otp', async (c) => {
+  try {
+    const { email, userType, otp } = await c.req.json()
+
+    if (!email || !userType || !otp) {
+      return c.json({ 
+        success: false, 
+        error: '이메일, 사용자 유형, OTP 코드가 필요합니다.' 
+      }, 400)
+    }
+
+    // OTP 검증
+    const otpRecord = await c.env.DB.prepare(`
+      SELECT * FROM otp_tokens 
+      WHERE email = ? AND userType = ? AND otp_code = ? 
+      AND datetime(expires_at) > datetime('now')
+    `).bind(email, userType, otp).first()
+
+    if (!otpRecord) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않거나 만료된 OTP 코드입니다.' 
+      }, 400)
+    }
+
+    // OTP 사용 처리
+    await c.env.DB.prepare(`
+      DELETE FROM otp_tokens 
+      WHERE email = ? AND userType = ? AND otp_code = ?
+    `).bind(email, userType, otp).run()
+
+    console.log(`✅ OTP verified for user: ${email}`)
+
+    return c.json({
+      success: true,
+      message: 'OTP 인증이 완료되었습니다.'
+    })
+
+  } catch (error) {
+    console.error('OTP verify error:', error)
+    return c.json({ 
+      success: false, 
+      error: 'OTP 검증 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 비밀번호 재설정 요청 API
+app.post('/api/auth/request-password-reset', async (c) => {
+  try {
+    const { email, userType } = await c.req.json()
+
+    if (!email || !userType) {
+      return c.json({ 
+        success: false, 
+        error: '이메일과 사용자 유형이 필요합니다.' 
+      }, 400)
+    }
+
+    if (!validateEmail(email)) {
+      return c.json({ 
+        success: false, 
+        error: '올바른 이메일 형식이 아닙니다.' 
+      }, 400)
+    }
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    // 사용자 존재 여부 확인
+    const user = await c.env.DB.prepare(`
+      SELECT email FROM ${tableName} WHERE email = ?
+    `).bind(email).first()
+
+    if (!user) {
+      // 보안상 사용자 존재 여부를 노출하지 않음
+      return c.json({
+        success: true,
+        message: '비밀번호 재설정 링크가 이메일로 전송되었습니다.'
+      })
+    }
+
+    // 재설정 토큰 생성
+    const resetToken = generateResetToken()
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1시간 후 만료
+
+    // 토큰 저장
+    await c.env.DB.prepare(`
+      INSERT OR REPLACE INTO password_reset_tokens (email, userType, reset_token, expires_at, created_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).bind(email, userType, resetToken, expiresAt.toISOString()).run()
+
+    // 이메일 발송
+    const resetLink = `https://b2c2d104.w-campus.pages.dev/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}&type=${userType}`
+    const emailContent = `
+      안녕하세요,
+      
+      비밀번호 재설정을 요청하셨습니다.
+      아래 링크를 클릭하여 새 비밀번호를 설정해주세요:
+      
+      ${resetLink}
+      
+      이 링크는 1시간 후에 만료됩니다.
+      만약 비밀번호 재설정을 요청하지 않으셨다면, 이 이메일을 무시해주세요.
+      
+      감사합니다.
+      WOW-CAMPUS K-Work Platform
+    `
+
+    const emailSent = await sendEmail(email, 'WOW-CAMPUS 비밀번호 재설정', emailContent)
+    
+    console.log(`🔒 Password reset requested for: ${email}, Token: ${resetToken}`)
+
+    return c.json({
+      success: true,
+      message: '비밀번호 재설정 링크가 이메일로 전송되었습니다.',
+      // 개발 환경에서만 토큰 노출 (실제 운영에서는 제거)
+      ...(process.env.NODE_ENV === 'development' && { resetToken, resetLink })
+    })
+
+  } catch (error) {
+    console.error('Password reset request error:', error)
+    return c.json({ 
+      success: false, 
+      error: '비밀번호 재설정 요청 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 비밀번호 재설정 확인 API
+app.post('/api/auth/reset-password', async (c) => {
+  try {
+    const { token, email, userType, newPassword } = await c.req.json()
+
+    if (!token || !email || !userType || !newPassword) {
+      return c.json({ 
+        success: false, 
+        error: '모든 필드가 필요합니다.' 
+      }, 400)
+    }
+
+    // 비밀번호 강도 검증
+    if (newPassword.length < 8 || !/(?=.*[a-zA-Z])(?=.*\d)/.test(newPassword)) {
+      return c.json({ 
+        success: false, 
+        error: '비밀번호는 8자 이상, 영문자와 숫자를 포함해야 합니다.' 
+      }, 400)
+    }
+
+    // 토큰 검증
+    const tokenRecord = await c.env.DB.prepare(`
+      SELECT * FROM password_reset_tokens 
+      WHERE email = ? AND userType = ? AND reset_token = ?
+      AND datetime(expires_at) > datetime('now')
+    `).bind(email, userType, token).first()
+
+    if (!tokenRecord) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않거나 만료된 재설정 토큰입니다.' 
+      }, 400)
+    }
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    // 새 비밀번호 해싱
+    const hashedPassword = await hashPassword(newPassword)
+
+    // 비밀번호 업데이트
+    const result = await c.env.DB.prepare(`
+      UPDATE ${tableName} 
+      SET password = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE email = ?
+    `).bind(hashedPassword, email).run()
+
+    if (result.success) {
+      // 사용된 토큰 삭제
+      await c.env.DB.prepare(`
+        DELETE FROM password_reset_tokens 
+        WHERE email = ? AND userType = ? AND reset_token = ?
+      `).bind(email, userType, token).run()
+
+      console.log(`✅ Password reset completed for: ${email}`)
+
+      return c.json({
+        success: true,
+        message: '비밀번호가 성공적으로 재설정되었습니다.'
+      })
+    } else {
+      return c.json({ 
+        success: false, 
+        error: '비밀번호 재설정에 실패했습니다.' 
+      }, 500)
+    }
+
+  } catch (error) {
+    console.error('Password reset error:', error)
+    return c.json({ 
+      success: false, 
+      error: '비밀번호 재설정 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 보안 설정 조회 API
+app.get('/api/auth/security-settings', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '로그인이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+
+    const { email, userType } = payload
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    // 보안 설정 조회 (2FA 컬럼 없는 경우 대비)
+    let user
+    try {
+      user = await c.env.DB.prepare(`
+        SELECT 
+          email,
+          two_factor_enabled,
+          two_factor_phone,
+          updated_at
+        FROM ${tableName} 
+        WHERE email = ?
+      `).bind(email).first()
+    } catch (dbError) {
+      // 2FA 컬럼이 없는 경우 기본 정보만 조회
+      if (dbError.message.includes('no such column')) {
+        user = await c.env.DB.prepare(`
+          SELECT 
+            email,
+            updated_at
+          FROM ${tableName} 
+          WHERE email = ?
+        `).bind(email).first()
+        
+        if (user) {
+          user.two_factor_enabled = 0
+          user.two_factor_phone = null
+        }
+      } else {
+        throw dbError
+      }
+    }
+
+    if (!user) {
+      return c.json({ 
+        success: false, 
+        error: '사용자를 찾을 수 없습니다.' 
+      }, 404)
+    }
+
+    return c.json({
+      success: true,
+      settings: {
+        email: user.email,
+        userType: userType,
+        twoFactorEnabled: !!user.two_factor_enabled,
+        twoFactorPhone: user.two_factor_phone ? 
+          user.two_factor_phone.replace(/(\d{3})-?(\d{4})-?(\d{4})/, '$1-****-$3') : null,
+        lastUpdated: user.updated_at,
+        // UI에서 활용할 수 있는 추가 정보
+        canEnable2FA: !user.two_factor_enabled,
+        securityLevel: user.two_factor_enabled ? 'high' : 'medium'
+      }
+    })
+
+  } catch (error) {
+    console.error('Security settings error:', error)
+    return c.json({ 
+      success: false, 
+      error: '보안 설정 조회 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 보안 설정 업데이트 API (UI 연동용)
+app.post('/api/auth/update-security', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '로그인이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+
+    const { email, userType } = payload
+    const { action, phone } = await c.req.json()
+
+    if (!action) {
+      return c.json({ 
+        success: false, 
+        error: '작업을 선택해주세요.' 
+      }, 400)
+    }
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    if (action === 'enable_2fa') {
+      if (!phone || phone.length < 10) {
+        return c.json({ 
+          success: false, 
+          error: '유효한 휴대폰 번호가 필요합니다.' 
+        }, 400)
+      }
+
+      try {
+        const result = await c.env.DB.prepare(`
+          UPDATE ${tableName} 
+          SET two_factor_enabled = 1, 
+              two_factor_phone = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE email = ?
+        `).bind(phone, email).run()
+
+        if (result.success) {
+          return c.json({
+            success: true,
+            message: '2단계 인증이 활성화되었습니다.',
+            settings: {
+              twoFactorEnabled: true,
+              twoFactorPhone: phone.replace(/(\d{3})-?(\d{4})-?(\d{4})/, '$1-****-$3')
+            }
+          })
+        }
+      } catch (dbError) {
+        if (dbError.message.includes('no such column')) {
+          try {
+            await c.env.DB.prepare(`ALTER TABLE ${tableName} ADD COLUMN two_factor_enabled INTEGER DEFAULT 0`).run()
+            await c.env.DB.prepare(`ALTER TABLE ${tableName} ADD COLUMN two_factor_phone TEXT`).run()
+            
+            const retryResult = await c.env.DB.prepare(`
+              UPDATE ${tableName} 
+              SET two_factor_enabled = 1, 
+                  two_factor_phone = ?
+              WHERE email = ?
+            `).bind(phone, email).run()
+
+            if (retryResult.success) {
+              return c.json({
+                success: true,
+                message: '2단계 인증이 활성화되었습니다.',
+                settings: {
+                  twoFactorEnabled: true,
+                  twoFactorPhone: phone.replace(/(\d{3})-?(\d{4})-?(\d{4})/, '$1-****-$3')
+                }
+              })
+            }
+          } catch (alterError) {
+            console.error('Column creation error:', alterError)
+          }
+        }
+        throw dbError
+      }
+    } 
+    else if (action === 'disable_2fa') {
+      try {
+        const result = await c.env.DB.prepare(`
+          UPDATE ${tableName} 
+          SET two_factor_enabled = 0, 
+              two_factor_phone = NULL,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE email = ?
+        `).bind(email).run()
+
+        if (result.success) {
+          return c.json({
+            success: true,
+            message: '2단계 인증이 비활성화되었습니다.',
+            settings: {
+              twoFactorEnabled: false,
+              twoFactorPhone: null
+            }
+          })
+        }
+      } catch (dbError) {
+        if (dbError.message.includes('no such column')) {
+          // 컬럼이 없으면 이미 비활성화된 상태로 간주
+          return c.json({
+            success: true,
+            message: '2단계 인증이 비활성화되었습니다.',
+            settings: {
+              twoFactorEnabled: false,
+              twoFactorPhone: null
+            }
+          })
+        }
+        throw dbError
+      }
+    }
+    else {
+      return c.json({ 
+        success: false, 
+        error: '지원하지 않는 작업입니다.' 
+      }, 400)
+    }
+
+    return c.json({ 
+      success: false, 
+      error: '설정 업데이트에 실패했습니다.' 
+    }, 500)
+
+  } catch (error) {
+    console.error('Security update error:', error)
+    return c.json({ 
+      success: false, 
+      error: '보안 설정 업데이트 중 오류가 발생했습니다.',
+      details: error.message
+    }, 500)
+  }
+})
+
+// UI용 보안 기능 상태 조회 API
+app.get('/api/auth/security-features', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '로그인이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+
+    const { userType } = payload
+
+    // 사용자 유형별 사용 가능한 보안 기능
+    const features = {
+      'admin': {
+        twoFactorAuth: true,
+        passwordReset: true,
+        securityLogs: true,
+        migration: true,
+        adminPanel: true
+      },
+      'agent': {
+        twoFactorAuth: true,
+        passwordReset: true,
+        securityLogs: false,
+        migration: false,
+        adminPanel: false
+      },
+      'employer': {
+        twoFactorAuth: true,
+        passwordReset: true,
+        securityLogs: false,
+        migration: false,
+        adminPanel: false
+      },
+      'jobseeker': {
+        twoFactorAuth: true,
+        passwordReset: true,
+        securityLogs: false,
+        migration: false,
+        adminPanel: false
+      }
+    }
+
+    return c.json({
+      success: true,
+      features: features[userType] || features['jobseeker'],
+      userType: userType
+    })
+
+  } catch (error) {
+    console.error('Security features error:', error)
+    return c.json({ 
+      success: false, 
+      error: '보안 기능 조회 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
 
 // 헬스체크 엔드포인트
 app.get('/health', async (c) => {
@@ -4285,5 +6215,1313 @@ app.post('/api/admin/seed-database', async (c) => {
   }
 })
 
+
+// 관리자 대시보드 - 로딩 화면과 함께 안전한 인증 처리
+app.get('/static/admin-dashboard.html', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOW-CAMPUS 관리자 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+        .card-shadow:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 로딩 화면 -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">관리자 대시보드 로딩 중...</p>
+            <p id="loading-status" class="text-sm text-gray-400 mt-2">인증 확인 중</p>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 컨텐츠 (처음에는 숨김) -->
+    <div id="dashboard-content" class="hidden">
+        <header class="bg-white shadow-md border-b-2 border-blue-600">
+            <div class="container mx-auto px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <a href="/" class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-user-shield text-white text-xl"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <h1 class="text-2xl font-bold text-blue-600">WOW-CAMPUS</h1>
+                            <span class="text-xs text-gray-500">관리자 대시보드</span>
+                        </div>
+                    </a>
+                    <div class="flex items-center space-x-4">
+                        <span id="admin-name" class="text-sm text-gray-600">관리자님 환영합니다</span>
+                        <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                            <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="container mx-auto px-6 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl card-shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">총 사용자</p>
+                            <p id="total-users" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl card-shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">구인기업</p>
+                            <p id="total-employers" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-building text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl card-shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">구직자</p>
+                            <p id="total-jobseekers" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-user-tie text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl card-shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">에이전트</p>
+                            <p id="total-agents" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-handshake text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">관리자 기능</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button class="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors">
+                        <i class="fas fa-users text-blue-600 text-xl mb-2"></i>
+                        <h3 class="font-semibold text-gray-800">사용자 관리</h3>
+                        <p class="text-sm text-gray-600">전체 사용자 계정 관리</p>
+                    </button>
+                    <button class="p-4 bg-green-50 hover:bg-green-100 rounded-lg text-left transition-colors">
+                        <i class="fas fa-briefcase text-green-600 text-xl mb-2"></i>
+                        <h3 class="font-semibold text-gray-800">구인공고 관리</h3>
+                        <p class="text-sm text-gray-600">구인공고 승인 및 관리</p>
+                    </button>
+                    <button class="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors">
+                        <i class="fas fa-chart-bar text-purple-600 text-xl mb-2"></i>
+                        <h3 class="font-semibold text-gray-800">통계 분석</h3>
+                        <p class="text-sm text-gray-600">시스템 사용 통계 확인</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        console.log('🔵 관리자 대시보드 페이지 시작');
+        let authCheckComplete = false;
+        
+        // 로딩 상태 업데이트
+        function updateLoadingStatus(message) {
+            const statusEl = document.getElementById('loading-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+                console.log('📱 로딩 상태:', message);
+            }
+        }
+        
+        // 대시보드 표시
+        function showDashboard() {
+            updateLoadingStatus('대시보드 준비 완료');
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('dashboard-content').classList.remove('hidden');
+                console.log('✅ 관리자 대시보드 표시 완료');
+            }, 500);
+        }
+        
+        // 로그인 페이지로 리다이렉트 (천천히)
+        function redirectToLogin(reason) {
+            console.log('❌ 로그인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('로그인이 필요합니다. 잠시 후 이동...');
+            setTimeout(() => {
+                window.location.href = '/static/login.html';
+            }, 2000);
+        }
+        
+        // 메인 페이지로 리다이렉트 (권한 없음)
+        function redirectToHome(reason) {
+            console.log('🏠 메인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('권한이 없습니다. 잠시 후 이동...');
+            setTimeout(() => {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '/';
+            }, 2000);
+        }
+        
+        // URL에서 토큰 추출 및 저장
+        function handleURLToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                console.log('🔗 URL에서 토큰 발견, localStorage에 저장');
+                localStorage.setItem('token', urlToken);
+                // URL에서 토큰 파라미터 제거 (보안상)
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // 종합적인 인증 검사
+        async function performAuthCheck() {
+            updateLoadingStatus('토큰 확인 중...');
+            
+            // 1단계: URL 토큰 처리
+            handleURLToken();
+            
+            // 2단계: localStorage에서 토큰 확인
+            const token = localStorage.getItem('token');
+            if (!token) {
+                redirectToLogin('토큰이 없음');
+                return;
+            }
+            
+            console.log('🔑 토큰 확인됨');
+            updateLoadingStatus('사용자 정보 확인 중...');
+            
+            // 3단계: 서버에서 토큰 검증 및 사용자 정보 확인
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.log('🚫 서버 토큰 검증 실패:', response.status);
+                    redirectToLogin('토큰 검증 실패');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    console.log('🚫 사용자 정보 없음:', data);
+                    redirectToLogin('사용자 정보 확인 실패');
+                    return;
+                }
+                
+                const user = data.user;
+                console.log('👤 사용자 정보 확인됨:', user);
+                
+                // 4단계: 관리자 권한 확인
+                const isAdmin = user.user_type === 'admin' || user.userType === 'admin' || user.type === 'admin';
+                if (!isAdmin) {
+                    console.log('🚫 관리자 권한 없음:', user);
+                    redirectToHome('관리자 권한 필요');
+                    return;
+                }
+                
+                // 5단계: localStorage에 사용자 정보 저장
+                console.log('✅ 관리자 권한 확인됨');
+                updateLoadingStatus('대시보드 로딩 중...');
+                
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // 6단계: UI 업데이트 및 대시보드 표시
+                const adminNameEl = document.getElementById('admin-name');
+                if (adminNameEl) {
+                    adminNameEl.textContent = user.name ? user.name + '님 환영합니다' : '관리자님 환영합니다';
+                }
+                
+                // 7단계: 통계 데이터 로드 후 대시보드 표시
+                await loadStats();
+                authCheckComplete = true;
+                showDashboard();
+                
+            } catch (error) {
+                console.error('🚨 인증 검사 중 오류:', error);
+                updateLoadingStatus('네트워크 오류 발생...');
+                redirectToLogin('네트워크 오류');
+            }
+        }
+        
+        // 통계 데이터 로드
+        async function loadStats() {
+            try {
+                updateLoadingStatus('통계 데이터 로딩 중...');
+                const response = await fetch('/api/admin/stats', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        document.getElementById('total-users').textContent = data.stats.totalUsers || '0';
+                        document.getElementById('total-employers').textContent = data.stats.totalEmployers || '0';
+                        document.getElementById('total-jobseekers').textContent = data.stats.totalJobseekers || '0';
+                        document.getElementById('total-agents').textContent = data.stats.totalAgents || '0';
+                        console.log('📊 통계 데이터 로드 완료');
+                    }
+                }
+            } catch (error) {
+                console.error('📊 통계 로드 오류:', error);
+                // 오류가 있어도 계속 진행
+            }
+        }
+        
+        // 로그아웃
+        function setupLogoutHandler() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (confirm('로그아웃 하시겠습니까?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = '/';
+                    }
+                });
+            }
+        }
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 관리자 대시보드 DOM 로드 완료');
+            setupLogoutHandler();
+            
+            // 충분한 지연 후 인증 검사 시작
+            setTimeout(function() {
+                console.log('🚀 인증 검사 시작 (2초 지연)');
+                performAuthCheck();
+            }, 2000);
+        });
+        
+        // 페이지를 떠나기 전에 인증이 완료되지 않았다면 경고
+        window.addEventListener('beforeunload', function(e) {
+            if (!authCheckComplete) {
+                console.log('⚠️ 인증이 완료되지 않은 상태에서 페이지를 떠남');
+            }
+        });
+    </script>
+</body>
+</html>`)
+})
+
+// 에이전트 대시보드
+app.get('/static/agent-dashboard.html', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOW-CAMPUS 에이전트 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #9333ea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 로딩 화면 -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">에이전트 대시보드 로딩 중...</p>
+            <p id="loading-status" class="text-sm text-gray-400 mt-2">인증 확인 중</p>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 컨텐츠 (처음에는 숨김) -->
+    <div id="dashboard-content" class="hidden">
+        <header class="bg-white shadow-md border-b-2 border-purple-600">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-handshake text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-purple-600">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">에이전트 대시보드</span>
+                    </div>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <span id="agent-name" class="text-sm text-gray-600">에이전트님 환영합니다</span>
+                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container mx-auto px-6 py-8">
+        <div class="bg-white rounded-lg shadow p-6 text-center">
+            <h2 class="text-2xl font-bold mb-4">에이전트 대시보드</h2>
+            <p class="text-gray-600 mb-4">에이전트 관리 시스템에 오신 것을 환영합니다.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                <div class="p-6 bg-purple-50 rounded-lg">
+                    <i class="fas fa-users text-purple-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">구직자 관리</h3>
+                    <p class="text-gray-600 text-sm">등록된 구직자 현황 및 관리</p>
+                </div>
+                <div class="p-6 bg-blue-50 rounded-lg">
+                    <i class="fas fa-briefcase text-blue-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">매칭 현황</h3>
+                    <p class="text-gray-600 text-sm">구인-구직 매칭 진행상황</p>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+    
+    <script>
+        console.log('🔵 에이전트 대시보드 페이지 시작');
+        let authCheckComplete = false;
+        
+        // 로딩 상태 업데이트
+        function updateLoadingStatus(message) {
+            const statusEl = document.getElementById('loading-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+                console.log('📱 로딩 상태:', message);
+            }
+        }
+        
+        // 대시보드 표시
+        function showDashboard() {
+            updateLoadingStatus('대시보드 준비 완료');
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('dashboard-content').classList.remove('hidden');
+                console.log('✅ 에이전트 대시보드 표시 완료');
+            }, 500);
+        }
+        
+        // 로그인 페이지로 리다이렉트
+        function redirectToLogin(reason) {
+            console.log('❌ 로그인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('로그인이 필요합니다. 잠시 후 이동...');
+            setTimeout(() => {
+                window.location.href = '/static/login.html';
+            }, 2000);
+        }
+        
+        // 메인 페이지로 리다이렉트 (권한 없음)
+        function redirectToHome(reason) {
+            console.log('🏠 메인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('권한이 없습니다. 잠시 후 이동...');
+            setTimeout(() => {
+                alert('에이전트 권한이 필요합니다.');
+                window.location.href = '/';
+            }, 2000);
+        }
+        
+        // URL에서 토큰 추출 및 저장
+        function handleURLToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                console.log('🔗 URL에서 토큰 발견, localStorage에 저장');
+                localStorage.setItem('token', urlToken);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // 종합적인 인증 검사
+        async function performAuthCheck() {
+            updateLoadingStatus('토큰 확인 중...');
+            
+            // 1단계: URL 토큰 처리
+            handleURLToken();
+            
+            // 2단계: localStorage에서 토큰 확인
+            const token = localStorage.getItem('token');
+            if (!token) {
+                redirectToLogin('토큰이 없음');
+                return;
+            }
+            
+            console.log('🔑 토큰 확인됨');
+            updateLoadingStatus('사용자 정보 확인 중...');
+            
+            // 3단계: 서버에서 토큰 검증 및 사용자 정보 확인
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.log('🚫 서버 토큰 검증 실패:', response.status);
+                    redirectToLogin('토큰 검증 실패');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    console.log('🚫 사용자 정보 없음:', data);
+                    redirectToLogin('사용자 정보 확인 실패');
+                    return;
+                }
+                
+                const user = data.user;
+                console.log('👤 사용자 정보 확인됨:', user);
+                
+                // 4단계: 에이전트 권한 확인
+                const isAgent = user.user_type === 'agent' || user.userType === 'agent' || user.type === 'agent';
+                if (!isAgent) {
+                    console.log('🚫 에이전트 권한 없음:', user);
+                    redirectToHome('에이전트 권한 필요');
+                    return;
+                }
+                
+                // 5단계: localStorage에 사용자 정보 저장
+                console.log('✅ 에이전트 권한 확인됨');
+                updateLoadingStatus('대시보드 로딩 중...');
+                
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // 6단계: UI 업데이트 및 대시보드 표시
+                const agentNameEl = document.getElementById('agent-name');
+                if (agentNameEl) {
+                    agentNameEl.textContent = user.name ? user.name + '님 환영합니다' : '에이전트님 환영합니다';
+                }
+                
+                authCheckComplete = true;
+                showDashboard();
+                
+            } catch (error) {
+                console.error('🚨 인증 검사 중 오류:', error);
+                updateLoadingStatus('네트워크 오류 발생...');
+                redirectToLogin('네트워크 오류');
+            }
+        }
+        
+        // 로그아웃
+        function setupLogoutHandler() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (confirm('로그아웃 하시겠습니까?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = '/';
+                    }
+                });
+            }
+        }
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 에이전트 대시보드 DOM 로드 완료');
+            setupLogoutHandler();
+            
+            // 충분한 지연 후 인증 검사 시작
+            setTimeout(function() {
+                console.log('🚀 인증 검사 시작 (2초 지연)');
+                performAuthCheck();
+            }, 2000);
+        });
+        
+        // 페이지를 떠나기 전에 인증이 완료되지 않았다면 경고
+        window.addEventListener('beforeunload', function(e) {
+            if (!authCheckComplete) {
+                console.log('⚠️ 인증이 완료되지 않은 상태에서 페이지를 떠남');
+            }
+        });
+    </script>
+</body>
+</html>`)
+})
+
+// 기업 대시보드
+app.get('/static/employer-dashboard.html', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOW-CAMPUS 기업 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #059669;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 로딩 화면 -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">기업 대시보드 로딩 중...</p>
+            <p id="loading-status" class="text-sm text-gray-400 mt-2">인증 확인 중</p>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 컨텐츠 (처음에는 숨김) -->
+    <div id="dashboard-content" class="hidden">
+        <header class="bg-white shadow-md border-b-2 border-green-600">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-green-600 to-blue-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-building text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-green-600">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">기업 대시보드</span>
+                    </div>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <span id="employer-name" class="text-sm text-gray-600">기업 담당자님 환영합니다</span>
+                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container mx-auto px-6 py-8">
+        <div class="bg-white rounded-lg shadow p-6 text-center">
+            <h2 class="text-2xl font-bold mb-4">기업 대시보드</h2>
+            <p class="text-gray-600 mb-4">구인 관리 시스템에 오신 것을 환영합니다.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                <div class="p-6 bg-green-50 rounded-lg">
+                    <i class="fas fa-plus-circle text-green-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">구인공고 등록</h3>
+                    <p class="text-gray-600 text-sm">새로운 구인공고를 등록하세요</p>
+                </div>
+                <div class="p-6 bg-blue-50 rounded-lg">
+                    <i class="fas fa-list text-blue-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">등록된 공고</h3>
+                    <p class="text-gray-600 text-sm">현재 등록된 구인공고 관리</p>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        console.log('🔵 기업 대시보드 페이지 시작');
+        let authCheckComplete = false;
+        
+        // 로딩 상태 업데이트
+        function updateLoadingStatus(message) {
+            const statusEl = document.getElementById('loading-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+                console.log('📱 로딩 상태:', message);
+            }
+        }
+        
+        // 대시보드 표시
+        function showDashboard() {
+            updateLoadingStatus('대시보드 준비 완료');
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('dashboard-content').classList.remove('hidden');
+                console.log('✅ 기업 대시보드 표시 완료');
+            }, 500);
+        }
+        
+        // 로그인 페이지로 리다이렉트
+        function redirectToLogin(reason) {
+            console.log('❌ 로그인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('로그인이 필요합니다. 잠시 후 이동...');
+            setTimeout(() => {
+                window.location.href = '/static/login.html';
+            }, 2000);
+        }
+        
+        // 메인 페이지로 리다이렉트 (권한 없음)
+        function redirectToHome(reason) {
+            console.log('🏠 메인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('권한이 없습니다. 잠시 후 이동...');
+            setTimeout(() => {
+                alert('기업 회원 권한이 필요합니다.');
+                window.location.href = '/';
+            }, 2000);
+        }
+        
+        // URL에서 토큰 추출 및 저장
+        function handleURLToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                console.log('🔗 URL에서 토큰 발견, localStorage에 저장');
+                localStorage.setItem('token', urlToken);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // 종합적인 인증 검사
+        async function performAuthCheck() {
+            updateLoadingStatus('토큰 확인 중...');
+            
+            // 1단계: URL 토큰 처리
+            handleURLToken();
+            
+            // 2단계: localStorage에서 토큰 확인
+            const token = localStorage.getItem('token');
+            if (!token) {
+                redirectToLogin('토큰이 없음');
+                return;
+            }
+            
+            console.log('🔑 토큰 확인됨');
+            updateLoadingStatus('사용자 정보 확인 중...');
+            
+            // 3단계: 서버에서 토큰 검증 및 사용자 정보 확인
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.log('🚫 서버 토큰 검증 실패:', response.status);
+                    redirectToLogin('토큰 검증 실패');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    console.log('🚫 사용자 정보 없음:', data);
+                    redirectToLogin('사용자 정보 확인 실패');
+                    return;
+                }
+                
+                const user = data.user;
+                console.log('👤 사용자 정보 확인됨:', user);
+                
+                // 4단계: 기업 권한 확인
+                const isEmployer = user.user_type === 'employer' || user.userType === 'employer' || user.type === 'employer';
+                if (!isEmployer) {
+                    console.log('🚫 기업 권한 없음:', user);
+                    redirectToHome('기업 권한 필요');
+                    return;
+                }
+                
+                // 5단계: localStorage에 사용자 정보 저장
+                console.log('✅ 기업 권한 확인됨');
+                updateLoadingStatus('대시보드 로딩 중...');
+                
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // 6단계: UI 업데이트 및 대시보드 표시
+                const employerNameEl = document.getElementById('employer-name');
+                if (employerNameEl) {
+                    employerNameEl.textContent = user.name ? user.name + '님 환영합니다' : '기업 담당자님 환영합니다';
+                }
+                
+                authCheckComplete = true;
+                showDashboard();
+                
+            } catch (error) {
+                console.error('🚨 인증 검사 중 오류:', error);
+                updateLoadingStatus('네트워크 오류 발생...');
+                redirectToLogin('네트워크 오류');
+            }
+        }
+        
+        // 로그아웃
+        function setupLogoutHandler() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (confirm('로그아웃 하시겠습니까?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = '/';
+                    }
+                });
+            }
+        }
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 기업 대시보드 DOM 로드 완료');
+            setupLogoutHandler();
+            
+            // 충분한 지연 후 인증 검사 시작
+            setTimeout(function() {
+                console.log('🚀 인증 검사 시작 (2초 지연)');
+                performAuthCheck();
+            }, 2000);
+        });
+        
+        // 페이지를 떠나기 전에 인증이 완료되지 않았다면 경고
+        window.addEventListener('beforeunload', function(e) {
+            if (!authCheckComplete) {
+                console.log('⚠️ 인증이 완료되지 않은 상태에서 페이지를 떠남');
+            }
+        });
+    </script>
+</body>
+</html>`)
+})
+
+// 강사 대시보드
+app.get('/static/instructor-dashboard.html', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOW-CAMPUS 강사 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #0891b2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 로딩 화면 -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">강사 대시보드 로딩 중...</p>
+            <p id="loading-status" class="text-sm text-gray-400 mt-2">인증 확인 중</p>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 컨텐츠 (처음에는 숨김) -->
+    <div id="dashboard-content" class="hidden">
+        <header class="bg-white shadow-md border-b-2 border-cyan-600">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-cyan-600 to-blue-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-chalkboard-teacher text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-cyan-600">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">강사 대시보드</span>
+                    </div>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <span id="instructor-name" class="text-sm text-gray-600">강사님 환영합니다</span>
+                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container mx-auto px-6 py-8">
+        <div class="bg-white rounded-lg shadow p-6 text-center">
+            <h2 class="text-2xl font-bold mb-4">강사 대시보드</h2>
+            <p class="text-gray-600 mb-4">교육 관리 시스템에 오신 것을 환영합니다.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                <div class="p-6 bg-cyan-50 rounded-lg">
+                    <i class="fas fa-book text-cyan-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">강의 관리</h3>
+                    <p class="text-gray-600 text-sm">개설된 강의 및 수강생 관리</p>
+                </div>
+                <div class="p-6 bg-blue-50 rounded-lg">
+                    <i class="fas fa-user-graduate text-blue-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">학생 현황</h3>
+                    <p class="text-gray-600 text-sm">수강 중인 학생 현황 확인</p>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        console.log('🔵 강사 대시보드 페이지 시작');
+        let authCheckComplete = false;
+        
+        // 로딩 상태 업데이트
+        function updateLoadingStatus(message) {
+            const statusEl = document.getElementById('loading-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+                console.log('📱 로딩 상태:', message);
+            }
+        }
+        
+        // 대시보드 표시
+        function showDashboard() {
+            updateLoadingStatus('대시보드 준비 완료');
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('dashboard-content').classList.remove('hidden');
+                console.log('✅ 강사 대시보드 표시 완료');
+            }, 500);
+        }
+        
+        // 로그인 페이지로 리다이렉트
+        function redirectToLogin(reason) {
+            console.log('❌ 로그인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('로그인이 필요합니다. 잠시 후 이동...');
+            setTimeout(() => {
+                window.location.href = '/static/login.html';
+            }, 2000);
+        }
+        
+        // 메인 페이지로 리다이렉트 (권한 없음)
+        function redirectToHome(reason) {
+            console.log('🏠 메인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('권한이 없습니다. 잠시 후 이동...');
+            setTimeout(() => {
+                alert('강사 권한이 필요합니다.');
+                window.location.href = '/';
+            }, 2000);
+        }
+        
+        // URL에서 토큰 추출 및 저장
+        function handleURLToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                console.log('🔗 URL에서 토큰 발견, localStorage에 저장');
+                localStorage.setItem('token', urlToken);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // 종합적인 인증 검사
+        async function performAuthCheck() {
+            updateLoadingStatus('토큰 확인 중...');
+            
+            // 1단계: URL 토큰 처리
+            handleURLToken();
+            
+            // 2단계: localStorage에서 토큰 확인
+            const token = localStorage.getItem('token');
+            if (!token) {
+                redirectToLogin('토큰이 없음');
+                return;
+            }
+            
+            console.log('🔑 토큰 확인됨');
+            updateLoadingStatus('사용자 정보 확인 중...');
+            
+            // 3단계: 서버에서 토큰 검증 및 사용자 정보 확인
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.log('🚫 서버 토큰 검증 실패:', response.status);
+                    redirectToLogin('토큰 검증 실패');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    console.log('🚫 사용자 정보 없음:', data);
+                    redirectToLogin('사용자 정보 확인 실패');
+                    return;
+                }
+                
+                const user = data.user;
+                console.log('👤 사용자 정보 확인됨:', user);
+                
+                // 4단계: 강사 권한 확인
+                const isInstructor = user.user_type === 'instructor' || user.userType === 'instructor' || user.type === 'instructor';
+                if (!isInstructor) {
+                    console.log('🚫 강사 권한 없음:', user);
+                    redirectToHome('강사 권한 필요');
+                    return;
+                }
+                
+                // 5단계: localStorage에 사용자 정보 저장
+                console.log('✅ 강사 권한 확인됨');
+                updateLoadingStatus('대시보드 로딩 중...');
+                
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // 6단계: UI 업데이트 및 대시보드 표시
+                const instructorNameEl = document.getElementById('instructor-name');
+                if (instructorNameEl) {
+                    instructorNameEl.textContent = user.name ? user.name + '님 환영합니다' : '강사님 환영합니다';
+                }
+                
+                authCheckComplete = true;
+                showDashboard();
+                
+            } catch (error) {
+                console.error('🚨 인증 검사 중 오류:', error);
+                updateLoadingStatus('네트워크 오류 발생...');
+                redirectToLogin('네트워크 오류');
+            }
+        }
+        
+        // 로그아웃
+        function setupLogoutHandler() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (confirm('로그아웃 하시겠습니까?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = '/';
+                    }
+                });
+            }
+        }
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 강사 대시보드 DOM 로드 완료');
+            setupLogoutHandler();
+            
+            // 충분한 지연 후 인증 검사 시작
+            setTimeout(function() {
+                console.log('🚀 인증 검사 시작 (2초 지연)');
+                performAuthCheck();
+            }, 2000);
+        });
+        
+        // 페이지를 떠나기 전에 인증이 완료되지 않았다면 경고
+        window.addEventListener('beforeunload', function(e) {
+            if (!authCheckComplete) {
+                console.log('⚠️ 인증이 완료되지 않은 상태에서 페이지를 떠남');
+            }
+        });
+    </script>
+</body>
+</html>`)
+})
+
+// 구직자 프로필 페이지
+app.get('/static/jobseeker-profile.html', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOW-CAMPUS 구직자 프로필</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #f97316;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 로딩 화면 -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">구직자 프로필 로딩 중...</p>
+            <p id="loading-status" class="text-sm text-gray-400 mt-2">인증 확인 중</p>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 컨텐츠 (처음에는 숨김) -->
+    <div id="dashboard-content" class="hidden">
+        <header class="bg-white shadow-md border-b-2 border-orange-600">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-orange-600 to-red-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user-graduate text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-orange-600">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">구직자 프로필</span>
+                    </div>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <span id="jobseeker-name" class="text-sm text-gray-600">구직자님 환영합니다</span>
+                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container mx-auto px-6 py-8">
+        <div class="bg-white rounded-lg shadow p-6 text-center">
+            <h2 class="text-2xl font-bold mb-4">구직자 프로필</h2>
+            <p class="text-gray-600 mb-4">구직 활동 관리 시스템에 오신 것을 환영합니다.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                <div class="p-6 bg-orange-50 rounded-lg">
+                    <i class="fas fa-user-edit text-orange-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">프로필 관리</h3>
+                    <p class="text-gray-600 text-sm">개인정보 및 이력서 관리</p>
+                </div>
+                <div class="p-6 bg-blue-50 rounded-lg">
+                    <i class="fas fa-search text-blue-600 text-3xl mb-3"></i>
+                    <h3 class="text-lg font-semibold">구인정보 검색</h3>
+                    <p class="text-gray-600 text-sm">맞춤 구인정보 찾기</p>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        console.log('🔵 구직자 프로필 페이지 시작');
+        let authCheckComplete = false;
+        
+        // 로딩 상태 업데이트
+        function updateLoadingStatus(message) {
+            const statusEl = document.getElementById('loading-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+                console.log('📱 로딩 상태:', message);
+            }
+        }
+        
+        // 대시보드 표시
+        function showDashboard() {
+            updateLoadingStatus('프로필 준비 완료');
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('dashboard-content').classList.remove('hidden');
+                console.log('✅ 구직자 프로필 표시 완료');
+            }, 500);
+        }
+        
+        // 로그인 페이지로 리다이렉트
+        function redirectToLogin(reason) {
+            console.log('❌ 로그인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('로그인이 필요합니다. 잠시 후 이동...');
+            setTimeout(() => {
+                window.location.href = '/static/login.html';
+            }, 2000);
+        }
+        
+        // 메인 페이지로 리다이렉트 (권한 없음)
+        function redirectToHome(reason) {
+            console.log('🏠 메인 페이지로 리다이렉트:', reason);
+            updateLoadingStatus('권한이 없습니다. 잠시 후 이동...');
+            setTimeout(() => {
+                alert('구직자 권한이 필요합니다.');
+                window.location.href = '/';
+            }, 2000);
+        }
+        
+        // URL에서 토큰 추출 및 저장
+        function handleURLToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                console.log('🔗 URL에서 토큰 발견, localStorage에 저장');
+                localStorage.setItem('token', urlToken);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // 종합적인 인증 검사
+        async function performAuthCheck() {
+            updateLoadingStatus('토큰 확인 중...');
+            
+            // 1단계: URL 토큰 처리
+            handleURLToken();
+            
+            // 2단계: localStorage에서 토큰 확인
+            const token = localStorage.getItem('token');
+            if (!token) {
+                redirectToLogin('토큰이 없음');
+                return;
+            }
+            
+            console.log('🔑 토큰 확인됨');
+            updateLoadingStatus('사용자 정보 확인 중...');
+            
+            // 3단계: 서버에서 토큰 검증 및 사용자 정보 확인
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.log('🚫 서버 토큰 검증 실패:', response.status);
+                    redirectToLogin('토큰 검증 실패');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    console.log('🚫 사용자 정보 없음:', data);
+                    redirectToLogin('사용자 정보 확인 실패');
+                    return;
+                }
+                
+                const user = data.user;
+                console.log('👤 사용자 정보 확인됨:', user);
+                
+                // 4단계: 구직자/학생 권한 확인
+                const isJobseeker = user.user_type === 'jobseeker' || user.userType === 'jobseeker' || user.type === 'jobseeker' ||
+                                   user.user_type === 'student' || user.userType === 'student' || user.type === 'student';
+                if (!isJobseeker) {
+                    console.log('🚫 구직자 권한 없음:', user);
+                    redirectToHome('구직자 권한 필요');
+                    return;
+                }
+                
+                // 5단계: localStorage에 사용자 정보 저장
+                console.log('✅ 구직자 권한 확인됨');
+                updateLoadingStatus('프로필 로딩 중...');
+                
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // 6단계: UI 업데이트 및 대시보드 표시
+                const jobseekerNameEl = document.getElementById('jobseeker-name');
+                if (jobseekerNameEl) {
+                    jobseekerNameEl.textContent = user.name ? user.name + '님 환영합니다' : '구직자님 환영합니다';
+                }
+                
+                authCheckComplete = true;
+                showDashboard();
+                
+            } catch (error) {
+                console.error('🚨 인증 검사 중 오류:', error);
+                updateLoadingStatus('네트워크 오류 발생...');
+                redirectToLogin('네트워크 오류');
+            }
+        }
+        
+        // 로그아웃
+        function setupLogoutHandler() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (confirm('로그아웃 하시겠습니까?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = '/';
+                    }
+                });
+            }
+        }
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 구직자 프로필 DOM 로드 완료');
+            setupLogoutHandler();
+            
+            // 충분한 지연 후 인증 검사 시작
+            setTimeout(function() {
+                console.log('🚀 인증 검사 시작 (2초 지연)');
+                performAuthCheck();
+            }, 2000);
+        });
+        
+        // 페이지를 떠나기 전에 인증이 완료되지 않았다면 경고
+        window.addEventListener('beforeunload', function(e) {
+            if (!authCheckComplete) {
+                console.log('⚠️ 인증이 완료되지 않은 상태에서 페이지를 떠남');
+            }
+        });
+    </script>
+</body>
+</html>`)
+})
 
 export default app
