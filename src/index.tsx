@@ -142,24 +142,37 @@ async function createAdmin(db: D1Database, data: any): Promise<number | null> {
 async function createAgent(db: D1Database, data: any): Promise<number | null> {
   try {
     const { 
-      email, password, company_name, country = 'Unknown', 
+      email, password, company_name, country, 
       contact_person, phone, address, license_number 
     } = data
+    
+    // 필수 필드 검증
+    if (!company_name) {
+      throw new Error('회사명이 필요합니다.')
+    }
+    if (!country) {
+      throw new Error('국가 정보가 필요합니다.')
+    }
+    if (!contact_person) {
+      throw new Error('담당자명이 필요합니다.')
+    }
+    
+    console.log(`🏢 Creating agent: ${company_name} (${country})`)
     
     const result = await db.prepare(`
       INSERT INTO agents (
         email, password, company_name, country, contact_person, 
-        phone, address, license_number, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
+        phone, address, license_number, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     `).bind(
-      email, password, company_name, country, contact_person || company_name,
+      email, password, company_name, country, contact_person,
       phone || null, address || null, license_number || null
     ).run()
     
     return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
   } catch (error) {
-    console.error('❌ Agent creation error:', error)
-    return null
+    console.error('❌ Agent creation error:', error.message)
+    throw error
   }
 }
 
@@ -167,24 +180,49 @@ async function createAgent(db: D1Database, data: any): Promise<number | null> {
 async function createEmployer(db: D1Database, data: any): Promise<number | null> {
   try {
     const { 
-      email, password, company_name, business_number, industry = 'General',
-      contact_person, phone, address, region = 'Seoul', website 
+      email, password, company_name, business_number, industry,
+      contact_person, phone, address, region, website 
     } = data
+    
+    // 필수 필드 검증
+    if (!company_name) {
+      throw new Error('회사명이 필요합니다.')
+    }
+    if (!business_number) {
+      throw new Error('사업자등록번호가 필요합니다.')
+    }
+    if (!industry) {
+      throw new Error('업종 정보가 필요합니다.')
+    }
+    if (!contact_person) {
+      throw new Error('담당자명이 필요합니다.')
+    }
+    if (!phone) {
+      throw new Error('연락처가 필요합니다.')
+    }
+    if (!address) {
+      throw new Error('주소가 필요합니다.')
+    }
+    if (!region) {
+      throw new Error('지역 정보가 필요합니다.')
+    }
+    
+    console.log(`🏭 Creating employer: ${company_name} (${business_number})`)
     
     const result = await db.prepare(`
       INSERT INTO employers (
         email, password, company_name, business_number, industry, 
-        contact_person, phone, address, region, website, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
+        contact_person, phone, address, region, website, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     `).bind(
-      email, password, company_name, business_number || null, industry,
-      contact_person || company_name, phone || null, address || null, region, website || null
+      email, password, company_name, business_number, industry,
+      contact_person, phone, address, region, website || null
     ).run()
     
     return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
   } catch (error) {
-    console.error('❌ Employer creation error:', error)
-    return null
+    console.error('❌ Employer creation error:', error.message)
+    throw error
   }
 }
 
@@ -3622,7 +3660,8 @@ app.post('/api/auth/register', async (c) => {
     console.error('🚫 Registration error:', error)
     return c.json({ 
       success: false, 
-      error: '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.' 
+      error: error.message || '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     }, 500)
   }
 })
@@ -4139,6 +4178,185 @@ async function migrateUserPasswords(db: D1Database, tableName: string, batchSize
   return { total, migrated, errors }
 }
 
+// 데이터베이스 스키마 마이그레이션 API
+app.post('/api/admin/run-migration', async (c) => {
+  try {
+    console.log('🚀 Database migration started')
+    
+    // 관리자 권한 확인
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '관리자 인증이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+    
+    if (payload.userType !== 'admin') {
+      return c.json({ 
+        success: false, 
+        error: '관리자만 이 기능을 사용할 수 있습니다.' 
+      }, 403)
+    }
+
+    // 2FA 컬럼 추가 마이그레이션
+    const migrations = []
+    
+    try {
+      // 관리자 테이블에 2FA 컬럼 추가
+      await c.env.DB.prepare(`
+        ALTER TABLE admins ADD COLUMN two_factor_enabled INTEGER DEFAULT 0
+      `).run()
+      migrations.push('admins.two_factor_enabled')
+    } catch (e) {
+      console.log('admins.two_factor_enabled already exists or error:', e.message)
+    }
+    
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE admins ADD COLUMN two_factor_phone TEXT
+      `).run()
+      migrations.push('admins.two_factor_phone')
+    } catch (e) {
+      console.log('admins.two_factor_phone already exists or error:', e.message)
+    }
+
+    // 에이전트 테이블
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE agents ADD COLUMN two_factor_enabled INTEGER DEFAULT 0
+      `).run()
+      migrations.push('agents.two_factor_enabled')
+    } catch (e) {
+      console.log('agents.two_factor_enabled already exists or error:', e.message)
+    }
+    
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE agents ADD COLUMN two_factor_phone TEXT
+      `).run()
+      migrations.push('agents.two_factor_phone')
+    } catch (e) {
+      console.log('agents.two_factor_phone already exists or error:', e.message)
+    }
+
+    // 기업 테이블
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE employers ADD COLUMN two_factor_enabled INTEGER DEFAULT 0
+      `).run()
+      migrations.push('employers.two_factor_enabled')
+    } catch (e) {
+      console.log('employers.two_factor_enabled already exists or error:', e.message)
+    }
+    
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE employers ADD COLUMN two_factor_phone TEXT
+      `).run()
+      migrations.push('employers.two_factor_phone')
+    } catch (e) {
+      console.log('employers.two_factor_phone already exists or error:', e.message)
+    }
+
+    // 구직자 테이블
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE job_seekers ADD COLUMN two_factor_enabled INTEGER DEFAULT 0
+      `).run()
+      migrations.push('job_seekers.two_factor_enabled')
+    } catch (e) {
+      console.log('job_seekers.two_factor_enabled already exists or error:', e.message)
+    }
+    
+    try {
+      await c.env.DB.prepare(`
+        ALTER TABLE job_seekers ADD COLUMN two_factor_phone TEXT
+      `).run()
+      migrations.push('job_seekers.two_factor_phone')
+    } catch (e) {
+      console.log('job_seekers.two_factor_phone already exists or error:', e.message)
+    }
+
+    // OTP 토큰 테이블 생성
+    try {
+      await c.env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS otp_tokens (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT NOT NULL,
+          userType TEXT NOT NULL,
+          otp_code TEXT NOT NULL,
+          expires_at DATETIME NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run()
+      migrations.push('otp_tokens table')
+    } catch (e) {
+      console.log('otp_tokens table creation error:', e.message)
+    }
+
+    // 비밀번호 재설정 테이블 생성
+    try {
+      await c.env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT NOT NULL,
+          userType TEXT NOT NULL,
+          reset_token TEXT NOT NULL UNIQUE,
+          expires_at DATETIME NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          used_at DATETIME NULL
+        )
+      `).run()
+      migrations.push('password_reset_tokens table')
+    } catch (e) {
+      console.log('password_reset_tokens table creation error:', e.message)
+    }
+
+    // 인덱스 생성
+    try {
+      await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_otp_email_usertype ON otp_tokens(email, userType)`).run()
+      await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(reset_token)`).run()
+      migrations.push('security indices')
+    } catch (e) {
+      console.log('Index creation error:', e.message)
+    }
+
+    console.log(`✅ Migration completed. Applied: ${migrations.join(', ')}`)
+    
+    return c.json({
+      success: true,
+      message: '데이터베이스 마이그레이션이 완료되었습니다.',
+      migrations: migrations,
+      timestamp: new Date().toISOString()
+    })
+
+  } catch (error) {
+    console.error('❌ Migration error:', error)
+    return c.json({ 
+      success: false, 
+      error: '마이그레이션 중 오류가 발생했습니다.',
+      details: error.message
+    }, 500)
+  }
+})
+
 // 관리자 전용 비밀번호 마이그레이션 API
 app.post('/api/admin/migrate-passwords', async (c) => {
   try {
@@ -4384,27 +4602,79 @@ app.post('/api/auth/enable-2fa', async (c) => {
       }, 400)
     }
 
-    // 2FA 설정 업데이트
-    const result = await c.env.DB.prepare(`
-      UPDATE ${tableName} 
-      SET two_factor_enabled = 1, 
-          two_factor_phone = ?,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE email = ?
-    `).bind(phone, email).run()
+    // 먼저 사용자 존재 여부 확인
+    const userCheck = await c.env.DB.prepare(`
+      SELECT id, email FROM ${tableName} WHERE email = ?
+    `).bind(email).first()
 
-    if (result.success) {
-      console.log(`✅ 2FA enabled for user: ${email}`)
-      
-      return c.json({
-        success: true,
-        message: '2단계 인증이 활성화되었습니다.',
-        twoFactorEnabled: true
-      })
-    } else {
+    if (!userCheck) {
       return c.json({ 
         success: false, 
-        error: '2단계 인증 활성화에 실패했습니다.' 
+        error: '사용자를 찾을 수 없습니다.' 
+      }, 404)
+    }
+
+    // 2FA 컬럼 존재 여부 확인 후 업데이트
+    try {
+      const result = await c.env.DB.prepare(`
+        UPDATE ${tableName} 
+        SET two_factor_enabled = 1, 
+            two_factor_phone = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE email = ?
+      `).bind(phone, email).run()
+
+      if (result.success && result.changes > 0) {
+        console.log(`✅ 2FA enabled for user: ${email}`)
+        
+        return c.json({
+          success: true,
+          message: '2단계 인증이 활성화되었습니다.',
+          twoFactorEnabled: true,
+          phone: phone.replace(/(\d{3})-?(\d{4})-?(\d{4})/, '$1-****-$3')
+        })
+      } else {
+        return c.json({ 
+          success: false, 
+          error: '사용자 업데이트에 실패했습니다.' 
+        }, 500)
+      }
+    } catch (dbError) {
+      console.error('2FA database error:', dbError)
+      
+      // 컬럼이 없는 경우 자동으로 추가 시도
+      if (dbError.message.includes('no such column')) {
+        try {
+          await c.env.DB.prepare(`ALTER TABLE ${tableName} ADD COLUMN two_factor_enabled INTEGER DEFAULT 0`).run()
+          await c.env.DB.prepare(`ALTER TABLE ${tableName} ADD COLUMN two_factor_phone TEXT`).run()
+          
+          // 다시 시도
+          const retryResult = await c.env.DB.prepare(`
+            UPDATE ${tableName} 
+            SET two_factor_enabled = 1, 
+                two_factor_phone = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE email = ?
+          `).bind(phone, email).run()
+
+          if (retryResult.success) {
+            console.log(`✅ 2FA enabled for user after column creation: ${email}`)
+            return c.json({
+              success: true,
+              message: '2단계 인증이 활성화되었습니다.',
+              twoFactorEnabled: true,
+              phone: phone.replace(/(\d{3})-?(\d{4})-?(\d{4})/, '$1-****-$3')
+            })
+          }
+        } catch (alterError) {
+          console.error('Column creation error:', alterError)
+        }
+      }
+      
+      return c.json({ 
+        success: false, 
+        error: '2단계 인증 활성화 중 데이터베이스 오류가 발생했습니다.',
+        details: dbError.message
       }, 500)
     }
 
@@ -4842,16 +5112,37 @@ app.get('/api/auth/security-settings', async (c) => {
       }, 400)
     }
 
-    // 보안 설정 조회
-    const user = await c.env.DB.prepare(`
-      SELECT 
-        email,
-        two_factor_enabled,
-        two_factor_phone,
-        updated_at
-      FROM ${tableName} 
-      WHERE email = ?
-    `).bind(email).first()
+    // 보안 설정 조회 (2FA 컬럼 없는 경우 대비)
+    let user
+    try {
+      user = await c.env.DB.prepare(`
+        SELECT 
+          email,
+          two_factor_enabled,
+          two_factor_phone,
+          updated_at
+        FROM ${tableName} 
+        WHERE email = ?
+      `).bind(email).first()
+    } catch (dbError) {
+      // 2FA 컬럼이 없는 경우 기본 정보만 조회
+      if (dbError.message.includes('no such column')) {
+        user = await c.env.DB.prepare(`
+          SELECT 
+            email,
+            updated_at
+          FROM ${tableName} 
+          WHERE email = ?
+        `).bind(email).first()
+        
+        if (user) {
+          user.two_factor_enabled = 0
+          user.two_factor_phone = null
+        }
+      } else {
+        throw dbError
+      }
+    }
 
     if (!user) {
       return c.json({ 
@@ -4864,10 +5155,14 @@ app.get('/api/auth/security-settings', async (c) => {
       success: true,
       settings: {
         email: user.email,
+        userType: userType,
         twoFactorEnabled: !!user.two_factor_enabled,
         twoFactorPhone: user.two_factor_phone ? 
           user.two_factor_phone.replace(/(\d{3})-?(\d{4})-?(\d{4})/, '$1-****-$3') : null,
-        lastUpdated: user.updated_at
+        lastUpdated: user.updated_at,
+        // UI에서 활용할 수 있는 추가 정보
+        canEnable2FA: !user.two_factor_enabled,
+        securityLevel: user.two_factor_enabled ? 'high' : 'medium'
       }
     })
 
@@ -4876,6 +5171,249 @@ app.get('/api/auth/security-settings', async (c) => {
     return c.json({ 
       success: false, 
       error: '보안 설정 조회 중 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 보안 설정 업데이트 API (UI 연동용)
+app.post('/api/auth/update-security', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '로그인이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+
+    const { email, userType } = payload
+    const { action, phone } = await c.req.json()
+
+    if (!action) {
+      return c.json({ 
+        success: false, 
+        error: '작업을 선택해주세요.' 
+      }, 400)
+    }
+
+    // 사용자 테이블 결정
+    const tables = {
+      'admin': 'admins',
+      'agent': 'agents', 
+      'employer': 'employers',
+      'jobseeker': 'job_seekers'
+    }
+    
+    const tableName = tables[userType as keyof typeof tables]
+    if (!tableName) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 사용자 유형입니다.' 
+      }, 400)
+    }
+
+    if (action === 'enable_2fa') {
+      if (!phone || phone.length < 10) {
+        return c.json({ 
+          success: false, 
+          error: '유효한 휴대폰 번호가 필요합니다.' 
+        }, 400)
+      }
+
+      try {
+        const result = await c.env.DB.prepare(`
+          UPDATE ${tableName} 
+          SET two_factor_enabled = 1, 
+              two_factor_phone = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE email = ?
+        `).bind(phone, email).run()
+
+        if (result.success) {
+          return c.json({
+            success: true,
+            message: '2단계 인증이 활성화되었습니다.',
+            settings: {
+              twoFactorEnabled: true,
+              twoFactorPhone: phone.replace(/(\d{3})-?(\d{4})-?(\d{4})/, '$1-****-$3')
+            }
+          })
+        }
+      } catch (dbError) {
+        if (dbError.message.includes('no such column')) {
+          try {
+            await c.env.DB.prepare(`ALTER TABLE ${tableName} ADD COLUMN two_factor_enabled INTEGER DEFAULT 0`).run()
+            await c.env.DB.prepare(`ALTER TABLE ${tableName} ADD COLUMN two_factor_phone TEXT`).run()
+            
+            const retryResult = await c.env.DB.prepare(`
+              UPDATE ${tableName} 
+              SET two_factor_enabled = 1, 
+                  two_factor_phone = ?
+              WHERE email = ?
+            `).bind(phone, email).run()
+
+            if (retryResult.success) {
+              return c.json({
+                success: true,
+                message: '2단계 인증이 활성화되었습니다.',
+                settings: {
+                  twoFactorEnabled: true,
+                  twoFactorPhone: phone.replace(/(\d{3})-?(\d{4})-?(\d{4})/, '$1-****-$3')
+                }
+              })
+            }
+          } catch (alterError) {
+            console.error('Column creation error:', alterError)
+          }
+        }
+        throw dbError
+      }
+    } 
+    else if (action === 'disable_2fa') {
+      try {
+        const result = await c.env.DB.prepare(`
+          UPDATE ${tableName} 
+          SET two_factor_enabled = 0, 
+              two_factor_phone = NULL,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE email = ?
+        `).bind(email).run()
+
+        if (result.success) {
+          return c.json({
+            success: true,
+            message: '2단계 인증이 비활성화되었습니다.',
+            settings: {
+              twoFactorEnabled: false,
+              twoFactorPhone: null
+            }
+          })
+        }
+      } catch (dbError) {
+        if (dbError.message.includes('no such column')) {
+          // 컬럼이 없으면 이미 비활성화된 상태로 간주
+          return c.json({
+            success: true,
+            message: '2단계 인증이 비활성화되었습니다.',
+            settings: {
+              twoFactorEnabled: false,
+              twoFactorPhone: null
+            }
+          })
+        }
+        throw dbError
+      }
+    }
+    else {
+      return c.json({ 
+        success: false, 
+        error: '지원하지 않는 작업입니다.' 
+      }, 400)
+    }
+
+    return c.json({ 
+      success: false, 
+      error: '설정 업데이트에 실패했습니다.' 
+    }, 500)
+
+  } catch (error) {
+    console.error('Security update error:', error)
+    return c.json({ 
+      success: false, 
+      error: '보안 설정 업데이트 중 오류가 발생했습니다.',
+      details: error.message
+    }, 500)
+  }
+})
+
+// UI용 보안 기능 상태 조회 API
+app.get('/api/auth/security-features', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ 
+        success: false, 
+        error: '로그인이 필요합니다.' 
+      }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    
+    try {
+      payload = await verify(token, 'production-secret-key')
+    } catch (prodError) {
+      try {
+        payload = await verify(token, 'test-secret-key')
+      } catch (testError) {
+        return c.json({ 
+          success: false, 
+          error: '유효하지 않은 토큰입니다.' 
+        }, 401)
+      }
+    }
+
+    const { userType } = payload
+
+    // 사용자 유형별 사용 가능한 보안 기능
+    const features = {
+      'admin': {
+        twoFactorAuth: true,
+        passwordReset: true,
+        securityLogs: true,
+        migration: true,
+        adminPanel: true
+      },
+      'agent': {
+        twoFactorAuth: true,
+        passwordReset: true,
+        securityLogs: false,
+        migration: false,
+        adminPanel: false
+      },
+      'employer': {
+        twoFactorAuth: true,
+        passwordReset: true,
+        securityLogs: false,
+        migration: false,
+        adminPanel: false
+      },
+      'jobseeker': {
+        twoFactorAuth: true,
+        passwordReset: true,
+        securityLogs: false,
+        migration: false,
+        adminPanel: false
+      }
+    }
+
+    return c.json({
+      success: true,
+      features: features[userType] || features['jobseeker'],
+      userType: userType
+    })
+
+  } catch (error) {
+    console.error('Security features error:', error)
+    return c.json({ 
+      success: false, 
+      error: '보안 기능 조회 중 오류가 발생했습니다.' 
     }, 500)
   }
 })

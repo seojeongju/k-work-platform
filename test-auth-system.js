@@ -7,7 +7,7 @@
  * Date: 2025-09-15
  */
 
-const BASE_URL = 'https://b2c2d104.w-campus.pages.dev'
+const BASE_URL = 'https://f180b4af.w-campus.pages.dev'
 // const BASE_URL = 'https://genspark-ai-developer.w-campus.pages.dev' // 개발 브랜치용
 
 // 테스트 데이터
@@ -20,7 +20,7 @@ const TEST_DATA = {
     role: 'admin'
   },
   agent: {
-    email: 'test-agent@global-recruit.com',
+    email: 'test-agent-new@global-recruit.com',
     password: 'AgentPass123!',
     userType: 'agent',
     company_name: '글로벌 인재 에이전시',
@@ -31,7 +31,7 @@ const TEST_DATA = {
     license_number: 'AG-2024-001'
   },
   employer: {
-    email: 'test-company@techcorp.co.kr',
+    email: 'test-company-new@techcorp.co.kr',
     password: 'EmployerPass123!',
     userType: 'employer',
     company_name: '테크코퍼레이션',
@@ -271,6 +271,8 @@ async function testUserTypeComplete(userType) {
     tokenVerification: null,
     twoFactorEnable: null,
     securitySettings: null,
+    securityUpdate: null,
+    securityFeatures: null,
     passwordResetRequest: null
   }
   
@@ -285,11 +287,17 @@ async function testUserTypeComplete(userType) {
     if (results.login.success && results.login.token) {
       results.tokenVerification = await testTokenVerification(userType, results.login.token)
       
-      // 4. 2FA 활성화 테스트
+      // 4. 2FA 활성화 테스트 (기존)
       results.twoFactorEnable = await test2FAEnable(userType, results.login.token)
       
       // 5. 보안 설정 조회 테스트
       results.securitySettings = await testSecuritySettings(userType, results.login.token)
+      
+      // 6. 보안 설정 업데이트 테스트 (새로운)
+      results.securityUpdate = await testSecurityUpdate(userType, results.login.token)
+      
+      // 7. 보안 기능 목록 테스트 (새로운)
+      results.securityFeatures = await testSecurityFeatures(userType, results.login.token)
     }
     
     // 6. 비밀번호 재설정 요청 테스트
@@ -302,16 +310,93 @@ async function testUserTypeComplete(userType) {
   return results
 }
 
-// 관리자 전용 기능 테스트
+// 데이터베이스 마이그레이션 테스트
+async function testDatabaseMigration(adminToken) {
+  console.log(`\n🔧 === 데이터베이스 마이그레이션 테스트 ===`)
+  
+  if (!adminToken) {
+    logTest('데이터베이스 마이그레이션', false, '관리자 토큰이 없습니다')
+    return { success: false }
+  }
+  
+  const response = await makeRequest('/api/admin/run-migration', {
+    method: 'POST',
+    headers: { 
+      'Authorization': `Bearer ${adminToken}` 
+    }
+  })
+  
+  const success = response.ok && response.data.success
+  logTest('데이터베이스 마이그레이션', success,
+    success ? `마이그레이션 완료: ${response.data.migrations?.length || 0}개 항목` : response.data.error)
+  
+  return { success, data: response.data }
+}
+
+// 보안 설정 업데이트 테스트
+async function testSecurityUpdate(userType, token) {
+  console.log(`\n🔧 === ${userType.toUpperCase()} 보안 설정 업데이트 테스트 ===`)
+  
+  if (!token) {
+    logTest(`${userType} 보안 설정 업데이트`, false, '토큰이 없습니다')
+    return { success: false }
+  }
+  
+  // 2FA 활성화 테스트
+  const enableResponse = await makeRequest('/api/auth/update-security', {
+    method: 'POST',
+    headers: { 
+      'Authorization': `Bearer ${token}` 
+    },
+    body: {
+      action: 'enable_2fa',
+      phone: '010-9999-8888'
+    }
+  })
+  
+  const enableSuccess = enableResponse.ok && enableResponse.data.success
+  logTest(`${userType} 2FA 활성화 (업데이트)`, enableSuccess,
+    enableSuccess ? '2FA 활성화 성공' : enableResponse.data.error)
+  
+  return { success: enableSuccess, data: enableResponse.data }
+}
+
+// 보안 기능 목록 테스트
+async function testSecurityFeatures(userType, token) {
+  console.log(`\n🔍 === ${userType.toUpperCase()} 보안 기능 목록 테스트 ===`)
+  
+  if (!token) {
+    logTest(`${userType} 보안 기능 목록`, false, '토큰이 없습니다')
+    return { success: false }
+  }
+  
+  const response = await makeRequest('/api/auth/security-features', {
+    method: 'GET',
+    headers: { 
+      'Authorization': `Bearer ${token}` 
+    }
+  })
+  
+  const success = response.ok && response.data.success
+  logTest(`${userType} 보안 기능 목록`, success,
+    success ? `사용 가능한 기능: ${Object.keys(response.data.features || {}).length}개` : response.data.error)
+  
+  return { success, data: response.data }
+}
+
+// 관리자 전용 기능 테스트 (확장)
 async function testAdminFeatures(adminToken) {
   console.log(`\n👑 === 관리자 전용 기능 테스트 ===`)
   
   if (!adminToken) {
-    logTest('관리자 마이그레이션 상태 확인', false, '관리자 토큰이 없습니다')
+    logTest('관리자 기능 테스트', false, '관리자 토큰이 없습니다')
     return
   }
   
-  // 1. 마이그레이션 상태 확인
+  // 1. 데이터베이스 마이그레이션
+  const migrationResult = await testDatabaseMigration(adminToken)
+  
+  // 2. 마이그레이션 상태 확인
   const statusResponse = await makeRequest('/api/admin/migration-status', {
     method: 'GET',
     headers: { 
@@ -323,7 +408,7 @@ async function testAdminFeatures(adminToken) {
   logTest('관리자 마이그레이션 상태 확인', statusSuccess, 
     statusSuccess ? '마이그레이션 상태 조회 성공' : statusResponse.data.error)
   
-  // 2. 비밀번호 마이그레이션 실행 (소량)
+  // 3. 비밀번호 마이그레이션 실행
   const migrateResponse = await makeRequest('/api/admin/migrate-passwords', {
     method: 'POST',
     headers: { 
@@ -335,7 +420,11 @@ async function testAdminFeatures(adminToken) {
   logTest('관리자 비밀번호 마이그레이션', migrateSuccess,
     migrateSuccess ? `마이그레이션 완료: ${migrateResponse.data.summary?.totalMigrated}건` : migrateResponse.data.error)
   
-  return { statusSuccess, migrateSuccess }
+  return { 
+    migrationSuccess: migrationResult.success,
+    statusSuccess, 
+    migrateSuccess 
+  }
 }
 
 // 전체 시스템 테스트 실행
@@ -399,6 +488,8 @@ async function runCompleteTest() {
         result.tokenVerification?.success,
         result.twoFactorEnable?.success,
         result.securitySettings?.success,
+        result.securityUpdate?.success,
+        result.securityFeatures?.success,
         result.passwordResetRequest?.success
       ]
       const passCount = tests.filter(Boolean).length
