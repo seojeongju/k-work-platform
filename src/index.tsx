@@ -9,7 +9,90 @@ type Bindings = {
   DB: D1Database;
 }
 
-// 간단한 해시 함수 (실제 운영환경에서는 더 강력한 해시 함수 사용 권장)
+// bcrypt 유사 해시 함수 (Cloudflare Workers 환경에서 사용 가능)
+async function hashPassword(password: string): Promise<string> {
+  // 솔트 생성
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+  const saltHex = Array.from(salt, byte => byte.toString(16).padStart(2, '0')).join('')
+  
+  // PBKDF2를 사용한 강력한 해시
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password + saltHex)
+  
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  )
+  
+  const hashBuffer = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 100000, // 10만번 반복
+      hash: 'SHA-256'
+    },
+    key,
+    256
+  )
+  
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  
+  // 솔트와 해시를 결합하여 저장
+  return `$pbkdf2$${saltHex}$${hashHex}`
+}
+
+// 비밀번호 검증 함수
+async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  try {
+    if (!hashedPassword.startsWith('$pbkdf2$')) {
+      // 기존 평문 비밀번호 호환성
+      return password === hashedPassword
+    }
+    
+    const parts = hashedPassword.split('$')
+    if (parts.length !== 4) return false
+    
+    const saltHex = parts[2]
+    const storedHashHex = parts[3]
+    
+    // 솔트를 바이트 배열로 변환
+    const salt = new Uint8Array(saltHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)))
+    
+    const encoder = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(password),
+      { name: 'PBKDF2' },
+      false,
+      ['deriveBits']
+    )
+    
+    const hashBuffer = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      key,
+      256
+    )
+    
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    
+    return hashHex === storedHashHex
+  } catch (error) {
+    console.error('Password verification error:', error)
+    return false
+  }
+}
+
+// 기존 SHA-256 해시 함수 (호환성을 위해 유지)
 async function hash(password: string): Promise<string> {
   const encoder = new TextEncoder()
   const data = encoder.encode(password)
@@ -17,6 +100,120 @@ async function hash(password: string): Promise<string> {
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
   return hashHex
+}
+
+// 이메일 중복 검사 함수 (강화된 버전)
+async function checkEmailExists(db: D1Database, email: string, userType?: string): Promise<boolean> {
+  const tables = ['admins', 'agents', 'employers', 'job_seekers']
+  
+  try {
+    for (const table of tables) {
+      const result = await db.prepare(`SELECT id FROM ${table} WHERE email = ?`).bind(email).first()
+      if (result) {
+        console.log(`⚠️ Email ${email} already exists in ${table}`)
+        return true
+      }
+    }
+    return false
+  } catch (error) {
+    console.error('❌ Email check error:', error)
+    return false
+  }
+}
+
+// 강화된 관리자 생성 함수
+async function createAdmin(db: D1Database, data: any): Promise<number | null> {
+  try {
+    const { email, password, name = 'Administrator', role = 'admin' } = data
+    
+    const result = await db.prepare(`
+      INSERT INTO admins (email, password, name, role, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
+    `).bind(email, password, name, role).run()
+    
+    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
+  } catch (error) {
+    console.error('❌ Admin creation error:', error)
+    return null
+  }
+}
+
+// 강화된 에이전트 생성 함수
+async function createAgent(db: D1Database, data: any): Promise<number | null> {
+  try {
+    const { 
+      email, password, company_name, country = 'Unknown', 
+      contact_person, phone, address, license_number 
+    } = data
+    
+    const result = await db.prepare(`
+      INSERT INTO agents (
+        email, password, company_name, country, contact_person, 
+        phone, address, license_number, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
+    `).bind(
+      email, password, company_name, country, contact_person || company_name,
+      phone || null, address || null, license_number || null
+    ).run()
+    
+    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
+  } catch (error) {
+    console.error('❌ Agent creation error:', error)
+    return null
+  }
+}
+
+// 강화된 기업 생성 함수
+async function createEmployer(db: D1Database, data: any): Promise<number | null> {
+  try {
+    const { 
+      email, password, company_name, business_number, industry = 'General',
+      contact_person, phone, address, region = 'Seoul', website 
+    } = data
+    
+    const result = await db.prepare(`
+      INSERT INTO employers (
+        email, password, company_name, business_number, industry, 
+        contact_person, phone, address, region, website, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
+    `).bind(
+      email, password, company_name, business_number || null, industry,
+      contact_person || company_name, phone || null, address || null, region, website || null
+    ).run()
+    
+    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
+  } catch (error) {
+    console.error('❌ Employer creation error:', error)
+    return null
+  }
+}
+
+// 강화된 구직자 생성 함수 (학생, 강사 포함)
+async function createJobSeeker(db: D1Database, data: any): Promise<number | null> {
+  try {
+    const { 
+      email, password, name, birth_date, gender = 'unknown', nationality = 'Unknown',
+      phone, current_address, korean_level = 'beginner', education_level = 'unknown',
+      current_visa = 'none', desired_visa = 'none'
+    } = data
+    
+    const result = await db.prepare(`
+      INSERT INTO job_seekers (
+        email, password, name, birth_date, gender, nationality, 
+        phone, current_address, korean_level, education_level,
+        current_visa, desired_visa, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
+    `).bind(
+      email, password, name || 'User', birth_date || null, gender, nationality,
+      phone || null, current_address || null, korean_level, education_level,
+      current_visa, desired_visa
+    ).run()
+    
+    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
+  } catch (error) {
+    console.error('❌ JobSeeker creation error:', error)
+    return null
+  }
 }
 
 // 입력 검증 함수들
@@ -3253,8 +3450,67 @@ app.post('/api/auth/logout', async (c) => {
 // ===============================
 
 // 로그인 API
+// 통합된 사용자 인증 함수
+async function authenticateUser(db: D1Database, email: string, password: string, userType: string) {
+  console.log(`🔑 Authenticating user: ${email}, type: ${userType}`)
+  
+  const userTables = {
+    'admin': { table: 'admins', nameField: 'name' },
+    'agent': { table: 'agents', nameField: 'company_name' },
+    'employer': { table: 'employers', nameField: 'company_name' },
+    'jobseeker': { table: 'job_seekers', nameField: 'name' },
+    'student': { table: 'job_seekers', nameField: 'name' }, // 학생도 job_seekers 테이블 사용
+    'instructor': { table: 'job_seekers', nameField: 'name' } // 강사도 job_seekers 테이블 사용
+  }
+  
+  const config = userTables[userType as keyof typeof userTables]
+  if (!config) {
+    console.log(`❌ Unknown user type: ${userType}`)
+    return null
+  }
+  
+  try {
+    const query = `
+      SELECT id, email, ${config.nameField} as name, password
+      FROM ${config.table} 
+      WHERE email = ? AND status IN ('active', 'approved')
+    `
+    
+    console.log(`📊 Query: ${query}`)
+    const user = await db.prepare(query).bind(email).first()
+    
+    if (!user) {
+      console.log(`❌ User not found in ${config.table}`)
+      return null
+    }
+    
+    console.log(`📊 Found user:`, { id: user.id, email: user.email, name: user.name })
+    
+    // 비밀번호 검증
+    const isPasswordValid = await verifyPassword(password, user.password as string)
+    console.log(`🔒 Password verification:`, isPasswordValid)
+    
+    if (isPasswordValid) {
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        userType: userType
+      }
+    }
+    
+    return null
+  } catch (error) {
+    console.error(`❌ Authentication error for ${userType}:`, error)
+    return null
+  }
+}
+
+// 새로운 로그인 API
+// 새로운 통합 로그인 API
 app.post('/api/auth/login', async (c) => {
   try {
+    console.log('🚀 Login attempt started')
     const { email, password, userType } = await c.req.json()
     
     // 입력 검증
@@ -3272,148 +3528,142 @@ app.post('/api/auth/login', async (c) => {
       }, 400)
     }
 
-    // 테스트 계정 로그인 처리 (실제 사용자도 포함)
-    const testAccounts = {
-      'jobseeker@test.com': { userType: 'jobseeker', password: 'test123', name: '김구직', id: 1 },
-      'employer@test.com': { userType: 'employer', password: 'test123', name: '박기업', id: 2 },
-      'agent@test.com': { userType: 'agent', password: 'test123', name: '이에이전트', id: 3 },
-      'admin@test.com': { userType: 'admin', password: 'admin123', name: '최관리자', id: 4 },
-      // 실제 w-campus.com 계정들 추가
-      'admin@w-campus.com': { userType: 'admin', password: 'admin123!', name: 'System Administrator', id: 1001 },
-      'instructor@w-campus.com': { userType: 'instructor', password: 'instructor123!', name: 'W-Campus Instructor', id: 1002 },
-      'student@w-campus.com': { userType: 'student', password: 'student123!', name: 'W-Campus Student', id: 1003 },
-      'user@w-campus.com': { userType: 'jobseeker', password: 'user123!', name: 'W-Campus User', id: 1004 },
-      // 기존 테스트 계정들
-      'wow3d7@naver.com': { userType: 'jobseeker', password: 'wow3d7144', name: '테스트 사용자', id: 100 },
-      'test@test.com': { userType: 'jobseeker', password: 'test1234', name: '테스트 구직자', id: 101 }
-    }
+    console.log(`📊 Login request: ${email} as ${userType}`)
 
-    const testAccount = testAccounts[email as keyof typeof testAccounts]
+    // 데이터베이스에서 사용자 인증
+    const dbUser = await authenticateUser(c.env.DB, email, password, userType)
     
-    console.log(`=== Test Account Check ===`)
-    console.log(`Email: ${email}, UserType: ${userType}, Password: ${password}`)
-    console.log(`Test Account Found:`, testAccount)
-    console.log(`Password Match:`, testAccount && testAccount.password === password)
-    console.log(`UserType Match:`, testAccount && testAccount.userType === userType)
-    
-    if (testAccount && testAccount.password === password && testAccount.userType === userType) {
-      // 테스트 계정 로그인 성공
-      console.log('✅ Test account login SUCCESS')
+    if (dbUser) {
+      console.log(`✅ Authentication successful for:`, dbUser)
+      
       const token = await sign({
-        id: testAccount.id,
-        email: email,
-        userType: userType,
-        name: testAccount.name,
+        id: dbUser.id,
+        email: dbUser.email,
+        userType: dbUser.userType,
+        name: dbUser.name,
         exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24시간
-      }, 'test-secret-key')
+      }, 'w-campus-production-secret-2025')
 
       return c.json({
         success: true,
         token,
         user: {
-          id: testAccount.id,
-          email: email,
-          name: testAccount.name,
-          userType: userType
-        },
-        message: '로그인 성공'
-      })
-    }
-    
-    console.log('❌ Test account login FAILED, trying database...')
-
-    // 실제 데이터베이스에서 사용자 조회 (우선 처리)
-    try {
-      console.log(`=== Login attempt ===`)
-      console.log(`Email: ${email}`)
-      console.log(`UserType: ${userType}`)
-      
-      // 먼저 평문 비밀번호로 시도 (신규 가입자)
-      console.log(`📊 Trying plain password authentication...`)
-      let dbUser = await authenticateUserWithPlainPassword(c.env.DB, email, password, userType)
-      console.log(`Plain password auth result:`, dbUser ? 'SUCCESS' : 'FAILED')
-      if (dbUser) {
-        console.log(`Plain password user data:`, JSON.stringify(dbUser, null, 2))
-      }
-      
-      // 평문 비밀번호로 찾지 못하면 해시된 비밀번호로 시도
-      if (!dbUser) {
-        console.log(`📊 Trying hashed password authentication...`)
-        dbUser = await authenticateUser(c.env.DB, email, password, userType)
-        console.log(`Hashed password auth result:`, dbUser ? 'SUCCESS' : 'FAILED')
-        if (dbUser) {
-          console.log(`Hashed password user data:`, JSON.stringify(dbUser, null, 2))
-        }
-      }
-      
-      if (dbUser) {
-        console.log(`Found user in DB:`, dbUser)
-        const token = await sign({
           id: dbUser.id,
           email: dbUser.email,
-          userType: userType,
-          name: dbUser.name || dbUser.company_name || 'Unknown',
-          exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
-        }, 'production-secret-key')
-
-        return c.json({
-          success: true,
-          token,
-          user: {
-            id: dbUser.id,
-            email: dbUser.email,
-            name: dbUser.name || dbUser.company_name || 'Unknown',
-            userType: userType
-          },
-          message: '로그인 성공'
-        })
-      }
+          name: dbUser.name,
+          userType: dbUser.userType
+        },
+        message: '로그인이 성공적으로 완료되었습니다.'
+      })
+    } else {
+      console.log(`❌ Authentication failed for: ${email}`)
       
-      console.log(`No user found in DB for email: ${email}, userType: ${userType}`)
-      
-      // DB에서 찾지 못한 경우, 일반적인 DB 조회도 시도 (userType 무관)
-      console.log(`Attempting generic database search for: ${email}`)
-      const genericUser = await searchUserInAllTables(c.env.DB, email, password)
-      
-      if (genericUser) {
-        console.log(`Found user in generic search:`, genericUser)
-        const token = await sign({
-          id: genericUser.id,
-          email: genericUser.email,
-          userType: genericUser.userType || userType,
-          name: genericUser.name || 'Unknown',
-          exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
-        }, 'production-secret-key')
-
-        return c.json({
-          success: true,
-          token,
-          user: {
-            id: genericUser.id,
-            email: genericUser.email,
-            name: genericUser.name || 'Unknown',
-            userType: genericUser.userType || userType
-          },
-          message: '로그인 성공'
-        })
-      }
-      
-    } catch (dbError) {
-      console.log('실제 DB 조회 실패, 테스트 계정으로 폴백:', dbError)
+      return c.json({
+        success: false,
+        error: '이메일 또는 비밀번호가 올바르지 않습니다.'
+      }, 401)
     }
-    
-    // 로그인 실패
-    console.log(`Login failed for: ${email}`)
-    return c.json({ 
-      success: false, 
-      error: '이메일 또는 비밀번호가 올바르지 않습니다.' 
-    }, 401)
 
   } catch (error) {
-    console.error('Login API error:', error)
+    console.error('🚫 Login error:', error)
     return c.json({ 
       success: false, 
-      error: '로그인 처리 중 오류가 발생했습니다.' 
+      error: '로그인 중 오류가 발생했습니다. 다시 시도해주세요.' 
+    }, 500)
+  }
+})
+
+// 통합 회원가입 API
+app.post('/api/auth/register', async (c) => {
+  try {
+    console.log('📝 Registration attempt started')
+    const requestData = await c.req.json()
+    const { email, password, userType, ...userData } = requestData
+    
+    // 기본 입력 검증
+    if (!email || !password || !userType) {
+      return c.json({ 
+        success: false, 
+        error: '이메일, 비밀번호, 사용자 유형은 필수입니다.' 
+      }, 400)
+    }
+
+    if (!validateEmail(email)) {
+      return c.json({ 
+        success: false, 
+        error: '올바른 이메일 형식을 입력해주세요.' 
+      }, 400)
+    }
+
+    if (!validatePassword(password)) {
+      return c.json({ 
+        success: false, 
+        error: '비밀번호는 8자 이상, 영문자와 숫자를 포함해야 합니다.' 
+      }, 400)
+    }
+
+    console.log(`📊 Registration request: ${email} as ${userType}`)
+
+    // 이메일 중복 검사
+    const emailExists = await checkEmailExists(c.env.DB, email)
+    if (emailExists) {
+      return c.json({ 
+        success: false, 
+        error: '이미 등록된 이메일입니다.' 
+      }, 409)
+    }
+
+    // 비밀번호 해시
+    const hashedPassword = await hashPassword(password)
+    console.log(`🔒 Password hashed successfully`)
+
+    // 사용자 유형별 회원가입 처리
+    let userId: number | null = null
+    
+    switch (userType) {
+      case 'admin':
+        userId = await createAdmin(c.env.DB, { email, password: hashedPassword, ...userData })
+        break
+      case 'agent':
+        userId = await createAgent(c.env.DB, { email, password: hashedPassword, ...userData })
+        break
+      case 'employer':
+        userId = await createEmployer(c.env.DB, { email, password: hashedPassword, ...userData })
+        break
+      case 'jobseeker':
+      case 'student':
+      case 'instructor':
+        userId = await createJobSeeker(c.env.DB, { email, password: hashedPassword, ...userData })
+        break
+      default:
+        return c.json({ 
+          success: false, 
+          error: '올바르지 않은 사용자 유형입니다.' 
+        }, 400)
+    }
+
+    if (userId) {
+      console.log(`✅ User registered successfully: ${email} (ID: ${userId})`)
+      
+      return c.json({
+        success: true,
+        message: '회원가입이 성공적으로 완료되었습니다.',
+        userId: userId
+      })
+    } else {
+      console.log(`❌ Registration failed for: ${email}`)
+      
+      return c.json({ 
+        success: false, 
+        error: '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.' 
+      }, 500)
+    }
+
+  } catch (error) {
+    console.error('🚫 Registration error:', error)
+    return c.json({ 
+      success: false, 
+      error: '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.' 
     }, 500)
   }
 })
@@ -3608,141 +3858,13 @@ app.post('/api/auth/register', async (c) => {
   }
 })
 
-// 이메일 중복 확인 함수
-async function checkEmailExists(db: D1Database, email: string, userType: string): Promise<boolean> {
-  const tables = {
-    'jobseeker': 'job_seekers',
-    'employer': 'employers', 
-    'agent': 'agents',
-    'admin': 'admins'
-  }
-  
-  const tableName = tables[userType as keyof typeof tables]
-  if (!tableName) return false
-  
-  try {
-    const result = await db.prepare(`SELECT id FROM ${tableName} WHERE email = ?`).bind(email).first()
-    return !!result
-  } catch (error) {
-    console.error(`Email check error for ${userType}:`, error)
-    return false
-  }
-}
 
-// 구직자 생성 함수
-async function createJobSeeker(db: D1Database, data: any): Promise<number | null> {
-  try {
-    const { 
-      email, 
-      password, 
-      name, 
-      birth_date, 
-      gender, 
-      nationality, 
-      phone, 
-      current_address, 
-      korean_level = 'beginner',
-      education_level,
-      current_visa,
-      desired_visa
-    } = data
-    
-    if (!name || !nationality) {
-      throw new Error('구직자 필수 정보가 누락되었습니다.')
-    }
-    
-    console.log(`Creating job seeker with email: ${email}, password length: ${password?.length}`)
-    
-    const result = await db.prepare(`
-      INSERT INTO job_seekers (
-        email, password, name, birth_date, gender, nationality, 
-        phone, current_address, korean_level, education_level,
-        current_visa, desired_visa, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
-    `).bind(
-      email, password, name, birth_date || null, gender || null, nationality,
-      phone || null, current_address || null, korean_level, education_level || null,
-      current_visa || null, desired_visa || null
-    ).run()
-    
-    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
-  } catch (error) {
-    console.error('Create job seeker error:', error)
-    return null
-  }
-}
 
-// 기업 생성 함수
-async function createEmployer(db: D1Database, data: any): Promise<number | null> {
-  try {
-    const { 
-      email, 
-      password, 
-      company_name, 
-      business_number, 
-      industry, 
-      contact_person, 
-      phone, 
-      address, 
-      region, 
-      website 
-    } = data
-    
-    if (!company_name || !business_number || !industry || !contact_person || !phone || !address || !region) {
-      throw new Error('기업 필수 정보가 누락되었습니다.')
-    }
-    
-    const result = await db.prepare(`
-      INSERT INTO employers (
-        email, password, company_name, business_number, industry, 
-        contact_person, phone, address, region, website, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-    `).bind(
-      email, password, company_name, business_number, industry,
-      contact_person, phone, address, region, website || null
-    ).run()
-    
-    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
-  } catch (error) {
-    console.error('Create employer error:', error)
-    return null
-  }
-}
 
-// 에이전트 생성 함수
-async function createAgent(db: D1Database, data: any): Promise<number | null> {
-  try {
-    const { 
-      email, 
-      password, 
-      company_name, 
-      country, 
-      contact_person, 
-      phone, 
-      address, 
-      license_number 
-    } = data
-    
-    if (!company_name || !country || !contact_person) {
-      throw new Error('에이전트 필수 정보가 누락되었습니다.')
-    }
-    
-    const result = await db.prepare(`
-      INSERT INTO agents (
-        email, password, company_name, country, contact_person, 
-        phone, address, license_number, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-    `).bind(
-      email, password, company_name, country, contact_person,
-      phone || null, address || null, license_number || null
-    ).run()
-    
-    return result.meta?.last_row_id ? Number(result.meta.last_row_id) : null
-  } catch (error) {
-    console.error('Create agent error:', error)
-    return null
-  }
-}
+
+
+
+
 
 // 평문 비밀번호로 인증하는 함수 (신규 가입자용)
 async function authenticateUserWithPlainPassword(db: D1Database, email: string, password: string, userType: string) {
@@ -3830,37 +3952,7 @@ async function searchUserInAllTables(db: D1Database, email: string, password: st
   return null
 }
 
-// 실제 데이터베이스 로그인 검증 개선
-async function authenticateUser(db: D1Database, email: string, password: string, userType: string) {
-  const tables = {
-    'jobseeker': 'job_seekers',
-    'employer': 'employers', 
-    'agent': 'agents',
-    'admin': 'admins'
-  }
-  
-  const tableName = tables[userType as keyof typeof tables]
-  if (!tableName) return null
-  
-  try {
-    const hashedPassword = await hash(password)
-    let query: string
-    
-    if (tableName === 'admins') {
-      query = `SELECT id, email, name, role as userType FROM ${tableName} WHERE email = ? AND password = ? AND status = 'active'`
-    } else if (tableName === 'job_seekers') {
-      query = `SELECT id, email, name, nationality, korean_level FROM ${tableName} WHERE email = ? AND password = ? AND status = 'active'`
-    } else {
-      query = `SELECT id, email, company_name as name FROM ${tableName} WHERE email = ? AND password = ? AND status IN ('approved', 'active')`
-    }
-    
-    const user = await db.prepare(query).bind(email, hashedPassword).first()
-    return user
-  } catch (error) {
-    console.error(`Authentication error for ${userType}:`, error)
-    return null
-  }
-}
+
 
 // 구직자 등록 API (별도 엔드포인트) 
 app.post('/api/job-seekers/register', async (c) => {
