@@ -3281,48 +3281,7 @@ async function verifyToken(c: any, next: any) {
   }
 }
 
-// 로그인 상태 확인 API
-app.get('/api/auth/verify', async (c) => {
-  const authHeader = c.req.header('Authorization');
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ authenticated: false, error: '토큰이 없습니다.' }, 401);
-  }
-  
-  const token = authHeader.substring(7);
-  
-  // 실제 JWT 토큰이 아닌 간단한 토큰 형식인 경우 처리
-  if (!token.startsWith('token_')) {
-    try {
-      const decoded = await verify(token, JWT_SECRET);
-      return c.json({ 
-        authenticated: true, 
-        user: {
-          id: decoded.id,
-          email: decoded.email,
-          userType: decoded.userType,
-          name: decoded.name
-        }
-      });
-    } catch (error) {
-      return c.json({ authenticated: false, error: '유효하지 않은 토큰입니다.' }, 401);
-    }
-  } else {
-    // 기존 간단한 토큰 형식 검증 및 반환
-    const tokenParts = token.split('_');
-    if (tokenParts.length < 3) {
-      return c.json({ authenticated: false, error: '유효하지 않은 토큰입니다.' }, 401);
-    }
-    
-    return c.json({ 
-      authenticated: true, 
-      user: {
-        id: tokenParts[1],
-        userType: tokenParts[2]
-      }
-    });
-  }
-});
+
 
 // 인증 상태 확인 API (쿠키 기반)
 app.get('/api/auth/status', async (c) => {
@@ -3751,14 +3710,15 @@ app.post('/api/auth/register', async (c) => {
     const { userType, email, password, confirmPassword, ...additionalData } = requestData
     
     // 기본 검증
-    if (!email || !password || !userType || !confirmPassword) {
+    if (!email || !password || !userType) {
       return c.json({ 
         success: false, 
         error: '필수 정보가 누락되었습니다.' 
       }, 400)
     }
 
-    if (password !== confirmPassword) {
+    // confirmPassword가 있으면 검증
+    if (confirmPassword && password !== confirmPassword) {
       return c.json({ 
         success: false, 
         error: '비밀번호가 일치하지 않습니다.' 

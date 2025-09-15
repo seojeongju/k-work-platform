@@ -414,21 +414,12 @@ async function runCompleteTest() {
 }
 
 // 스크립트 실행
-if (require.main === module) {
-  runCompleteTest()
-    .then(() => {
-      console.log('\n✨ 모든 테스트가 완료되었습니다!')
-      process.exit(testResults.failed > 0 ? 1 : 0)
-    })
-    .catch(error => {
-      console.error('\n💥 테스트 실행 중 심각한 오류:', error)
-      process.exit(1)
-    })
-}
-
-module.exports = {
-  runCompleteTest,
-  testUserTypeComplete,
-  TEST_DATA,
-  BASE_URL
-}
+runCompleteTest()
+  .then(() => {
+    console.log('\n✨ 모든 테스트가 완료되었습니다!')
+    process.exit(testResults.failed > 0 ? 1 : 0)
+  })
+  .catch(error => {
+    console.error('\n💥 테스트 실행 중 심각한 오류:', error)
+    process.exit(1)
+  })
