@@ -1530,17 +1530,32 @@ app.get('/', async (c) => {
                 mobileDashboardMenu.classList.remove('hidden');
             }
 
-            // 사용자 유형별 대시보드로 이동
+            // 사용자 유형별 대시보드로 이동 (강화된 버전)
             function goToDashboard() {
+                console.log('대시보드 이동 함수 호출됨');
+                
+                const token = localStorage.getItem('token');
                 const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
                 
-                if (!user.userType) {
-                    console.error('사용자 유형 정보를 찾을 수 없습니다.');
-                    alert('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+                console.log('토큰:', token ? '있음' : '없음');
+                console.log('사용자 정보:', user);
+                
+                // 인증 확인
+                if (!token) {
+                    console.log('토큰이 없어서 로그인 페이지로 이동');
+                    alert('로그인이 필요합니다.');
+                    window.location.href = '/static/login.html';
                     return;
                 }
                 
-                console.log('대시보드 이동:', user.userType);
+                if (!user || !user.userType) {
+                    console.error('사용자 유형 정보를 찾을 수 없습니다.');
+                    alert('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+                    window.location.href = '/static/login.html';
+                    return;
+                }
+                
+                console.log('대시보드 이동 준비:', user.userType);
                 
                 // 사용자 유형별 대시보드 URL
                 let dashboardUrl = '/';
@@ -1548,28 +1563,39 @@ app.get('/', async (c) => {
                 switch(user.userType) {
                     case 'admin':
                         dashboardUrl = '/static/admin-dashboard.html';
+                        console.log('관리자 대시보드로 이동');
                         break;
                     case 'agent':
                         dashboardUrl = '/static/agent-dashboard.html';
+                        console.log('에이전트 대시보드로 이동');
                         break;
                     case 'employer':
                         dashboardUrl = '/static/employer-dashboard.html';
+                        console.log('기업 대시보드로 이동');
                         break;
                     case 'instructor':
                         dashboardUrl = '/static/instructor-dashboard.html';
+                        console.log('강사 대시보드로 이동');
                         break;
                     case 'jobseeker':
                     case 'student':
                         dashboardUrl = '/static/jobseeker-profile.html';
+                        console.log('구직자 프로필로 이동');
                         break;
                     default:
                         console.warn('알 수 없는 사용자 유형:', user.userType);
+                        alert('알 수 없는 사용자 유형입니다: ' + user.userType);
                         dashboardUrl = '/';
                         break;
                 }
                 
-                console.log('대시보드 URL 이동:', dashboardUrl);
-                window.location.href = dashboardUrl;
+                console.log('최종 대시보드 URL:', dashboardUrl);
+                
+                // 확실한 리다이렉트를 위해 약간의 지연 추가
+                setTimeout(function() {
+                    console.log('실제 페이지 이동 실행:', dashboardUrl);
+                    window.location.href = dashboardUrl;
+                }, 100);
             }
 
             // 로그아웃 함수
@@ -2206,32 +2232,48 @@ app.get('/static/login.html', async (c) => {
                 console.log('로그인 응답:', data);
                 
                 if (data.success && data.token) {
-                    // 로그인 성공
+                    console.log('로그인 성공, 토큰 저장 시작');
+                    
+                    // 로그인 성공 - 토큰과 사용자 정보 저장
                     localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user)); // 일관성 있게 'user'로 변경
-                    localStorage.setItem('currentUser', JSON.stringify(data.user)); // 기존 코드 호환성 유지
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem('currentUser', JSON.stringify(data.user)); // 호환성 유지
+                    
+                    console.log('저장된 사용자 정보:', data.user);
+                    console.log('저장된 토큰:', data.token.substring(0, 20) + '...');
                     
                     alert('로그인이 완료되었습니다!');
                     
-                    // 사용자 유형별 리다이렉트 (더 상세한 처리)
-                    console.log('리다이렉트 준비:', { selectedUserType, user: data.user });
-                    
-                    if (selectedUserType === 'agent') {
-                        window.location.href = '/static/agent-dashboard.html';
-                    } else if (selectedUserType === 'admin') {
-                        console.log('관리자 대시보드로 이동');
-                        window.location.href = '/static/admin-dashboard.html';
-                    } else if (selectedUserType === 'employer') {
-                        window.location.href = '/static/employer-dashboard.html';
-                    } else if (selectedUserType === 'jobseeker' || selectedUserType === 'student') {
-                        window.location.href = '/static/jobseeker-profile.html';
-                    } else if (selectedUserType === 'instructor') {
-                        window.location.href = '/static/instructor-dashboard.html';
-                    } else {
-                        // 기본적으로 메인 페이지로 이동 후 인증된 상태로 업데이트
-                        console.log('기본 리다이렉트: 메인 페이지');
-                        window.location.href = '/';
-                    }
+                    // 약간의 지연 후 리다이렉트 (localStorage 동기화 보장)
+                    setTimeout(function() {
+                        console.log('리다이렉트 준비:', { selectedUserType, userType: data.user.userType });
+                        
+                        // 사용자 유형별 리다이렉트 (강화된 로직)
+                        let dashboardUrl = '/';
+                        
+                        if (selectedUserType === 'admin' || data.user.userType === 'admin') {
+                            dashboardUrl = '/static/admin-dashboard.html';
+                            console.log('관리자 대시보드로 이동:', dashboardUrl);
+                        } else if (selectedUserType === 'agent' || data.user.userType === 'agent') {
+                            dashboardUrl = '/static/agent-dashboard.html';
+                            console.log('에이전트 대시보드로 이동:', dashboardUrl);
+                        } else if (selectedUserType === 'employer' || data.user.userType === 'employer') {
+                            dashboardUrl = '/static/employer-dashboard.html';
+                            console.log('기업 대시보드로 이동:', dashboardUrl);
+                        } else if (selectedUserType === 'instructor' || data.user.userType === 'instructor') {
+                            dashboardUrl = '/static/instructor-dashboard.html';
+                            console.log('강사 대시보드로 이동:', dashboardUrl);
+                        } else if (selectedUserType === 'jobseeker' || selectedUserType === 'student' || data.user.userType === 'jobseeker' || data.user.userType === 'student') {
+                            dashboardUrl = '/static/jobseeker-profile.html';
+                            console.log('구직자 프로필로 이동:', dashboardUrl);
+                        } else {
+                            console.log('기본 홈페이지로 이동');
+                            dashboardUrl = '/';
+                        }
+                        
+                        console.log('최종 리다이렉트 URL:', dashboardUrl);
+                        window.location.href = dashboardUrl;
+                    }, 500); // 500ms 지연
                 } else {
                     // 로그인 실패
                     const errorMessage = data.error || '이메일 또는 비밀번호가 올바르지 않습니다.';
@@ -6125,17 +6167,40 @@ app.get('/static/admin-dashboard.html', async (c) => {
     </div>
     
     <script>
-        // 인증 확인
+        console.log('관리자 대시보드 페이지 로드 시작');
+        
+        // 인증 확인 (더 강화된 버전)
         function checkAuth() {
+            console.log('인증 확인 시작');
+            
             const token = localStorage.getItem('token');
             const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
             
-            if (!token || !user || user.userType !== 'admin') {
-                alert('관리자 권한이 필요합니다.');
+            console.log('토큰:', token);
+            console.log('사용자:', user);
+            
+            if (!token) {
+                console.log('토큰이 없음 - 로그인 페이지로 이동');
+                alert('로그인이 필요합니다.');
                 window.location.href = '/static/login.html';
                 return false;
             }
             
+            if (!user || !user.userType) {
+                console.log('사용자 정보가 없음 - 로그인 페이지로 이동');
+                alert('사용자 정보가 없습니다. 다시 로그인해주세요.');
+                window.location.href = '/static/login.html';
+                return false;
+            }
+            
+            if (user.userType !== 'admin') {
+                console.log('관리자 권한이 없음:', user.userType);
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '/';
+                return false;
+            }
+            
+            console.log('인증 성공 - 관리자 대시보드 표시');
             document.getElementById('admin-name').textContent = user.name ? user.name + '님 환영합니다' : '관리자님 환영합니다';
             return true;
         }
@@ -6179,11 +6244,28 @@ app.get('/static/admin-dashboard.html', async (c) => {
             }
         });
         
-        // 페이지 로드시 실행
+        // 페이지 로드시 실행 - 약간의 지연 추가
         document.addEventListener('DOMContentLoaded', function() {
-            if (checkAuth()) {
-                loadStats();
-            }
+            console.log('DOM 로드 완료, 인증 확인 시작');
+            // 약간의 지연을 주어 localStorage가 완전히 설정되도록 함
+            setTimeout(function() {
+                if (checkAuth()) {
+                    loadStats();
+                }
+            }, 100);
+        });
+        
+        // 추가 안전장치 - window load 이벤트
+        window.addEventListener('load', function() {
+            console.log('Window 로드 완료, 추가 인증 확인');
+            setTimeout(function() {
+                const token = localStorage.getItem('token');
+                const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
+                if (!token || !user || user.userType !== 'admin') {
+                    console.log('Window 로드 시 인증 실패 감지');
+                    window.location.href = '/static/login.html';
+                }
+            }, 200);
         });
     </script>
 </body>
@@ -6243,17 +6325,40 @@ app.get('/static/agent-dashboard.html', async (c) => {
     </div>
     
     <script>
-        // 인증 확인
+        console.log('에이전트 대시보드 페이지 로드 시작');
+        
+        // 강화된 인증 확인
         function checkAuth() {
+            console.log('에이전트 인증 확인 시작');
+            
             const token = localStorage.getItem('token');
             const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
             
-            if (!token || !user || user.userType !== 'agent') {
-                alert('에이전트 권한이 필요합니다.');
+            console.log('토큰:', token ? '있음' : '없음');
+            console.log('사용자:', user);
+            
+            if (!token) {
+                console.log('토큰이 없음 - 로그인 페이지로 이동');
+                alert('로그인이 필요합니다.');
                 window.location.href = '/static/login.html';
                 return false;
             }
             
+            if (!user || !user.userType) {
+                console.log('사용자 정보가 없음 - 로그인 페이지로 이동');
+                alert('사용자 정보가 없습니다. 다시 로그인해주세요.');
+                window.location.href = '/static/login.html';
+                return false;
+            }
+            
+            if (user.userType !== 'agent') {
+                console.log('에이전트 권한이 없음:', user.userType);
+                alert('에이전트 권한이 필요합니다.');
+                window.location.href = '/';
+                return false;
+            }
+            
+            console.log('에이전트 인증 성공');
             document.getElementById('agent-name').textContent = user.name ? user.name + '님 환영합니다' : '에이전트님 환영합니다';
             return true;
         }
@@ -6268,9 +6373,24 @@ app.get('/static/agent-dashboard.html', async (c) => {
             }
         });
         
-        // 페이지 로드시 실행
+        // 페이지 로드시 실행 - 지연 추가
         document.addEventListener('DOMContentLoaded', function() {
-            checkAuth();
+            console.log('에이전트 DOM 로드 완료');
+            setTimeout(function() {
+                checkAuth();
+            }, 100);
+        });
+        
+        // 추가 안전장치
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const token = localStorage.getItem('token');
+                const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('currentUser') || '{}');
+                if (!token || !user || user.userType !== 'agent') {
+                    console.log('Window 로드 시 에이전트 인증 실패');
+                    window.location.href = '/static/login.html';
+                }
+            }, 200);
         });
     </script>
 </body>
