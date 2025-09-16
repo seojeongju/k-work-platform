@@ -2680,8 +2680,12 @@ app.get('/static/register.html', async (c) => {
                 document.getElementById('jobseekerFields').classList.remove('hidden');
             } else if (selectedUserType === 'employer') {
                 document.getElementById('employerFields').classList.remove('hidden');
+                // 구인기업 필드 이벤트 리스너 추가
+                setTimeout(addEmployerFieldListeners, 100);
             } else if (selectedUserType === 'agent') {
                 document.getElementById('agentFields').classList.remove('hidden');
+                // 에이전트 필드 이벤트 리스너 추가
+                setTimeout(addAgentFieldListeners, 100);
             }
         }
 
@@ -2697,6 +2701,23 @@ app.get('/static/register.html', async (c) => {
             
             let allFieldsFilled = selectedUserType && firstName && lastName && email && password && confirmPassword && phone;
             let passwordsMatch = password === confirmPassword;
+            
+            // 사용자 유형별 추가 필수 필드 검사
+            if (selectedUserType === 'employer') {
+                const companyName = document.getElementById('companyName')?.value || '';
+                const industry = document.getElementById('industry')?.value || '';
+                const contactPerson = document.getElementById('contactPerson')?.value || '';
+                const address = document.getElementById('address')?.value || '';
+                const region = document.getElementById('region')?.value || '';
+                
+                // 사업자등록번호는 선택사항이므로 체크하지 않음
+                allFieldsFilled = allFieldsFilled && companyName && industry && contactPerson && address && region;
+            } else if (selectedUserType === 'agent') {
+                const agencyName = document.getElementById('agencyName')?.value || '';
+                const licenseNumber = document.getElementById('licenseNumber')?.value || '';
+                
+                allFieldsFilled = allFieldsFilled && agencyName && licenseNumber;
+            }
             
             // 비밀번호 유효성 검사
             const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
@@ -2715,6 +2736,26 @@ app.get('/static/register.html', async (c) => {
         ['firstName', 'lastName', 'email', 'password', 'confirmPassword', 'phone'].forEach(id => {
             document.getElementById(id).addEventListener('input', updateRegisterButton);
         });
+        
+        // 구인기업 필드 이벤트 리스너 (동적으로 추가될 수 있으므로 나중에 추가)
+        function addEmployerFieldListeners() {
+            ['companyName', 'industry', 'contactPerson', 'address', 'region', 'businessNumber', 'website'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', updateRegisterButton);
+                }
+            });
+        }
+        
+        // 에이전트 필드 이벤트 리스너
+        function addAgentFieldListeners() {
+            ['agencyName', 'licenseNumber'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', updateRegisterButton);
+                }
+            });
+        }
 
         // 비밀번호 확인 실시간 검증
         document.getElementById('confirmPassword').addEventListener('input', function() {
