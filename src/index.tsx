@@ -3525,7 +3525,7 @@ async function authenticateUser(db: D1Database, email: string, password: string,
     const query = `
       SELECT id, email, ${config.nameField} as name, password
       FROM ${config.table} 
-      WHERE email = ? AND status IN ('active', 'approved')
+      WHERE email = ? AND status IN ('active', 'approved', 'pending')
     `
     
     console.log(`📊 Query: ${query}`)
@@ -4097,7 +4097,7 @@ async function authenticateUserWithPlainPassword(db: D1Database, email: string, 
     } else if (tableName === 'job_seekers') {
       query = `SELECT id, email, name, nationality, korean_level FROM ${tableName} WHERE email = ? AND password = ? AND status = 'active'`
     } else {
-      query = `SELECT id, email, company_name as name FROM ${tableName} WHERE email = ? AND password = ? AND status IN ('approved', 'active')`
+      query = `SELECT id, email, company_name as name FROM ${tableName} WHERE email = ? AND password = ? AND status IN ('approved', 'active', 'pending')`
     }
     
     console.log(`📊 Query:`, query)
