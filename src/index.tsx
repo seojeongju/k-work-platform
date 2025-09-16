@@ -2448,28 +2448,28 @@ app.get('/static/register.html', async (c) => {
             <form id="registerForm" class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">이름</label>
+                        <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">이름 <span class="text-red-500">*</span></label>
                         <input type="text" id="firstName" name="firstName" required 
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
-                               placeholder="이름">
+                               placeholder="이름을 입력하세요">
                     </div>
                     <div>
-                        <label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">성</label>
+                        <label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">성 <span class="text-red-500">*</span></label>
                         <input type="text" id="lastName" name="lastName" required 
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
-                               placeholder="성">
+                               placeholder="성을 입력하세요">
                     </div>
                 </div>
                 
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">이메일 <span class="text-red-500">*</span></label>
                     <input type="email" id="email" name="email" required 
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
                            placeholder="이메일을 입력하세요">
                 </div>
                 
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">비밀번호 <span class="text-red-500">*</span></label>
                     <div class="relative">
                         <input type="password" id="password" name="password" required 
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent pr-10 text-sm"
@@ -2482,14 +2482,14 @@ app.get('/static/register.html', async (c) => {
                 </div>
                 
                 <div>
-                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">비밀번호 확인</label>
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">비밀번호 확인 <span class="text-red-500">*</span></label>
                     <input type="password" id="confirmPassword" name="confirmPassword" required 
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
                            placeholder="비밀번호를 다시 입력하세요">
                 </div>
                 
                 <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">전화번호</label>
+                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">전화번호 <span class="text-red-500">*</span></label>
                     <input type="tel" id="phone" name="phone" required 
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
                            placeholder="010-1234-5678">
@@ -2529,7 +2529,7 @@ app.get('/static/register.html', async (c) => {
                 <!-- 구인기업 전용 필드 -->
                 <div id="employerFields" class="hidden space-y-4">
                     <div>
-                        <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1">회사명</label>
+                        <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1">회사명 <span class="text-red-500">*</span></label>
                         <input type="text" id="companyName" name="companyName" required
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
                                placeholder="회사명을 입력하세요">
@@ -2541,7 +2541,7 @@ app.get('/static/register.html', async (c) => {
                                placeholder="000-00-00000 (선택사항)">
                     </div>
                     <div>
-                        <label for="industry" class="block text-sm font-medium text-gray-700 mb-1">업종</label>
+                        <label for="industry" class="block text-sm font-medium text-gray-700 mb-1">업종 <span class="text-red-500">*</span></label>
                         <select id="industry" name="industry" required
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm">
                             <option value="">업종을 선택하세요</option>
@@ -2557,19 +2557,19 @@ app.get('/static/register.html', async (c) => {
                         </select>
                     </div>
                     <div>
-                        <label for="contactPerson" class="block text-sm font-medium text-gray-700 mb-1">담당자명</label>
+                        <label for="contactPerson" class="block text-sm font-medium text-gray-700 mb-1">담당자명 <span class="text-red-500">*</span></label>
                         <input type="text" id="contactPerson" name="contactPerson" required
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
                                placeholder="담당자 이름을 입력하세요">
                     </div>
                     <div>
-                        <label for="address" class="block text-sm font-medium text-gray-700 mb-1">주소</label>
+                        <label for="address" class="block text-sm font-medium text-gray-700 mb-1">주소 <span class="text-red-500">*</span></label>
                         <input type="text" id="address" name="address" required
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
                                placeholder="회사 주소를 입력하세요">
                     </div>
                     <div>
-                        <label for="region" class="block text-sm font-medium text-gray-700 mb-1">지역</label>
+                        <label for="region" class="block text-sm font-medium text-gray-700 mb-1">지역 <span class="text-red-500">*</span></label>
                         <select id="region" name="region" required
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm">
                             <option value="">지역을 선택하세요</option>
@@ -2603,14 +2603,14 @@ app.get('/static/register.html', async (c) => {
                 <!-- 에이전트 전용 필드 -->
                 <div id="agentFields" class="hidden space-y-4">
                     <div>
-                        <label for="agencyName" class="block text-sm font-medium text-gray-700 mb-1">에이전시명</label>
-                        <input type="text" id="agencyName" name="agencyName" 
+                        <label for="agencyName" class="block text-sm font-medium text-gray-700 mb-1">에이전시명 <span class="text-red-500">*</span></label>
+                        <input type="text" id="agencyName" name="agencyName" required
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
                                placeholder="에이전시명을 입력하세요">
                     </div>
                     <div>
-                        <label for="licenseNumber" class="block text-sm font-medium text-gray-700 mb-1">허가번호</label>
-                        <input type="text" id="licenseNumber" name="licenseNumber" 
+                        <label for="licenseNumber" class="block text-sm font-medium text-gray-700 mb-1">허가번호 <span class="text-red-500">*</span></label>
+                        <input type="text" id="licenseNumber" name="licenseNumber" required
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
                                placeholder="허가번호를 입력하세요">
                     </div>
@@ -2647,6 +2647,8 @@ app.get('/static/register.html', async (c) => {
         // 회원 유형 선택
         document.querySelectorAll('.user-type-btn').forEach(btn => {
             btn.addEventListener('click', function() {
+                console.log('User type clicked:', this.dataset.type);
+                
                 // 모든 버튼에서 active 클래스 제거
                 document.querySelectorAll('.user-type-btn').forEach(b => {
                     b.classList.remove('bg-wowcampus-blue', 'text-white');
@@ -2658,8 +2660,11 @@ app.get('/static/register.html', async (c) => {
                 this.classList.add('bg-wowcampus-blue', 'text-white');
                 
                 selectedUserType = this.dataset.type;
+                console.log('Selected user type:', selectedUserType);
+                
                 showUserTypeFields();
-                updateRegisterButton();
+                // 즉시 버튼 체크
+                setTimeout(updateRegisterButton, 200);
             });
         });
 
@@ -2678,6 +2683,8 @@ app.get('/static/register.html', async (c) => {
             // 선택된 유형에 따라 필드 표시
             if (selectedUserType === 'jobseeker') {
                 document.getElementById('jobseekerFields').classList.remove('hidden');
+                // 구직자 필드 이벤트 리스너 추가
+                setTimeout(addJobseekerFieldListeners, 100);
             } else if (selectedUserType === 'employer') {
                 document.getElementById('employerFields').classList.remove('hidden');
                 // 구인기업 필드 이벤트 리스너 추가
@@ -2689,70 +2696,193 @@ app.get('/static/register.html', async (c) => {
             }
         }
 
-        // 회원가입 버튼 상태 업데이트
+        // 회원가입 버튼 상태 업데이트 (모든 사용자 유형 지원)
         function updateRegisterButton() {
-            const firstName = document.getElementById('firstName').value;
-            const lastName = document.getElementById('lastName').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const phone = document.getElementById('phone').value;
+            console.log('=== updateRegisterButton called ==='); 
+            
             const registerBtn = document.getElementById('registerBtn');
-            
-            let allFieldsFilled = selectedUserType && firstName && lastName && email && password && confirmPassword && phone;
-            let passwordsMatch = password === confirmPassword;
-            
-            // 사용자 유형별 추가 필수 필드 검사
-            if (selectedUserType === 'employer') {
-                const companyName = document.getElementById('companyName')?.value || '';
-                const industry = document.getElementById('industry')?.value || '';
-                const contactPerson = document.getElementById('contactPerson')?.value || '';
-                const address = document.getElementById('address')?.value || '';
-                const region = document.getElementById('region')?.value || '';
-                
-                // 사업자등록번호는 선택사항이므로 체크하지 않음
-                allFieldsFilled = allFieldsFilled && companyName && industry && contactPerson && address && region;
-            } else if (selectedUserType === 'agent') {
-                const agencyName = document.getElementById('agencyName')?.value || '';
-                const licenseNumber = document.getElementById('licenseNumber')?.value || '';
-                
-                allFieldsFilled = allFieldsFilled && agencyName && licenseNumber;
+            if (!registerBtn) {
+                console.log('Register button not found!');
+                return;
             }
             
-            // 비밀번호 유효성 검사
-            const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
-            let passwordValid = passwordRegex.test(password);
+            // 선택된 사용자 유형 확인
+            if (!selectedUserType) {
+                console.log('No user type selected');
+                registerBtn.disabled = true;
+                registerBtn.classList.add('opacity-50');
+                return;
+            }
             
-            if (allFieldsFilled && passwordsMatch && passwordValid) {
+            console.log('Selected user type:', selectedUserType);
+            
+            // 기본 필드들
+            const firstName = document.getElementById('firstName')?.value?.trim() || '';
+            const lastName = document.getElementById('lastName')?.value?.trim() || '';
+            const email = document.getElementById('email')?.value?.trim() || '';
+            const password = document.getElementById('password')?.value || '';
+            const confirmPassword = document.getElementById('confirmPassword')?.value || '';
+            const phone = document.getElementById('phone')?.value?.trim() || '';
+            
+            console.log('Basic fields:', {
+                firstName: firstName.length > 0,
+                lastName: lastName.length > 0, 
+                email: email.length > 0,
+                password: password.length > 0,
+                confirmPassword: confirmPassword.length > 0,
+                phone: phone.length > 0
+            });
+            
+            // 기본 조건들
+            const basicFieldsOk = firstName && lastName && email && password && confirmPassword && phone;
+            const passwordsMatch = password === confirmPassword;
+            const passwordLengthOk = password.length >= 8; // 8자로 수정
+            
+            console.log('Basic validation:', {basicFieldsOk, passwordsMatch, passwordLengthOk});
+            
+            let canEnable = false;
+            
+            if (selectedUserType === 'jobseeker') {
+                // 구직자: 기본 필드만 필요
+                canEnable = basicFieldsOk && passwordsMatch && passwordLengthOk;
+                console.log('Jobseeker validation result:', canEnable);
+            }
+            else if (selectedUserType === 'employer') {
+                // 구인기업: 기본 필드 + 기업 정보 필드
+                const companyName = document.getElementById('companyName')?.value?.trim() || '';
+                const industry = document.getElementById('industry')?.value || '';
+                const contactPerson = document.getElementById('contactPerson')?.value?.trim() || '';
+                const address = document.getElementById('address')?.value?.trim() || '';
+                const region = document.getElementById('region')?.value || '';
+                // business_number는 선택사항이므로 검증하지 않음
+                
+                const employerFieldsOk = companyName && industry && contactPerson && address && region;
+                canEnable = basicFieldsOk && passwordsMatch && passwordLengthOk && employerFieldsOk;
+                
+                console.log('Employer validation result:', {
+                    basicFieldsOk,
+                    passwordsMatch,
+                    passwordLengthOk,
+                    employerFieldsOk,
+                    companyName: companyName.length > 0,
+                    industry: industry.length > 0,
+                    contactPerson: contactPerson.length > 0,
+                    address: address.length > 0,
+                    region: region.length > 0,
+                    canEnable
+                });
+            }
+            else if (selectedUserType === 'agent') {
+                // 에이전트: 기본 필드 + 에이전시 정보
+                const agencyName = document.getElementById('agencyName')?.value?.trim() || '';
+                const licenseNumber = document.getElementById('licenseNumber')?.value?.trim() || '';
+                
+                const agentFieldsOk = agencyName && licenseNumber;
+                canEnable = basicFieldsOk && passwordsMatch && passwordLengthOk && agentFieldsOk;
+                
+                console.log('Agent validation result:', {
+                    basicFieldsOk,
+                    passwordsMatch,
+                    passwordLengthOk,
+                    agentFieldsOk,
+                    agencyName: agencyName.length > 0,
+                    licenseNumber: licenseNumber.length > 0,
+                    canEnable
+                });
+            }
+            else {
+                console.log('Unknown user type:', selectedUserType);
+                canEnable = false;
+            }
+            
+            // 버튼 상태 업데이트
+            if (canEnable) {
                 registerBtn.disabled = false;
                 registerBtn.classList.remove('opacity-50');
+                registerBtn.classList.add('hover:bg-blue-700');
+                registerBtn.style.backgroundColor = '#1E40AF';
+                console.log('Button ENABLED for', selectedUserType);
             } else {
                 registerBtn.disabled = true;
                 registerBtn.classList.add('opacity-50');
+                registerBtn.classList.remove('hover:bg-blue-700');
+                registerBtn.style.backgroundColor = '';
+                console.log('Button DISABLED for', selectedUserType);
             }
         }
 
         // 입력 필드 이벤트 리스너
         ['firstName', 'lastName', 'email', 'password', 'confirmPassword', 'phone'].forEach(id => {
-            document.getElementById(id).addEventListener('input', updateRegisterButton);
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', updateRegisterButton);
+                element.addEventListener('blur', updateRegisterButton);
+            }
         });
         
-        // 구인기업 필드 이벤트 리스너 (동적으로 추가될 수 있으므로 나중에 추가)
+        // 페이지 로드 시 초기 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Page loaded, initializing...');
+            updateRegisterButton();
+            
+            // 회원가입 버튼에 직접 클릭 이벤트 추가 (폴백)
+            const registerBtn = document.getElementById('registerBtn');
+            if (registerBtn) {
+                registerBtn.addEventListener('click', function(e) {
+                    console.log('🖱️ Register button clicked directly');
+                    if (!registerBtn.disabled) {
+                        // 폼 제출 트리거
+                        const form = document.getElementById('registerForm');
+                        if (form) {
+                            console.log('📋 Triggering form submit');
+                            form.dispatchEvent(new Event('submit', { cancelable: true }));
+                        } else {
+                            console.log('Form not found');
+                        }
+                    } else {
+                        console.log('Button is disabled');
+                    }
+                });
+            }
+        });
+        
+        // 구직자 필드 이벤트 리스너
+        function addJobseekerFieldListeners() {
+            ['nationality', 'visaType'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('change', updateRegisterButton); // select는 change 이벤트 사용
+                }
+            });
+        }
+        
+        // 구인기업 필드 이벤트 리스너
         function addEmployerFieldListeners() {
+            console.log('Adding employer field listeners');
             ['companyName', 'industry', 'contactPerson', 'address', 'region', 'businessNumber', 'website'].forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
-                    element.addEventListener('input', updateRegisterButton);
+                    const eventType = element.tagName.toLowerCase() === 'select' ? 'change' : 'input';
+                    element.addEventListener(eventType, updateRegisterButton);
+                    element.addEventListener('blur', updateRegisterButton);
+                    console.log('Added listeners to ' + id);
+                } else {
+                    console.log('Element not found: ' + id);
                 }
             });
         }
         
         // 에이전트 필드 이벤트 리스너
         function addAgentFieldListeners() {
+            console.log('Adding agent field listeners');
             ['agencyName', 'licenseNumber'].forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
                     element.addEventListener('input', updateRegisterButton);
+                    element.addEventListener('blur', updateRegisterButton);
+                    console.log('Added listeners to ' + id);
+                } else {
+                    console.log('Element not found: ' + id);
                 }
             });
         }
@@ -2789,13 +2919,17 @@ app.get('/static/register.html', async (c) => {
         });
 
         // 회원가입 폼 제출
-        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        document.getElementById('registerForm')?.addEventListener('submit', async function(e) {
+            console.log('🚀 Form submit event triggered!');
             e.preventDefault();
             
             if (!selectedUserType) {
                 alert('회원 유형을 선택해주세요.');
+                console.log('No user type selected');
                 return;
             }
+            
+            console.log('Processing registration for:', selectedUserType);
             
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
@@ -2840,8 +2974,9 @@ app.get('/static/register.html', async (c) => {
                     requestData.address = data.address || '';
                 }
                 
-                console.log('회원가입 요청 데이터:', requestData);
+                console.log('Registration request data:', requestData);
                 
+                console.log('Sending API request to /api/auth/register');
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
@@ -2849,6 +2984,9 @@ app.get('/static/register.html', async (c) => {
                     },
                     body: JSON.stringify(requestData)
                 });
+                
+                console.log('📡 Response status:', response.status, response.statusText);
+                console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
                 
                 // HTTP 상태 코드 체크
                 if (!response.ok) {
@@ -3987,7 +4125,14 @@ app.post('/api/auth/register', async (c) => {
   try {
     console.log('📝 Registration attempt started')
     const requestData = await c.req.json()
-    const { email, password, userType, ...userData } = requestData
+    console.log('📝 Registration data received:', {
+      userType: requestData.userType,
+      email: requestData.email,
+      hasPassword: !!requestData.password,
+      fieldsCount: Object.keys(requestData).length
+    })
+    
+    const { email, password, userType, confirmPassword, ...userData } = requestData
     
     // Sanitize all user inputs to prevent XSS
     const sanitizedUserData: any = {}
@@ -4004,6 +4149,14 @@ app.post('/api/auth/register', async (c) => {
       return c.json({ 
         success: false, 
         error: '이메일, 비밀번호, 사용자 유형은 필수입니다.' 
+      }, 400)
+    }
+
+    // confirmPassword 검증 (있는 경우에만)
+    if (confirmPassword && password !== confirmPassword) {
+      return c.json({ 
+        success: false, 
+        error: '비밀번호가 일치하지 않습니다.' 
       }, 400)
     }
 
@@ -4082,8 +4235,8 @@ app.post('/api/auth/register', async (c) => {
     console.error('🚫 Registration error:', error)
     return c.json({ 
       success: false, 
-      error: error.message || '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: error instanceof Error ? error.message : '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.',
+      details: process.env.NODE_ENV === 'development' ? String(error) : undefined
     }, 500)
   }
 })
@@ -4107,130 +4260,7 @@ app.post('/api/auth/logout', async (c) => {
   }
 })
 
-// 회원가입 API
-app.post('/api/auth/register', async (c) => {
-  try {
-    const requestData = await c.req.json()
-    const { userType, email, password, confirmPassword, ...additionalData } = requestData
-    
-    // Sanitize all user inputs to prevent XSS
-    const sanitizedData: any = {}
-    for (const [key, value] of Object.entries(additionalData)) {
-      if (typeof value === 'string') {
-        sanitizedData[key] = sanitizeInput(value)
-      } else {
-        sanitizedData[key] = value
-      }
-    }
-    
-    // 기본 검증
-    if (!email || !password || !userType) {
-      return c.json({ 
-        success: false, 
-        error: '필수 정보가 누락되었습니다.' 
-      }, 400)
-    }
-
-    // confirmPassword가 있으면 검증
-    if (confirmPassword && password !== confirmPassword) {
-      return c.json({ 
-        success: false, 
-        error: '비밀번호가 일치하지 않습니다.' 
-      }, 400)
-    }
-
-    if (!validateEmail(email)) {
-      return c.json({ 
-        success: false, 
-        error: '올바른 이메일 형식이 아닙니다.' 
-      }, 400)
-    }
-
-    if (!validatePassword(password)) {
-      return c.json({ 
-        success: false, 
-        error: '비밀번호는 최소 8자, 영문자와 숫자를 포함해야 합니다.' 
-      }, 400)
-    }
-
-    // 이메일 중복 확인
-    const emailExists = await checkEmailExists(c.env.DB, email, userType)
-    if (emailExists) {
-      return c.json({ 
-        success: false, 
-        error: '이미 사용 중인 이메일입니다.' 
-      }, 400)
-    }
-
-    // 비밀번호 평문 저장 (개발/테스트 환경용 - 운영 시 해시 필요)
-    // const hashedPassword = await hash(password)
-    
-    // 사용자 유형별 회원가입 처리
-    let userId: number | null = null
-    
-    switch (userType) {
-      case 'jobseeker':
-        userId = await createJobSeeker(c.env.DB, { 
-          email, 
-          password: password, // 평문으로 저장
-          ...sanitizedData 
-        })
-        break
-      case 'employer':
-        userId = await createEmployer(c.env.DB, { 
-          email, 
-          password: password, // 평문으로 저장
-          ...sanitizedData 
-        })
-        break
-      case 'agent':
-        userId = await createAgent(c.env.DB, { 
-          email, 
-          password: password, // 평문으로 저장
-          ...sanitizedData 
-        })
-        break
-      default:
-        return c.json({ 
-          success: false, 
-          error: '지원하지 않는 사용자 유형입니다.' 
-        }, 400)
-    }
-
-    if (!userId) {
-      return c.json({ 
-        success: false, 
-        error: '회원가입 중 오류가 발생했습니다.' 
-      }, 500)
-    }
-
-    // JWT 토큰 생성
-    const token = await sign({
-      id: userId,
-      email: email,
-      userType: userType,
-      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
-    }, 'production-secret-key')
-
-    return c.json({
-      success: true,
-      token,
-      user: {
-        id: userId,
-        email: email,
-        userType: userType
-      },
-      message: '회원가입이 완료되었습니다.'
-    })
-
-  } catch (error) {
-    console.error('Registration API error:', error)
-    return c.json({ 
-      success: false, 
-      error: '회원가입 처리 중 오류가 발생했습니다.' 
-    }, 500)
-  }
-})
+// Duplicate registration endpoint removed - using the secure version at line 4071
 
 
 
