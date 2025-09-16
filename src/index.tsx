@@ -184,12 +184,9 @@ async function createEmployer(db: D1Database, data: any): Promise<number | null>
       contact_person, phone, address, region, website 
     } = data
     
-    // 필수 필드 검증
+    // 필수 필드 검증 (사업자등록번호는 선택사항으로 변경)
     if (!company_name) {
       throw new Error('회사명이 필요합니다.')
-    }
-    if (!business_number) {
-      throw new Error('사업자등록번호가 필요합니다.')
     }
     if (!industry) {
       throw new Error('업종 정보가 필요합니다.')
@@ -207,7 +204,7 @@ async function createEmployer(db: D1Database, data: any): Promise<number | null>
       throw new Error('지역 정보가 필요합니다.')
     }
     
-    console.log(`🏭 Creating employer: ${company_name} (${business_number})`)
+    console.log(`🏭 Creating employer: ${company_name} (${business_number || '사업자번호 미제공'})`)
     
     const result = await db.prepare(`
       INSERT INTO employers (
@@ -215,7 +212,7 @@ async function createEmployer(db: D1Database, data: any): Promise<number | null>
         contact_person, phone, address, region, website, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     `).bind(
-      email, password, company_name, business_number, industry,
+      email, password, company_name, business_number || null, industry,
       contact_person, phone, address, region, website || null
     ).run()
     
@@ -2533,15 +2530,73 @@ app.get('/static/register.html', async (c) => {
                 <div id="employerFields" class="hidden space-y-4">
                     <div>
                         <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1">회사명</label>
-                        <input type="text" id="companyName" name="companyName" 
+                        <input type="text" id="companyName" name="companyName" required
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
                                placeholder="회사명을 입력하세요">
                     </div>
                     <div>
-                        <label for="businessNumber" class="block text-sm font-medium text-gray-700 mb-1">사업자등록번호</label>
+                        <label for="businessNumber" class="block text-sm font-medium text-gray-700 mb-1">사업자등록번호 <span class="text-gray-500 text-xs">(선택사항)</span></label>
                         <input type="text" id="businessNumber" name="businessNumber" 
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
-                               placeholder="000-00-00000">
+                               placeholder="000-00-00000 (선택사항)">
+                    </div>
+                    <div>
+                        <label for="industry" class="block text-sm font-medium text-gray-700 mb-1">업종</label>
+                        <select id="industry" name="industry" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm">
+                            <option value="">업종을 선택하세요</option>
+                            <option value="IT/소프트웨어">IT/소프트웨어</option>
+                            <option value="제조업">제조업</option>
+                            <option value="서비스업">서비스업</option>
+                            <option value="건설업">건설업</option>
+                            <option value="유통/판매">유통/판매</option>
+                            <option value="교육">교육</option>
+                            <option value="의료/헬스케어">의료/헬스케어</option>
+                            <option value="금융">금융</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="contactPerson" class="block text-sm font-medium text-gray-700 mb-1">담당자명</label>
+                        <input type="text" id="contactPerson" name="contactPerson" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
+                               placeholder="담당자 이름을 입력하세요">
+                    </div>
+                    <div>
+                        <label for="address" class="block text-sm font-medium text-gray-700 mb-1">주소</label>
+                        <input type="text" id="address" name="address" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
+                               placeholder="회사 주소를 입력하세요">
+                    </div>
+                    <div>
+                        <label for="region" class="block text-sm font-medium text-gray-700 mb-1">지역</label>
+                        <select id="region" name="region" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm">
+                            <option value="">지역을 선택하세요</option>
+                            <option value="서울">서울특별시</option>
+                            <option value="부산">부산광역시</option>
+                            <option value="대구">대구광역시</option>
+                            <option value="인천">인천광역시</option>
+                            <option value="광주">광주광역시</option>
+                            <option value="대전">대전광역시</option>
+                            <option value="울산">울산광역시</option>
+                            <option value="세종">세종특별자치시</option>
+                            <option value="경기">경기도</option>
+                            <option value="강원">강원도</option>
+                            <option value="충북">충청북도</option>
+                            <option value="충남">충청남도</option>
+                            <option value="전북">전라북도</option>
+                            <option value="전남">전라남도</option>
+                            <option value="경북">경상북도</option>
+                            <option value="경남">경상남도</option>
+                            <option value="제주">제주특별자치도</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="website" class="block text-sm font-medium text-gray-700 mb-1">웹사이트 <span class="text-gray-500 text-xs">(선택사항)</span></label>
+                        <input type="url" id="website" name="website"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-wowcampus-blue focus:border-transparent text-sm"
+                               placeholder="https://company.com (선택사항)">
                     </div>
                 </div>
 
@@ -2730,9 +2785,13 @@ app.get('/static/register.html', async (c) => {
                     requestData.korean_level = data.koreanLevel || '초급';
                 } else if (selectedUserType === 'employer') {
                     requestData.company_name = data.companyName;
-                    requestData.business_number = data.businessNumber;
+                    requestData.business_number = data.businessNumber || null; // 선택사항
+                    requestData.industry = data.industry;
+                    requestData.contact_person = data.contactPerson;
                     requestData.phone = data.phone;
-                    requestData.address = data.address || '';
+                    requestData.address = data.address;
+                    requestData.region = data.region;
+                    requestData.website = data.website || null; // 선택사항
                 } else if (selectedUserType === 'agent') {
                     requestData.company_name = data.agencyName;
                     requestData.license_number = data.licenseNumber;

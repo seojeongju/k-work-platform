@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS employers (
   email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
   company_name TEXT NOT NULL,
-  business_number TEXT UNIQUE NOT NULL,
+  business_number TEXT UNIQUE,
   industry TEXT NOT NULL,
   contact_person TEXT NOT NULL,
   phone TEXT NOT NULL,

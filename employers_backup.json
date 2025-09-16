@@ -1,0 +1,73 @@
+
+ ⛅️ wrangler 4.35.0 (update available 4.37.0)
+─────────────────────────────────────────────
+🌀 Executing on local database w-campus-production-fresh (d5248baa-5bf3-4292-bfc1-a81c2c44c7a4) from .wrangler/state/v3/d1:
+🌀 To execute on your remote database, add a --remote flag to your wrangler command.
+🚣 1 command executed successfully.
+[
+  {
+    "results": [
+      {
+        "id": 1,
+        "email": "test.employer@gmail.com",
+        "password": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+        "company_name": "테스트 기업",
+        "business_number": "123-45-67890",
+        "industry": "IT/소프트웨어",
+        "contact_person": "박인사",
+        "phone": "02-1234-5678",
+        "address": "서울시 강남구 테헤란로 123",
+        "region": "SEL",
+        "website": "www.testcompany.com",
+        "status": "approved",
+        "created_at": "2025-09-16 05:02:38",
+        "updated_at": "2025-09-16 05:02:38",
+        "temp_password": 0,
+        "two_factor_enabled": 0,
+        "two_factor_phone": "null"
+      },
+      {
+        "id": 2,
+        "email": "test-employer2@test.com",
+        "password": "$pbkdf2$287e6045ec4915d41fc5d5ed826a6e14$960b3463c1c8b68c2746aec35dfdd0887d606ec3674cb5ca0dd69e6808c5074e",
+        "company_name": "테스트 회사2",
+        "business_number": "987-65-43210",
+        "industry": "IT",
+        "contact_person": "박담당",
+        "phone": "02-9876-5432",
+        "address": "서울시 서초구",
+        "region": "서울",
+        "website": "null",
+        "status": "pending",
+        "created_at": "2025-09-16 05:05:49",
+        "updated_at": "2025-09-16 05:05:49",
+        "temp_password": 0,
+        "two_factor_enabled": 0,
+        "two_factor_phone": "null"
+      },
+      {
+        "id": 3,
+        "email": "employer118@test.com",
+        "password": "$pbkdf2$7f8dc651ecb696b9d01167bd9614cdec$60d54c6c959b743ccd7bee94e9d5e92f148ccd84a0375597746768fccc3c9a78",
+        "company_name": "Random Test Company 118",
+        "business_number": "118-118-118",
+        "industry": "Technology",
+        "contact_person": "Manager 118",
+        "phone": "02-118-118",
+        "address": "Seoul, Korea",
+        "region": "Seoul",
+        "website": "null",
+        "status": "pending",
+        "created_at": "2025-09-16 05:14:55",
+        "updated_at": "2025-09-16 05:14:55",
+        "temp_password": 0,
+        "two_factor_enabled": 0,
+        "two_factor_phone": "null"
+      }
+    ],
+    "success": true,
+    "meta": {
+      "duration": 3
+    }
+  }
+]
