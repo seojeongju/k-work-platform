@@ -32,8 +32,16 @@ CREATE TABLE job_seekers_new (
 );
 
 -- 2. 기존 데이터를 새 테이블로 복사
-INSERT INTO job_seekers_new 
-SELECT * FROM job_seekers;
+INSERT INTO job_seekers_new (
+  id, email, password, name, birth_date, gender, nationality, 
+  current_visa, desired_visa, phone, current_address, korean_level, 
+  education_level, work_experience, agent_id, status, created_at, updated_at
+)
+SELECT 
+  id, email, password, name, birth_date, gender, nationality, 
+  current_visa, desired_visa, phone, current_address, korean_level, 
+  education_level, work_experience, agent_id, status, created_at, updated_at
+FROM job_seekers;
 
 -- 3. 기존 테이블 삭제
 DROP TABLE job_seekers;

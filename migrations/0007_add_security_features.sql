@@ -27,9 +27,7 @@ CREATE TABLE IF NOT EXISTS otp_tokens (
   userType TEXT NOT NULL,
   otp_code TEXT NOT NULL,
   expires_at DATETIME NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_otp_email_usertype (email, userType),
-  INDEX idx_otp_expires (expires_at)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 비밀번호 재설정 토큰 테이블 생성
@@ -40,10 +38,7 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
   reset_token TEXT NOT NULL UNIQUE,
   expires_at DATETIME NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  used_at DATETIME NULL,
-  INDEX idx_reset_email_usertype (email, userType),
-  INDEX idx_reset_token (reset_token),
-  INDEX idx_reset_expires (expires_at)
+  used_at DATETIME NULL
 );
 
 -- 로그인 시도 기록 테이블 (보안 로그)
@@ -55,10 +50,7 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   user_agent TEXT,
   success INTEGER DEFAULT 0, -- 0: 실패, 1: 성공
   failure_reason TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_login_email_usertype (email, userType),
-  INDEX idx_login_created (created_at),
-  INDEX idx_login_success (success)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 보안 이벤트 로그 테이블
@@ -70,11 +62,21 @@ CREATE TABLE IF NOT EXISTS security_events (
   event_data TEXT, -- JSON format for additional data
   ip_address TEXT,
   user_agent TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_security_email_usertype (user_email, userType),
-  INDEX idx_security_event_type (event_type),
-  INDEX idx_security_created (created_at)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 새로 추가된 테이블에 인덱스 생성
+CREATE INDEX IF NOT EXISTS idx_otp_email_usertype ON otp_tokens(email, userType);
+CREATE INDEX IF NOT EXISTS idx_otp_expires ON otp_tokens(expires_at);
+CREATE INDEX IF NOT EXISTS idx_reset_email_usertype ON password_reset_tokens(email, userType);
+CREATE INDEX IF NOT EXISTS idx_reset_token ON password_reset_tokens(reset_token);
+CREATE INDEX IF NOT EXISTS idx_reset_expires ON password_reset_tokens(expires_at);
+CREATE INDEX IF NOT EXISTS idx_login_email_usertype ON login_attempts(email, userType);
+CREATE INDEX IF NOT EXISTS idx_login_created ON login_attempts(created_at);
+CREATE INDEX IF NOT EXISTS idx_login_success ON login_attempts(success);
+CREATE INDEX IF NOT EXISTS idx_security_email_usertype ON security_events(user_email, userType);
+CREATE INDEX IF NOT EXISTS idx_security_event_type ON security_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_security_created ON security_events(created_at);
 
 -- 기존 테이블에 인덱스 추가
 CREATE INDEX IF NOT EXISTS idx_admins_two_factor ON admins(two_factor_enabled);

@@ -238,12 +238,12 @@ async function createJobSeeker(db: D1Database, data: any): Promise<number | null
     const result = await db.prepare(`
       INSERT INTO job_seekers (
         email, password, name, birth_date, gender, nationality, 
-        phone, current_address, korean_level, education_level,
+        phone, current_address, korean_level, education_level, work_experience,
         current_visa, desired_visa, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
     `).bind(
       email, password, name || 'User', birth_date || null, gender, nationality,
-      phone || null, current_address || null, korean_level, education_level,
+      phone || null, current_address || null, korean_level, education_level || 'unknown', data.work_experience || null,
       current_visa, desired_visa
     ).run()
     
