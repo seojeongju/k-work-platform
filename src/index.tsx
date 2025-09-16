@@ -230,7 +230,7 @@ async function createEmployer(db: D1Database, data: any): Promise<number | null>
 async function createJobSeeker(db: D1Database, data: any): Promise<number | null> {
   try {
     const { 
-      email, password, name, birth_date, gender = 'unknown', nationality = 'Unknown',
+      email, password, name, birth_date, gender, nationality = 'Unknown',
       phone, current_address, korean_level = 'beginner', education_level = 'unknown',
       current_visa = 'none', desired_visa = 'none'
     } = data
@@ -242,7 +242,7 @@ async function createJobSeeker(db: D1Database, data: any): Promise<number | null
         current_visa, desired_visa, status, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
     `).bind(
-      email, password, name || 'User', birth_date || null, gender, nationality,
+      email, password, name || 'User', birth_date || null, gender || null, nationality,
       phone || null, current_address || null, korean_level, education_level || 'unknown', data.work_experience || null,
       current_visa, desired_visa
     ).run()
