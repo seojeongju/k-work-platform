@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Login Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">W-CAMPUS Frontend Login Test</h1>
+        
+        <div class="grid md:grid-cols-2 gap-8">
+            <!-- Test Controls -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">Automated Login Tests</h2>
+                
+                <div class="space-y-4">
+                    <button id="test-admin" class="w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600">
+                        Test Admin Login
+                    </button>
+                    <button id="test-agent" class="w-full bg-purple-500 text-white py-2 px-4 rounded hover:bg-purple-600">
+                        Test Agent Login
+                    </button>
+                    <button id="test-jobseeker" class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                        Test Jobseeker Login
+                    </button>
+                    <button id="test-main-page" class="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">
+                        Test Main Page Navigation
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Test Results -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">Test Results</h2>
+                <div id="test-results" class="space-y-2 font-mono text-sm">
+                    <p>Ready to run tests...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Manual Test Links -->
+        <div class="mt-8 bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4">Manual Test Links</h2>
+            <div class="grid md:grid-cols-3 gap-4">
+                <a href="/static/login.html" target="_blank" class="bg-blue-500 text-white py-2 px-4 rounded text-center hover:bg-blue-600">
+                    Login Page
+                </a>
+                <a href="/static/register.html" target="_blank" class="bg-green-500 text-white py-2 px-4 rounded text-center hover:bg-green-600">
+                    Registration Page
+                </a>
+                <a href="/" target="_blank" class="bg-gray-500 text-white py-2 px-4 rounded text-center hover:bg-gray-600">
+                    Main Page
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const testResults = document.getElementById('test-results');
+        
+        function addResult(message, type = 'info') {
+            const colors = {
+                success: 'text-green-600',
+                error: 'text-red-600',
+                info: 'text-blue-600',
+                warning: 'text-yellow-600'
+            };
+            
+            const p = document.createElement('p');
+            p.className = colors[type] || 'text-gray-600';
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            testResults.appendChild(p);
+            testResults.scrollTop = testResults.scrollHeight;
+        }
+        
+        async function performLogin(email, password, userType) {
+            try {
+                addResult(`Attempting login: ${email} (${userType})`);
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, userType })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addResult(`✅ Login successful for ${userType}`, 'success');
+                    addResult(`Token: ${data.token ? 'Generated' : 'Missing'}`, 'info');
+                    addResult(`User: ${data.user?.name || 'Unknown'}`, 'info');
+                    return data;
+                } else {
+                    addResult(`❌ Login failed: ${data.error}`, 'error');
+                    return null;
+                }
+            } catch (error) {
+                addResult(`🚨 Login error: ${error.message}`, 'error');
+                return null;
+            }
+        }
+        
+        async function testDashboardAccess(token, userType) {
+            try {
+                addResult(`Testing ${userType} dashboard access...`);
+                
+                const dashboardUrls = {
+                    admin: '/static/admin-dashboard.html',
+                    agent: '/static/agent-dashboard.html',
+                    employer: '/static/employer-dashboard.html',
+                    jobseeker: '/static/jobseeker-profile.html'
+                };
+                
+                const url = dashboardUrls[userType];
+                if (!url) {
+                    addResult(`No dashboard URL for ${userType}`, 'warning');
+                    return;
+                }
+                
+                const response = await fetch(url);
+                if (response.ok) {
+                    addResult(`✅ Dashboard accessible for ${userType}`, 'success');
+                } else {
+                    addResult(`❌ Dashboard access failed for ${userType}: ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                addResult(`🚨 Dashboard test error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test users
+        const testUsers = {
+            admin: { email: 'admin@test.com', password: 'Password123!', userType: 'admin' },
+            agent: { email: 'agent@test.com', password: 'Password123!', userType: 'agent' },
+            jobseeker: { email: 'jobseeker@test.com', password: 'Password123!', userType: 'jobseeker' }
+        };
+        
+        // Event listeners
+        document.getElementById('test-admin').addEventListener('click', async () => {
+            addResult('=== ADMIN LOGIN TEST ===', 'info');
+            const result = await performLogin(testUsers.admin.email, testUsers.admin.password, testUsers.admin.userType);
+            if (result && result.token) {
+                await testDashboardAccess(result.token, 'admin');
+            }
+        });
+        
+        document.getElementById('test-agent').addEventListener('click', async () => {
+            addResult('=== AGENT LOGIN TEST ===', 'info');
+            const result = await performLogin(testUsers.agent.email, testUsers.agent.password, testUsers.agent.userType);
+            if (result && result.token) {
+                await testDashboardAccess(result.token, 'agent');
+            }
+        });
+        
+        document.getElementById('test-jobseeker').addEventListener('click', async () => {
+            addResult('=== JOBSEEKER LOGIN TEST ===', 'info');
+            const result = await performLogin(testUsers.jobseeker.email, testUsers.jobseeker.password, testUsers.jobseeker.userType);
+            if (result && result.token) {
+                await testDashboardAccess(result.token, 'jobseeker');
+            }
+        });
+        
+        document.getElementById('test-main-page').addEventListener('click', async () => {
+            addResult('=== MAIN PAGE NAVIGATION TEST ===', 'info');
+            try {
+                const response = await fetch('/');
+                if (response.ok) {
+                    addResult('✅ Main page accessible', 'success');
+                    
+                    // Test API endpoints
+                    const statsResponse = await fetch('/api/stats');
+                    if (statsResponse.ok) {
+                        const statsData = await statsResponse.json();
+                        addResult(`✅ Stats API working: ${statsData.success ? 'Data loaded' : 'No data'}`, 'success');
+                    } else {
+                        addResult(`❌ Stats API failed: ${statsResponse.status}`, 'error');
+                    }
+                    
+                } else {
+                    addResult(`❌ Main page access failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`🚨 Main page test error: ${error.message}`, 'error');
+            }
+        });
+        
+        // Initial message
+        addResult('Frontend testing ready. Click buttons to run tests.');
+    </script>
+</body>
+</html>

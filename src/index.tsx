@@ -268,7 +268,31 @@ function validatePassword(password: string): boolean {
 
 function sanitizeInput(input: string): string {
   if (typeof input !== 'string') return ''
-  return input.trim().replace(/[<>'"&]/g, '')
+  
+  // More comprehensive XSS protection
+  return input
+    .trim()
+    // Remove HTML tags completely
+    .replace(/<[^>]*>/g, '')
+    // Remove javascript: protocol
+    .replace(/javascript:/gi, '')
+    // Remove on* event handlers
+    .replace(/on\w+\s*=/gi, '')
+    // Remove script tags and content
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    // Remove style tags and content
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    // Escape remaining special characters
+    .replace(/[<>'"&]/g, (match) => {
+      const escapeMap: {[key: string]: string} = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '&': '&amp;'
+      };
+      return escapeMap[match] || match;
+    })
 }
 
 function validatePhoneNumber(phone: string): boolean {
@@ -310,8 +334,8 @@ app.use('/api/*', async (c, next) => {
                    c.req.header('X-Forwarded-For') || 
                    'unknown'
   const now = Date.now()
-  const windowMs = 15 * 60 * 1000 // 15분
-  const maxRequests = 100
+  const windowMs = 5 * 60 * 1000 // 5분
+  const maxRequests = 20
   
   const key = `rate_limit_${clientIP}`
   const current = requestCounts.get(key)
@@ -3558,9 +3582,34 @@ async function authenticateUser(db: D1Database, email: string, password: string,
   }
 }
 
+// Auth-specific rate limiting (more restrictive)
+const authRequestCounts = new Map<string, { count: number; resetTime: number }>()
+
 // 새로운 로그인 API
 // 새로운 통합 로그인 API
 app.post('/api/auth/login', async (c) => {
+  // Additional stricter rate limiting for auth endpoints
+  const clientIP = c.req.header('CF-Connecting-IP') || 
+                   c.req.header('X-Forwarded-For') || 
+                   'unknown'
+  const now = Date.now()
+  const authWindowMs = 1 * 60 * 1000 // 1분
+  const maxAuthRequests = 5 // 1분에 최대 5번 로그인 시도
+  
+  const authKey = `auth_rate_limit_${clientIP}`
+  const currentAuth = authRequestCounts.get(authKey)
+  
+  if (!currentAuth || now > currentAuth.resetTime) {
+    authRequestCounts.set(authKey, { count: 1, resetTime: now + authWindowMs })
+  } else {
+    currentAuth.count++
+    if (currentAuth.count > maxAuthRequests) {
+      return c.json({ 
+        error: '로그인 시도 횟수가 초과되었습니다. 1분 후 다시 시도해주세요.',
+        retryAfter: Math.ceil((currentAuth.resetTime - now) / 1000)
+      }, 429)
+    }
+  }
   try {
     console.log('🚀 Login attempt started')
     const { email, password, userType } = await c.req.json()
@@ -3840,6 +3889,16 @@ app.post('/api/auth/register', async (c) => {
     const requestData = await c.req.json()
     const { email, password, userType, ...userData } = requestData
     
+    // Sanitize all user inputs to prevent XSS
+    const sanitizedUserData: any = {}
+    for (const [key, value] of Object.entries(userData)) {
+      if (typeof value === 'string') {
+        sanitizedUserData[key] = sanitizeInput(value)
+      } else {
+        sanitizedUserData[key] = value
+      }
+    }
+    
     // 기본 입력 검증
     if (!email || !password || !userType) {
       return c.json({ 
@@ -3882,18 +3941,18 @@ app.post('/api/auth/register', async (c) => {
     
     switch (userType) {
       case 'admin':
-        userId = await createAdmin(c.env.DB, { email, password: hashedPassword, ...userData })
+        userId = await createAdmin(c.env.DB, { email, password: hashedPassword, ...sanitizedUserData })
         break
       case 'agent':
-        userId = await createAgent(c.env.DB, { email, password: hashedPassword, ...userData })
+        userId = await createAgent(c.env.DB, { email, password: hashedPassword, ...sanitizedUserData })
         break
       case 'employer':
-        userId = await createEmployer(c.env.DB, { email, password: hashedPassword, ...userData })
+        userId = await createEmployer(c.env.DB, { email, password: hashedPassword, ...sanitizedUserData })
         break
       case 'jobseeker':
       case 'student':
       case 'instructor':
-        userId = await createJobSeeker(c.env.DB, { email, password: hashedPassword, ...userData })
+        userId = await createJobSeeker(c.env.DB, { email, password: hashedPassword, ...sanitizedUserData })
         break
       default:
         return c.json({ 
@@ -3954,6 +4013,16 @@ app.post('/api/auth/register', async (c) => {
     const requestData = await c.req.json()
     const { userType, email, password, confirmPassword, ...additionalData } = requestData
     
+    // Sanitize all user inputs to prevent XSS
+    const sanitizedData: any = {}
+    for (const [key, value] of Object.entries(additionalData)) {
+      if (typeof value === 'string') {
+        sanitizedData[key] = sanitizeInput(value)
+      } else {
+        sanitizedData[key] = value
+      }
+    }
+    
     // 기본 검증
     if (!email || !password || !userType) {
       return c.json({ 
@@ -4004,21 +4073,21 @@ app.post('/api/auth/register', async (c) => {
         userId = await createJobSeeker(c.env.DB, { 
           email, 
           password: password, // 평문으로 저장
-          ...additionalData 
+          ...sanitizedData 
         })
         break
       case 'employer':
         userId = await createEmployer(c.env.DB, { 
           email, 
           password: password, // 평문으로 저장
-          ...additionalData 
+          ...sanitizedData 
         })
         break
       case 'agent':
         userId = await createAgent(c.env.DB, { 
           email, 
           password: password, // 평문으로 저장
-          ...additionalData 
+          ...sanitizedData 
         })
         break
       default:
