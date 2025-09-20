@@ -7723,4 +7723,13 @@ app.get('/static/jobseeker-profile.html', async (c) => {
 </html>`)
 })
 
+// 일반 정적 파일 서빙 (JS, CSS 등)
+app.get('/static/*', serveStatic({ 
+  root: './public',
+  onNotFound: (path, c) => {
+    console.log(`Static file not found: ${path}`)
+    return c.text('File not found', 404)
+  }
+}))
+
 export default app
