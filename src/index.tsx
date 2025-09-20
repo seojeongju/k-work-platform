@@ -305,6 +305,11 @@ function validateId(id: string): boolean {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
+// DB-independent liveness probe. Always returns 200 without touching D1.
+app.get('/healthz', (c) => {
+  return c.json({ status: 'ok', service: 'w-campus', env: (c as any).env?.ENVIRONMENT || 'unknown', time: new Date().toISOString() }, 200)
+})
+
 // 보안 헤더 미들웨어
 app.use('*', async (c, next) => {
   // 보안 헤더 설정
@@ -3599,7 +3604,7 @@ app.get('/static/jobseekers-view.html', async (c) => {
 app.use(renderer)
 
 // JWT 토큰 검증 미들웨어 
-const JWT_SECRET = 'w-campus-secure-jwt-secret-key-2025';
+const DEFAULT_JWT_SECRET = 'w-campus-secure-jwt-secret-key-2025';
 
 async function verifyToken(c: any, next: any) {
   const authHeader = c.req.header('Authorization');
@@ -3628,7 +3633,7 @@ async function verifyToken(c: any, next: any) {
   
   // JWT 토큰 검증
   try {
-    const decoded = await verify(token, JWT_SECRET);
+    const decoded = await verify(token, c.env.JWT_SECRET || DEFAULT_JWT_SECRET);
     c.set('user', decoded);
     await next();
   } catch (error) {
@@ -3881,7 +3886,7 @@ app.post('/api/auth/login', async (c) => {
         userType: dbUser.userType,
         name: dbUser.name,
         exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24시간
-      }, 'production-secret-key')
+      }, c.env.JWT_SECRET || 'w-campus-secure-jwt-secret-key-2025')
 
       return c.json({
         success: true,
@@ -3939,20 +3944,14 @@ app.get('/api/auth/verify', async (c) => {
     // JWT 토큰 검증 시도 (production-secret-key 먼저)
     let payload
     try {
-      payload = await verify(token, 'production-secret-key')
-      console.log('✅ Token verified with production key')
-    } catch (prodError) {
-      console.log('🔄 Production key failed, trying test key...')
-      try {
-        payload = await verify(token, 'test-secret-key')
-        console.log('✅ Token verified with test key')
-      } catch (testError) {
-        console.log('❌ Both keys failed:', testError.message)
-        return c.json({ 
-          success: false, 
-          error: '유효하지 않은 토큰입니다.' 
-        }, 401)
-      }
+      payload = await verify(token, c.env.JWT_SECRET || 'w-campus-secure-jwt-secret-key-2025')
+      console.log('✅ Token verified')
+    } catch (err) {
+      console.log('❌ Token verify failed:', err.message)
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 토큰입니다.' 
+      }, 401)
     }
 
     // 토큰에서 사용자 정보 추출
@@ -4064,16 +4063,12 @@ app.get('/api/admin/stats', async (c) => {
     let payload
     
     try {
-      payload = await verify(token, 'production-secret-key')
-    } catch (prodError) {
-      try {
-        payload = await verify(token, 'test-secret-key')
-      } catch (testError) {
-        return c.json({ 
-          success: false, 
-          error: '유효하지 않은 토큰입니다.' 
-        }, 401)
-      }
+      payload = await verify(token, c.env.JWT_SECRET || 'w-campus-secure-jwt-secret-key-2025')
+    } catch (err) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 토큰입니다.' 
+      }, 401)
     }
     
     if (payload.userType !== 'admin') {
@@ -4601,16 +4596,12 @@ app.post('/api/admin/run-migration', async (c) => {
     let payload
     
     try {
-      payload = await verify(token, 'production-secret-key')
-    } catch (prodError) {
-      try {
-        payload = await verify(token, 'test-secret-key')
-      } catch (testError) {
-        return c.json({ 
-          success: false, 
-          error: '유효하지 않은 토큰입니다.' 
-        }, 401)
-      }
+      payload = await verify(token, c.env.JWT_SECRET || 'w-campus-secure-jwt-secret-key-2025')
+    } catch (err) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 토큰입니다.' 
+      }, 401)
     }
     
     if (payload.userType !== 'admin') {
@@ -4780,16 +4771,12 @@ app.post('/api/admin/migrate-passwords', async (c) => {
     let payload
     
     try {
-      payload = await verify(token, 'production-secret-key')
-    } catch (prodError) {
-      try {
-        payload = await verify(token, 'test-secret-key')
-      } catch (testError) {
-        return c.json({ 
-          success: false, 
-          error: '유효하지 않은 토큰입니다.' 
-        }, 401)
-      }
+      payload = await verify(token, c.env.JWT_SECRET || 'w-campus-secure-jwt-secret-key-2025')
+    } catch (err) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 토큰입니다.' 
+      }, 401)
     }
     
     // 관리자 권한 확인
@@ -4863,16 +4850,12 @@ app.get('/api/admin/migration-status', async (c) => {
     let payload
     
     try {
-      payload = await verify(token, 'production-secret-key')
-    } catch (prodError) {
-      try {
-        payload = await verify(token, 'test-secret-key')
-      } catch (testError) {
-        return c.json({ 
-          success: false, 
-          error: '유효하지 않은 토큰입니다.' 
-        }, 401)
-      }
+      payload = await verify(token, c.env.JWT_SECRET || 'w-campus-secure-jwt-secret-key-2025')
+    } catch (err) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 토큰입니다.' 
+      }, 401)
     }
     
     if (payload.userType !== 'admin') {
@@ -4969,16 +4952,12 @@ app.post('/api/auth/enable-2fa', async (c) => {
     let payload
     
     try {
-      payload = await verify(token, 'production-secret-key')
-    } catch (prodError) {
-      try {
-        payload = await verify(token, 'test-secret-key')
-      } catch (testError) {
-        return c.json({ 
-          success: false, 
-          error: '유효하지 않은 토큰입니다.' 
-        }, 401)
-      }
+      payload = await verify(token, c.env.JWT_SECRET || 'w-campus-secure-jwt-secret-key-2025')
+    } catch (err) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 토큰입니다.' 
+      }, 401)
     }
 
     const { email, userType } = payload
@@ -5107,16 +5086,12 @@ app.post('/api/auth/disable-2fa', async (c) => {
     let payload
     
     try {
-      payload = await verify(token, 'production-secret-key')
-    } catch (prodError) {
-      try {
-        payload = await verify(token, 'test-secret-key')
-      } catch (testError) {
-        return c.json({ 
-          success: false, 
-          error: '유효하지 않은 토큰입니다.' 
-        }, 401)
-      }
+      payload = await verify(token, c.env.JWT_SECRET || 'w-campus-secure-jwt-secret-key-2025')
+    } catch (err) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 토큰입니다.' 
+      }, 401)
     }
 
     const { email, userType } = payload
@@ -5487,16 +5462,12 @@ app.get('/api/auth/security-settings', async (c) => {
     let payload
     
     try {
-      payload = await verify(token, 'production-secret-key')
-    } catch (prodError) {
-      try {
-        payload = await verify(token, 'test-secret-key')
-      } catch (testError) {
-        return c.json({ 
-          success: false, 
-          error: '유효하지 않은 토큰입니다.' 
-        }, 401)
-      }
+      payload = await verify(token, c.env.JWT_SECRET || 'w-campus-secure-jwt-secret-key-2025')
+    } catch (err) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 토큰입니다.' 
+      }, 401)
     }
 
     const { email, userType } = payload
@@ -5595,16 +5566,12 @@ app.post('/api/auth/update-security', async (c) => {
     let payload
     
     try {
-      payload = await verify(token, 'production-secret-key')
-    } catch (prodError) {
-      try {
-        payload = await verify(token, 'test-secret-key')
-      } catch (testError) {
-        return c.json({ 
-          success: false, 
-          error: '유효하지 않은 토큰입니다.' 
-        }, 401)
-      }
+      payload = await verify(token, c.env.JWT_SECRET || 'w-campus-secure-jwt-secret-key-2025')
+    } catch (err) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 토큰입니다.' 
+      }, 401)
     }
 
     const { email, userType } = payload
@@ -5762,16 +5729,12 @@ app.get('/api/auth/security-features', async (c) => {
     let payload
     
     try {
-      payload = await verify(token, 'production-secret-key')
-    } catch (prodError) {
-      try {
-        payload = await verify(token, 'test-secret-key')
-      } catch (testError) {
-        return c.json({ 
-          success: false, 
-          error: '유효하지 않은 토큰입니다.' 
-        }, 401)
-      }
+      payload = await verify(token, c.env.JWT_SECRET || 'w-campus-secure-jwt-secret-key-2025')
+    } catch (err) {
+      return c.json({ 
+        success: false, 
+        error: '유효하지 않은 토큰입니다.' 
+      }, 401)
     }
 
     const { userType } = payload
