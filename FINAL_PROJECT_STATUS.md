@@ -88,7 +88,7 @@
 5. **다국어 지원**: 영어, 중국어 등 추가 언어
 
 ## 📞 **기술 지원 정보**
-- **Cloudflare API Token**: `Tm2YhROFnBNIJho9mXC5W_UEZeMztJltRQXqaq6c`
+- **Cloudflare API Token**: `[REDACTED]`
 - **GitHub Repository**: https://github.com/seojeongju/k-work-platform
 - **도메인 관리**: 가비아 (w-campus.com)
 
