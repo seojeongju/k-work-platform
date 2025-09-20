@@ -14,7 +14,7 @@
     "setup": "node local-dev-setup.cjs",
     "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
     "test": "curl http://localhost:3000",
-    "test:health": "curl -I http://localhost:3000/health || curl -I http://localhost:3000/health.txt || curl -I http://localhost:3000/health",
+    "test:health": "curl -I http://localhost:3000/healthz || curl -I http://localhost:3000/health || curl -I http://localhost:3000/health.txt",
     "db:migrate:local": "wrangler d1 migrations apply w-campus-production-fresh --local",
     "db:migrate:prod": "wrangler d1 migrations apply w-campus-production-fresh",
     "db:seed": "wrangler d1 execute w-campus-production-fresh --local --file=./test-accounts.sql",
