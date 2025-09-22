@@ -2149,9 +2149,11 @@ app.get('/static/login.html', async (c) => {
     <script>
         let selectedUserType = null;
 
-        // 회원 유형 선택
+        // 회원 유형 선택 - 개선된 버전
         document.querySelectorAll('.user-type-btn').forEach(btn => {
             btn.addEventListener('click', function() {
+                console.log('🎯 User type button clicked:', this.dataset.type);
+                
                 // 모든 버튼에서 active 클래스 제거
                 document.querySelectorAll('.user-type-btn').forEach(b => {
                     b.classList.remove('bg-wowcampus-blue', 'text-white');
@@ -2163,8 +2165,20 @@ app.get('/static/login.html', async (c) => {
                 this.classList.add('bg-wowcampus-blue', 'text-white');
                 
                 selectedUserType = this.dataset.type;
+                console.log('✅ Selected user type set to:', selectedUserType);
                 updateLoginButton();
             });
+        });
+        
+        // 디폴트로 구직자 선택 (사용자 편의성 개선)
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const jobseekerBtn = document.querySelector('.user-type-btn[data-type="jobseeker"]');
+                if (jobseekerBtn && !selectedUserType) {
+                    console.log('🔧 Auto-selecting jobseeker as default');
+                    jobseekerBtn.click();
+                }
+            }, 500);
         });
 
         // 초기 스타일 설정
@@ -2207,13 +2221,23 @@ app.get('/static/login.html', async (c) => {
             }
         });
 
-        // 로그인 폼 제출
+        // 로그인 폼 제출 - 개선된 버전
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            console.log('🚀 Login form submitted');
+            console.log('🔍 Current selectedUserType:', selectedUserType);
+            
+            // 사용자 유형이 선택되지 않은 경우 자동 선택
             if (!selectedUserType) {
-                alert('회원 유형을 선택해주세요.');
-                return;
+                console.log('⚠️ No user type selected, auto-selecting jobseeker');
+                selectedUserType = 'jobseeker';
+                
+                // 구직자 버튼 시각적 활성화
+                const jobseekerBtn = document.querySelector('.user-type-btn[data-type="jobseeker"]');
+                if (jobseekerBtn) {
+                    jobseekerBtn.click();
+                }
             }
 
             const formData = new FormData(e.target);
@@ -2223,10 +2247,16 @@ app.get('/static/login.html', async (c) => {
                 userType: selectedUserType
             };
 
+            console.log('📊 Login data prepared:', {
+                email: loginData.email,
+                hasPassword: !!loginData.password,
+                userType: loginData.userType
+            });
+
             showLoading();
 
             try {
-                console.log('로그인 시도:', loginData);
+                console.log('🔥 Sending login request...');
                 
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
