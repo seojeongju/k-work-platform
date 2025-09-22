@@ -7699,11 +7699,20 @@ app.get('/static/jobseeker-profile.html', async (c) => {
                 const user = data.user;
                 console.log('👤 사용자 정보 확인됨:', user);
                 
-                // 4단계: 구직자/학생 권한 확인
+                // 4단계: 구직자/학생 권한 확인 (개선된 로직)
                 const isJobseeker = user.user_type === 'jobseeker' || user.userType === 'jobseeker' || user.type === 'jobseeker' ||
                                    user.user_type === 'student' || user.userType === 'student' || user.type === 'student';
+                
+                console.log('🔍 구직자 프로필 권한 체크:', {
+                    user_type: user.user_type,
+                    userType: user.userType,
+                    type: user.type,
+                    isJobseeker: isJobseeker,
+                    fullUser: user
+                });
+                
                 if (!isJobseeker) {
-                    console.log('🚫 구직자 권한 없음:', user);
+                    console.error('🚫 구직자 권한 없음:', user);
                     redirectToHome('구직자 권한 필요');
                     return;
                 }
@@ -7940,15 +7949,33 @@ app.get('/static/jobseeker-dashboard.html', async (c) => {
                 }
                 
                 const data = await response.json();
+                console.log('🔍 토큰 검증 응답:', data);
+                
                 if (!data.success) {
                     throw new Error(data.error || '인증 실패');
                 }
                 
                 currentUser = data.user;
+                console.log('👤 현재 사용자 정보:', currentUser);
                 
-                // 구직자가 아닌 경우 접근 제한
-                if (currentUser.userType !== 'jobseeker' && currentUser.user_type !== 'jobseeker') {
-                    throw new Error('구직자만 접근 가능합니다.');
+                // 구직자 권한 체크 (다양한 필드 확인)
+                const isJobseeker = currentUser.userType === 'jobseeker' || 
+                                   currentUser.user_type === 'jobseeker' || 
+                                   currentUser.type === 'jobseeker' ||
+                                   currentUser.userType === 'student' || 
+                                   currentUser.user_type === 'student' || 
+                                   currentUser.type === 'student';
+                
+                console.log('🔍 권한 체크 결과:', {
+                    userType: currentUser.userType,
+                    user_type: currentUser.user_type,
+                    type: currentUser.type,
+                    isJobseeker: isJobseeker
+                });
+                
+                if (!isJobseeker) {
+                    console.error('🚫 구직자 권한 없음. 사용자 정보:', currentUser);
+                    throw new Error('구직자만 접근 가능합니다. 현재: ' + (currentUser.userType || currentUser.user_type || currentUser.type));
                 }
                 
                 updateLoadingStatus('대시보드 로딩 중...');
