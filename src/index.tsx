@@ -2170,15 +2170,24 @@ app.get('/static/login.html', async (c) => {
             });
         });
         
-        // 디폴트로 구직자 선택 (사용자 편의성 개선)
+        // 디폴트로 구직자 선택 (사용자 편의성 개선) - 다중 시점에서 확인
+        function forceSelectJobseeker() {
+            const jobseekerBtn = document.querySelector('.user-type-btn[data-type="jobseeker"]');
+            if (jobseekerBtn && !selectedUserType) {
+                console.log('🔧 Auto-selecting jobseeker as default');
+                jobseekerBtn.click();
+                selectedUserType = 'jobseeker';
+            }
+        }
+        
+        // DOM 로드 즉시
+        document.addEventListener('DOMContentLoaded', forceSelectJobseeker);
+        
+        // 윈도우 로드 시
         window.addEventListener('load', function() {
-            setTimeout(function() {
-                const jobseekerBtn = document.querySelector('.user-type-btn[data-type="jobseeker"]');
-                if (jobseekerBtn && !selectedUserType) {
-                    console.log('🔧 Auto-selecting jobseeker as default');
-                    jobseekerBtn.click();
-                }
-            }, 500);
+            setTimeout(forceSelectJobseeker, 100);
+            setTimeout(forceSelectJobseeker, 500);
+            setTimeout(forceSelectJobseeker, 1000);
         });
 
         // 초기 스타일 설정
@@ -2228,16 +2237,23 @@ app.get('/static/login.html', async (c) => {
             console.log('🚀 Login form submitted');
             console.log('🔍 Current selectedUserType:', selectedUserType);
             
-            // 사용자 유형이 선택되지 않은 경우 자동 선택
-            if (!selectedUserType) {
-                console.log('⚠️ No user type selected, auto-selecting jobseeker');
+            // 사용자 유형이 선택되지 않은 경우 강제로 jobseeker 설정
+            if (!selectedUserType || selectedUserType === null || selectedUserType === '') {
+                console.log('⚠️ No user type selected, FORCING jobseeker selection');
                 selectedUserType = 'jobseeker';
                 
                 // 구직자 버튼 시각적 활성화
                 const jobseekerBtn = document.querySelector('.user-type-btn[data-type="jobseeker"]');
                 if (jobseekerBtn) {
                     jobseekerBtn.click();
+                    console.log('🔧 Jobseeker button clicked programmatically');
                 }
+            }
+            
+            // 추가 안전장치: 여전히 선택되지 않은 경우 강제 설정
+            if (!selectedUserType) {
+                selectedUserType = 'jobseeker';
+                console.log('🚨 EMERGENCY: Force setting userType to jobseeker');
             }
 
             const formData = new FormData(e.target);

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 디버그 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <div class="text-center">
+                <h2 class="mt-6 text-3xl font-extrabold text-gray-900">로그인 디버그</h2>
+                <p class="mt-2 text-sm text-gray-600">wow3d25@wow3d.co.kr로 로그인 테스트</p>
+            </div>
+
+            <!-- 자동 로그인 테스트 -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <button id="autoLogin" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                    자동 로그인 테스트 실행
+                </button>
+                <div id="result" class="mt-4 p-4 bg-gray-50 rounded"></div>
+            </div>
+
+            <!-- 수동 로그인 폼 -->
+            <form id="debugLoginForm" class="bg-white p-6 rounded-lg shadow space-y-4">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">이메일</label>
+                    <input type="email" id="email" name="email" value="wow3d25@wow3d.co.kr" 
+                           class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">비밀번호</label>
+                    <input type="password" id="password" name="password" value="lee2548121!" 
+                           class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">사용자 타입</label>
+                    <select id="userType" name="userType" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="jobseeker" selected>구직자 (jobseeker)</option>
+                        <option value="job_seeker">구직자 (job_seeker)</option>
+                        <option value="employer">기업</option>
+                        <option value="agent">에이전트</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">
+                    수동 로그인 테스트
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 자동 로그인 테스트
+        document.getElementById('autoLogin').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p class="text-blue-600">로그인 테스트 중...</p>';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'wow3d25@wow3d.co.kr',
+                        password: 'lee2548121!',
+                        userType: 'jobseeker'
+                    })
+                });
+
+                const data = await response.json();
+                console.log('로그인 응답:', data);
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="text-green-600">
+                            <h4 class="font-bold">✅ 로그인 성공!</h4>
+                            <p>사용자: ${data.user.name}</p>
+                            <p>이메일: ${data.user.email}</p>
+                            <p>타입: ${data.user.userType}</p>
+                            <p class="text-xs mt-2 break-all">토큰: ${data.token.substring(0, 50)}...</p>
+                        </div>
+                    `;
+                    
+                    // 토큰을 localStorage에 저장
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="text-red-600">
+                            <h4 class="font-bold">❌ 로그인 실패</h4>
+                            <p>오류: ${data.error}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('로그인 오류:', error);
+                resultDiv.innerHTML = `
+                    <div class="text-red-600">
+                        <h4 class="font-bold">❌ 네트워크 오류</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+
+        // 수동 로그인 폼
+        document.getElementById('debugLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const loginData = {
+                email: formData.get('email'),
+                password: formData.get('password'),
+                userType: formData.get('userType')
+            };
+
+            console.log('수동 로그인 데이터:', loginData);
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(loginData)
+                });
+
+                const data = await response.json();
+                console.log('수동 로그인 응답:', data);
+                
+                alert(data.success ? '로그인 성공!' : '로그인 실패: ' + data.error);
+            } catch (error) {
+                console.error('수동 로그인 오류:', error);
+                alert('오류: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
