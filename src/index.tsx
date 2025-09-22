@@ -2257,22 +2257,50 @@ app.get('/static/login.html', async (c) => {
             }
 
             const formData = new FormData(e.target);
+            // 로그인 데이터 강화 준비
+            const rawEmail = formData.get('email');
+            const rawPassword = formData.get('password');
+            
+            // 최종 안전장치: userType 강제 보장
+            const finalUserType = selectedUserType || 'jobseeker';
+            
             const loginData = {
-                email: formData.get('email'),
-                password: formData.get('password'),
-                userType: selectedUserType
+                email: rawEmail ? rawEmail.toString().trim() : '',
+                password: rawPassword ? rawPassword.toString() : '',
+                userType: finalUserType
             };
 
-            console.log('📊 Login data prepared:', {
+            console.log('📊 Login data prepared with enhanced validation:', {
                 email: loginData.email,
+                emailLength: loginData.email.length,
                 hasPassword: !!loginData.password,
-                userType: loginData.userType
+                passwordLength: loginData.password.length,
+                userType: loginData.userType,
+                selectedUserType: selectedUserType,
+                finalUserType: finalUserType,
+                formDataRaw: {
+                    email: rawEmail,
+                    password: !!rawPassword
+                }
             });
+            
+            // 필수 데이터 검증
+            if (!loginData.email || !loginData.password) {
+                alert('이메일과 비밀번호를 모두 입력해주세요.');
+                return;
+            }
+            
+            if (!loginData.userType) {
+                loginData.userType = 'jobseeker';
+                console.log('🚨 FINAL EMERGENCY: Setting userType to jobseeker');
+            }
 
             showLoading();
 
             try {
-                console.log('🔥 Sending login request...');
+                console.log('🔥 Sending login request with data:', loginData);
+                console.log('🌐 Request URL:', '/api/auth/login');
+                console.log('📦 Request body:', JSON.stringify(loginData));
                 
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
@@ -2280,6 +2308,13 @@ app.get('/static/login.html', async (c) => {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(loginData)
+                });
+                
+                console.log('📡 Response received:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    headers: Object.fromEntries(response.headers.entries())
                 });
                 
                 // HTTP 상태 코드 체크
@@ -2296,7 +2331,14 @@ app.get('/static/login.html', async (c) => {
                 }
                 
                 const data = await response.json();
-                console.log('로그인 응답:', data);
+                console.log('📥 로그인 응답 상세:', {
+                    success: data.success,
+                    hasToken: !!data.token,
+                    hasUser: !!data.user,
+                    message: data.message,
+                    error: data.error,
+                    fullResponse: data
+                });
                 
                 if (data.success && data.token) {
                     console.log('로그인 성공, 토큰 저장 시작');
@@ -2353,9 +2395,16 @@ app.get('/static/login.html', async (c) => {
                         
                     }, 800); // 800ms 지연으로 증가
                 } else {
-                    // 로그인 실패
+                    // 로그인 실패 - 상세 디버깅
+                    console.error('🚫 로그인 실패 상세 분석:', {
+                        success: data.success,
+                        error: data.error,
+                        sentData: loginData,
+                        responseData: data
+                    });
+                    
                     const errorMessage = data.error || '이메일 또는 비밀번호가 올바르지 않습니다.';
-                    alert(errorMessage);
+                    alert('로그인 실패: ' + errorMessage + '\n\n디버그 정보를 확인하려면 개발자 도구(F12)를 열어주세요.');
                 }
             } catch (error) {
                 console.error('Login error:', error);
