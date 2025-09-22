@@ -1600,8 +1600,8 @@ app.get('/', async (c) => {
                         break;
                     case 'jobseeker':
                     case 'student':
-                        dashboardUrl = '/static/jobseeker-profile.html';
-                        console.log('구직자 프로필로 이동');
+                        dashboardUrl = '/static/jobseeker-dashboard.html';
+                        console.log('구직자 대시보드로 이동');
                         break;
                     default:
                         console.warn('알 수 없는 사용자 유형:', user.userType);
@@ -2331,8 +2331,8 @@ app.get('/static/login.html', async (c) => {
                             dashboardUrl = '/static/instructor-dashboard.html?token=' + encodeURIComponent(data.token);
                             console.log('강사 대시보드로 이동:', dashboardUrl);
                         } else if (selectedUserType === 'jobseeker' || selectedUserType === 'student' || data.user.userType === 'jobseeker' || data.user.userType === 'student') {
-                            dashboardUrl = '/static/jobseeker-profile.html?token=' + encodeURIComponent(data.token);
-                            console.log('구직자 프로필로 이동:', dashboardUrl);
+                            dashboardUrl = '/static/jobseeker-dashboard.html?token=' + encodeURIComponent(data.token);
+                            console.log('구직자 대시보드로 이동:', dashboardUrl);
                         } else {
                             console.log('기본 홈페이지로 이동');
                             dashboardUrl = '/';
@@ -7770,6 +7770,254 @@ app.get('/static/jobseeker-profile.html', async (c) => {
 })
 
 // 일반 정적 파일 서빙 (JS, CSS 등)
+// 구직자 대시보드 라우트 추가 (jobseeker-profile과 동일한 내용)
+app.get('/static/jobseeker-dashboard.html', async (c) => {
+  // jobseeker-profile.html과 동일한 내용을 반환
+  return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOW-CAMPUS 구직자 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #f97316;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 로딩 화면 -->
+    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">구직자 대시보드 로딩 중...</p>
+            <p id="loading-status" class="text-sm text-gray-400 mt-2">인증 확인 중</p>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 컨텐츠 (처음에는 숨김) -->
+    <div id="dashboard-content" class="hidden">
+        <header class="bg-white shadow-md border-b-2 border-orange-600">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-orange-600 to-red-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user-graduate text-white text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold text-orange-600">WOW-CAMPUS</h1>
+                        <span class="text-xs text-gray-500">구직자 대시보드</span>
+                    </div>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <span id="jobseeker-name" class="text-sm text-gray-600">구직자님 환영합니다</span>
+                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-2"></i>로그아웃
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+        <!-- 메인 컨텐츠 -->
+        <div class="container mx-auto px-6 py-8">
+            <!-- 환영 메시지 -->
+            <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg p-6 mb-8">
+                <h2 class="text-2xl font-bold mb-2">
+                    <span id="welcome-name">구직자</span>님, 안녕하세요! 👋
+                </h2>
+                <p class="text-orange-100">WOW-CAMPUS 구직자 대시보드에 오신 것을 환영합니다.</p>
+            </div>
+
+            <!-- 기능 카드들 -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <!-- 프로필 관리 -->
+                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-user-edit text-orange-500 text-2xl mr-3"></i>
+                        <h3 class="text-lg font-semibold">프로필 관리</h3>
+                    </div>
+                    <p class="text-gray-600 mb-4">개인정보와 이력서를 관리하세요</p>
+                    <button onclick="editProfile()" class="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition-colors">
+                        프로필 수정
+                    </button>
+                </div>
+
+                <!-- 구인정보 검색 -->
+                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-search text-blue-500 text-2xl mr-3"></i>
+                        <h3 class="text-lg font-semibold">구인정보 검색</h3>
+                    </div>
+                    <p class="text-gray-600 mb-4">맞춤형 일자리를 찾아보세요</p>
+                    <button onclick="searchJobs()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors">
+                        구인정보 보기
+                    </button>
+                </div>
+
+                <!-- 지원 내역 -->
+                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-clipboard-list text-green-500 text-2xl mr-3"></i>
+                        <h3 class="text-lg font-semibold">지원 내역</h3>
+                    </div>
+                    <p class="text-gray-600 mb-4">지원한 일자리를 확인하세요</p>
+                    <button onclick="viewApplications()" class="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 transition-colors">
+                        지원 내역 보기
+                    </button>
+                </div>
+            </div>
+
+            <!-- 최근 활동 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold mb-4">
+                    <i class="fas fa-clock text-gray-500 mr-2"></i>최근 활동
+                </h3>
+                <div id="recent-activities" class="space-y-3">
+                    <div class="border-l-4 border-orange-500 pl-4">
+                        <p class="font-medium">계정 생성</p>
+                        <p class="text-sm text-gray-500">WOW-CAMPUS에 가입하신 것을 환영합니다!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let authToken = null;
+
+        // 페이지 로드 시 인증 확인
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                updateLoadingStatus('사용자 정보 확인 중...');
+                
+                // URL에서 토큰 확인
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlToken = urlParams.get('token');
+                
+                // localStorage에서 토큰 확인
+                const storedToken = localStorage.getItem('authToken') || localStorage.getItem('token');
+                const storedUser = localStorage.getItem('currentUser') || localStorage.getItem('user');
+                
+                authToken = urlToken || storedToken;
+                
+                if (!authToken) {
+                    throw new Error('인증 토큰이 없습니다.');
+                }
+                
+                // 사용자 정보가 있는 경우 파싱
+                if (storedUser) {
+                    try {
+                        currentUser = JSON.parse(storedUser);
+                    } catch (e) {
+                        console.error('사용자 정보 파싱 오류:', e);
+                    }
+                }
+                
+                updateLoadingStatus('인증 검증 중...');
+                
+                // 토큰 검증
+                const response = await fetch('/api/auth/verify', {
+                    headers: {
+                        'Authorization': 'Bearer ' + authToken
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('인증 실패');
+                }
+                
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.error || '인증 실패');
+                }
+                
+                currentUser = data.user;
+                
+                // 구직자가 아닌 경우 접근 제한
+                if (currentUser.userType !== 'jobseeker' && currentUser.user_type !== 'jobseeker') {
+                    throw new Error('구직자만 접근 가능합니다.');
+                }
+                
+                updateLoadingStatus('대시보드 로딩 중...');
+                
+                // 사용자 정보 표시
+                displayUserInfo();
+                
+                // 로딩 화면 숨기고 컨텐츠 표시
+                setTimeout(() => {
+                    document.getElementById('loading-screen').style.display = 'none';
+                    document.getElementById('dashboard-content').classList.remove('hidden');
+                }, 1000);
+                
+            } catch (error) {
+                console.error('인증 오류:', error);
+                alert('로그인이 필요합니다: ' + error.message);
+                window.location.href = '/static/login.html';
+            }
+        });
+        
+        function updateLoadingStatus(status) {
+            const statusElement = document.getElementById('loading-status');
+            if (statusElement) {
+                statusElement.textContent = status;
+            }
+        }
+        
+        function displayUserInfo() {
+            if (currentUser) {
+                // 사용자 이름 표시
+                const nameElements = [
+                    document.getElementById('jobseeker-name'),
+                    document.getElementById('welcome-name')
+                ];
+                
+                nameElements.forEach(element => {
+                    if (element) {
+                        element.textContent = currentUser.name || '구직자';
+                    }
+                });
+            }
+        }
+        
+        function editProfile() {
+            alert('프로필 수정 기능은 곧 추가될 예정입니다.');
+        }
+        
+        function searchJobs() {
+            window.location.href = '/static/jobs-view.html';
+        }
+        
+        function viewApplications() {
+            alert('지원 내역 기능은 곧 추가될 예정입니다.');
+        }
+        
+        function logout() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('token');
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            }
+        }
+    </script>
+</body>
+</html>`)
+})
+
 app.get('/static/*', serveStatic({ 
   root: './public',
   onNotFound: (path, c) => {
