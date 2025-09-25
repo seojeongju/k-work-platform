@@ -2470,18 +2470,30 @@ app.get('/static/login.html', async (c) => {
                 console.log('🌐 Request URL:', '/api/auth/login');
                 console.log('📦 Request body:', JSON.stringify(loginData));
                 
+                // 타임아웃 설정으로 fetch 요청을 래핑
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    console.log('⏰ Request timeout - aborting');
+                    controller.abort();
+                }, 30000); // 30초 타임아웃
+                
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(loginData)
+                    body: JSON.stringify(loginData),
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId); // 성공 시 타임아웃 취소
                 
                 console.log('📡 Response received:', {
                     status: response.status,
                     statusText: response.statusText,
                     ok: response.ok,
+                    url: response.url,
+                    type: response.type,
                     headers: Object.fromEntries(response.headers.entries())
                 });
                 
