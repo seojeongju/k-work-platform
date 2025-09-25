@@ -6797,6 +6797,226 @@ app.post('/api/admin/seed-database', async (c) => {
   }
 })
 
+// ================================
+// 구직자 프로필 관리 API
+// ================================
+
+// 구직자 프로필 조회
+app.get('/api/jobseeker/profile', async (c) => {
+  try {
+    // JWT 토큰 검증
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ success: false, message: '인증 토큰이 필요합니다.' }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    try {
+      payload = await verify(token, c.env.JWT_SECRET || 'your-secret-key')
+    } catch (error) {
+      return c.json({ success: false, message: '유효하지 않은 토큰입니다.' }, 401)
+    }
+
+    // 구직자 정보 조회
+    const jobSeeker = await c.env.DB.prepare(`
+      SELECT id, email, name, birth_date, gender, nationality, 
+             current_visa, desired_visa, phone, current_address,
+             korean_level, education_level, work_experience, resume_url
+      FROM job_seekers 
+      WHERE id = ? AND status = 'active'
+    `).bind(payload.userId).first()
+
+    if (!jobSeeker) {
+      return c.json({ success: false, message: '구직자 정보를 찾을 수 없습니다.' }, 404)
+    }
+
+    return c.json({
+      success: true,
+      profile: jobSeeker
+    })
+
+  } catch (error) {
+    console.error('프로필 조회 오류:', error)
+    return c.json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 구직자 프로필 업데이트
+app.put('/api/jobseeker/profile', async (c) => {
+  try {
+    // JWT 토큰 검증
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ success: false, message: '인증 토큰이 필요합니다.' }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    try {
+      payload = await verify(token, c.env.JWT_SECRET || 'your-secret-key')
+    } catch (error) {
+      return c.json({ success: false, message: '유효하지 않은 토큰입니다.' }, 401)
+    }
+
+    const data = await c.req.json()
+    const {
+      name, phone, birth_date, gender, nationality, current_address,
+      current_visa, desired_visa, korean_level, education_level, work_experience
+    } = data
+
+    // 필수 필드 검증
+    if (!name || name.trim().length < 1) {
+      return c.json({ success: false, message: '이름은 필수입니다.' }, 400)
+    }
+
+    // 프로필 업데이트
+    const result = await c.env.DB.prepare(`
+      UPDATE job_seekers 
+      SET name = ?, phone = ?, birth_date = ?, gender = ?, nationality = ?,
+          current_address = ?, current_visa = ?, desired_visa = ?, 
+          korean_level = ?, education_level = ?, work_experience = ?,
+          updated_at = datetime('now')
+      WHERE id = ? AND status = 'active'
+    `).bind(
+      name.trim(), phone || null, birth_date || null, gender || null, nationality || null,
+      current_address || null, current_visa || null, desired_visa || null,
+      korean_level || null, education_level || null, work_experience || null,
+      payload.userId
+    ).run()
+
+    if (result.changes === 0) {
+      return c.json({ success: false, message: '프로필 업데이트에 실패했습니다.' }, 400)
+    }
+
+    return c.json({
+      success: true,
+      message: '프로필이 성공적으로 업데이트되었습니다.'
+    })
+
+  } catch (error) {
+    console.error('프로필 업데이트 오류:', error)
+    return c.json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 이력서 파일 업로드 (Cloudflare Workers에서는 실제 파일 저장 대신 URL 저장)
+app.post('/api/jobseeker/upload-resume', async (c) => {
+  try {
+    // JWT 토큰 검증
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ success: false, message: '인증 토큰이 필요합니다.' }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    try {
+      payload = await verify(token, c.env.JWT_SECRET || 'your-secret-key')
+    } catch (error) {
+      return c.json({ success: false, message: '유효하지 않은 토큰입니다.' }, 401)
+    }
+
+    const formData = await c.req.formData()
+    const file = formData.get('resume') as File
+    
+    if (!file) {
+      return c.json({ success: false, message: '업로드할 파일이 없습니다.' }, 400)
+    }
+
+    // 파일 크기 검증 (5MB 제한)
+    if (file.size > 5 * 1024 * 1024) {
+      return c.json({ success: false, message: '파일 크기는 5MB 이하여야 합니다.' }, 400)
+    }
+
+    // 파일 형식 검증
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+    if (!allowedTypes.includes(file.type)) {
+      return c.json({ success: false, message: 'PDF, DOC, DOCX 파일만 업로드 가능합니다.' }, 400)
+    }
+
+    // 실제 프로덕션 환경에서는 Cloudflare R2나 다른 스토리지 서비스에 파일 저장
+    // 현재는 파일 정보만 데이터베이스에 저장
+    const fileName = `resume_${payload.userId}_${Date.now()}_${file.name}`
+    const resumeUrl = `/uploads/resumes/${fileName}`
+
+    // 이력서 URL을 데이터베이스에 저장
+    const result = await c.env.DB.prepare(`
+      UPDATE job_seekers 
+      SET resume_url = ?, updated_at = datetime('now')
+      WHERE id = ? AND status = 'active'
+    `).bind(resumeUrl, payload.userId).run()
+
+    if (result.changes === 0) {
+      return c.json({ success: false, message: '이력서 업로드에 실패했습니다.' }, 400)
+    }
+
+    // 실제 환경에서는 여기에서 파일을 스토리지에 업로드하는 로직 추가 필요
+    // 예: Cloudflare R2, AWS S3 등
+    
+    return c.json({
+      success: true,
+      message: '이력서가 성공적으로 업로드되었습니다.',
+      resumeUrl: resumeUrl,
+      fileName: fileName
+    })
+
+  } catch (error) {
+    console.error('이력서 업로드 오류:', error)
+    return c.json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
+// 이력서 다운로드/조회
+app.get('/api/jobseeker/resume', async (c) => {
+  try {
+    // JWT 토큰 검증
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ success: false, message: '인증 토큰이 필요합니다.' }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    let payload
+    try {
+      payload = await verify(token, c.env.JWT_SECRET || 'your-secret-key')
+    } catch (error) {
+      return c.json({ success: false, message: '유효하지 않은 토큰입니다.' }, 401)
+    }
+
+    // 구직자의 이력서 URL 조회
+    const jobSeeker = await c.env.DB.prepare(`
+      SELECT resume_url FROM job_seekers 
+      WHERE id = ? AND status = 'active'
+    `).bind(payload.userId).first()
+
+    if (!jobSeeker || !jobSeeker.resume_url) {
+      return c.json({ success: false, message: '업로드된 이력서가 없습니다.' }, 404)
+    }
+
+    return c.json({
+      success: true,
+      resumeUrl: jobSeeker.resume_url
+    })
+
+  } catch (error) {
+    console.error('이력서 조회 오류:', error)
+    return c.json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.' 
+    }, 500)
+  }
+})
+
 
 // 관리자 대시보드 - 로딩 화면과 함께 안전한 인증 처리
 app.get('/static/admin-dashboard.html', async (c) => {
