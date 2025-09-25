@@ -340,27 +340,126 @@
     </div>
 
     <script>
+        // URL에서 토큰 처리
+        function handleURLToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                console.log('🔗 URL에서 토큰 발견, localStorage에 저장');
+                localStorage.setItem('token', urlToken);
+                // URL에서 토큰 파라미터 제거 (보안상)
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
         // 인증 확인
-        function checkAuth() {
-            const token = localStorage.getItem('authToken');
-            const userRole = localStorage.getItem('userRole');
+        async function checkAuth() {
+            // 1단계: URL 토큰 처리
+            handleURLToken();
+            
+            // 2단계: 토큰 검상
+            const token = localStorage.getItem('token') || localStorage.getItem('authToken');
             
             if (!token) {
                 alert('로그인이 필요합니다.');
-                window.location.href = '/static/login.html';
+                window.location.href = '/';
                 return;
             }
             
-            if (userRole !== 'jobseeker') {
-                alert('구직자 권한이 필요합니다.');
+            // 3단계: 토큰 검증 (API 호출)
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('토큰 검증 실패');
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    throw new Error('사용자 정보 로드 실패');
+                }
+                
+                // 4단계: 사용자 정보 localStorage에 저장
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('currentUser', JSON.stringify(data.user));
+                
+                // 5단계: 권한 확인
+                if (data.user.userType !== 'jobseeker' && data.user.userType !== 'student') {
+                    alert('구직자 권한이 필요합니다. 현재 계정 유형: ' + (data.user.userType || '알 수 없음'));
+                    console.log('사용자 정보:', data.user);
+                    window.location.href = '/';
+                    return;
+                }
+                
+                // 6단계: 사용자 정보 UI에 표시
+                const userName = data.user.name || data.user.userName || '구직자';
+                const userNameElement = document.getElementById('userName');
+                const welcomeNameElement = document.getElementById('welcomeName');
+                
+                if (userNameElement) userNameElement.textContent = userName;
+                if (welcomeNameElement) welcomeNameElement.textContent = userName;
+                
+                console.log('인증 성공:', {
+                    token: token ? token.substring(0, 20) + '...' : 'null',
+                    user: data.user,
+                    userName: userName
+                });
+                
+                return; // 성공 시 종료
+                
+            } catch (error) {
+                console.error('인증 오류:', error);
+                alert('로그인 정보가 만료되었거나 잘못되었습니다. 다시 로그인해주세요.');
+                localStorage.clear();
+                window.location.href = '/';
+                return;
+            }
+            
+            // 폴백: localStorage의 사용자 정보로 처리 (위의 API 호출이 실패한 경우)
+            let user;
+            try {
+                const userStr = localStorage.getItem('user') || localStorage.getItem('currentUser');
+                if (userStr) {
+                    user = JSON.parse(userStr);
+                } else {
+                    throw new Error('사용자 정보가 없습니다.');
+                }
+            } catch (error) {
+                console.error('사용자 정보 파싱 오류:', error);
+                alert('로그인 정보가 올바르지 않습니다. 다시 로그인해주세요.');
+                localStorage.clear();
+                window.location.href = '/';
+                return;
+            }
+            
+            // 구직자 권한 확인
+            if (user.userType !== 'jobseeker' && user.userType !== 'student') {
+                alert('구직자 권한이 필요합니다. 현재 계정 유형: ' + (user.userType || '알 수 없음'));
+                console.log('사용자 정보:', user);
                 window.location.href = '/';
                 return;
             }
             
             // 사용자 정보 설정
-            const userName = localStorage.getItem('userName') || '김구직';
-            document.getElementById('userName').textContent = userName;
-            document.getElementById('welcomeName').textContent = userName;
+            const userName = user.name || user.userName || '구직자';
+            const userNameElement = document.getElementById('userName');
+            const welcomeNameElement = document.getElementById('welcomeName');
+            
+            if (userNameElement) userNameElement.textContent = userName;
+            if (welcomeNameElement) welcomeNameElement.textContent = userName;
+            
+            console.log('인증 성공 (폴백):', {
+                token: token ? token.substring(0, 20) + '...' : 'null',
+                user: user,
+                userName: userName
+            });
         }
 
         // 날짜 설정
@@ -378,10 +477,16 @@
         // 로그아웃
         function logout() {
             if (confirm('로그아웃 하시겠습니까?')) {
+                // 모든 인증 관련 데이터 삭제
+                localStorage.removeItem('token');
                 localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
+                localStorage.removeItem('currentUser');
                 localStorage.removeItem('userRole');
                 localStorage.removeItem('userName');
-                window.location.href = '/static/login.html';
+                
+                // 메인 페이지로 이동
+                window.location.href = '/';
             }
         }
 
