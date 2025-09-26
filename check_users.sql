@@ -1,0 +1,1 @@
+SELECT id, email, name, status FROM job_seekers LIMIT 5;
