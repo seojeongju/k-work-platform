@@ -4600,6 +4600,52 @@ app.post('/api/auth/register', async (c) => {
     if (userId) {
       console.log(`✅ User registered successfully: ${email} (ID: ${userId})`)
       
+      // For certain user types (employer, jobseeker), generate token for immediate login
+      if (userType === 'employer' || userType === 'jobseeker') {
+        try {
+          // Get user info from database
+          let userName = email // fallback
+          if (userType === 'employer') {
+            userName = sanitizedUserData.company_name || email
+          } else if (userType === 'jobseeker') {
+            userName = sanitizedUserData.name || email
+          }
+          
+          // Generate JWT token
+          const token = await sign({
+            id: userId,
+            email: email,
+            userType: userType,
+            name: userName,
+            exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24시간
+          }, 'production-secret-key')
+
+          console.log(`🎟️ Token generated for ${userType}: ${email}`)
+          
+          return c.json({
+            success: true,
+            token: token,
+            user: {
+              id: userId,
+              email: email,
+              name: userName,
+              userType: userType
+            },
+            message: '회원가입이 성공적으로 완료되었습니다.'
+          })
+        } catch (tokenError) {
+          console.error('❌ Token generation failed:', tokenError)
+          // Fallback to success without token
+          return c.json({
+            success: true,
+            message: '회원가입이 완료되었습니다. 로그인 페이지로 이동하여 로그인해주세요.',
+            userId: userId,
+            redirect: '/static/login.html'
+          })
+        }
+      }
+      
+      // For other user types (agent, admin), return success without token (requires approval)
       return c.json({
         success: true,
         message: '회원가입이 성공적으로 완료되었습니다.',
