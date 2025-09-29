@@ -71,118 +71,210 @@ app.get('/', (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WOW-CAMPUS - 외국인을 위한 종합 플랫폼 | 취업·유학·정착</title>
     <meta name="description" content="외국인을 위한 한국 취업, 유학, 정착 정보를 제공하는 종합 플랫폼입니다.">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS with fallback -->
+    <script src="https://cdn.tailwindcss.com" onerror="this.remove()"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     
+    <!-- Fallback CSS if Tailwind fails to load -->
+    <style id="fallback-css">
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .space-x-2 > * + * { margin-left: 0.5rem; }
+        .space-x-8 > * + * { margin-left: 2rem; }
+        .hidden { display: none; }
+        .fixed { position: fixed; }
+        .top-0 { top: 0; }
+        .w-full { width: 100%; }
+        .z-50 { z-index: 50; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .bg-white { background-color: #ffffff; }
+        .text-white { color: #ffffff; }
+        .rounded-full { border-radius: 9999px; }
+        .font-bold { font-weight: 700; }
+        .text-xl { font-size: 1.25rem; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .mt-16 { margin-top: 4rem; }
+        .text-center { text-align: center; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .grid { display: grid; }
+        .grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
+        .gap-8 { gap: 2rem; }
+        .p-6 { padding: 1.5rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        @media (min-width: 768px) {
+            .md\\:flex { display: flex; }
+            .md\\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 1024px) {
+            .lg\\:grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+        }
+    </style>
+    
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'wow-blue': '#667eea',
-                        'wow-purple': '#764ba2',
-                        'wow-green': '#10b981',
-                        'wow-orange': '#f59e0b'
-                    },
-                    animation: {
-                        'fade-in-up': 'fadeInUp 0.6s ease-out',
-                        'fade-in': 'fadeIn 0.8s ease-out',
-                        'bounce-slow': 'bounce 3s infinite'
+        // Tailwind config (will only work if Tailwind loads)
+        if (window.tailwind) {
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            'wow-blue': '#667eea',
+                            'wow-purple': '#764ba2',
+                            'wow-green': '#10b981',
+                            'wow-orange': '#f59e0b'
+                        }
                     }
                 }
-            }
+            };
         }
     </script>
     
     <style>
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+        /* Enhanced styles with fallbacks */
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            color: white;
+            padding: 4rem 0;
+            text-align: center;
         }
         .glass-effect {
+            background: rgba(102, 126, 234, 0.9);
             backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
         .nav-link {
+            text-decoration: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
             transition: all 0.3s ease;
-            position: relative;
         }
-        .nav-link:hover::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: #fff;
+        .nav-link:hover {
+            color: #10b981;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .hero-title {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .hero-subtitle {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        .service-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .service-card:hover {
+            transform: translateY(-5px);
+        }
+        .service-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .btn-primary {
+            background-color: #667eea;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 2rem;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #10b981;
+            transform: translateY(-2px);
+        }
+        /* Mobile responsive */
+        .mobile-menu {
+            display: none;
+            background: #667eea;
+            padding: 1rem;
+        }
+        .mobile-menu a {
+            display: block;
+            color: white;
+            padding: 0.5rem 0;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2rem; }
+            .desktop-menu { display: none; }
+            .mobile-toggle { display: block; }
         }
     </style>
 </head>
-<body class="font-sans">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; line-height: 1.6;">
     <!-- 네비게이션 -->
-    <nav class="fixed top-0 w-full z-50 glass-effect">
-        <div class="container mx-auto px-4 py-3">
-            <div class="flex items-center justify-between">
+    <nav class="fixed top-0 w-full z-50 glass-effect" style="position: fixed; top: 0; width: 100%; z-index: 50; background: rgba(102, 126, 234, 0.95); backdrop-filter: blur(10px);">
+        <div class="container mx-auto px-4 py-3" style="max-width: 1200px; margin: 0 auto; padding: 0.75rem 1rem;">
+            <div class="flex items-center justify-between" style="display: flex; align-items: center; justify-content: space-between;">
                 <!-- 로고 -->
-                <div class="flex items-center space-x-2">
-                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                        <span class="text-wow-blue font-bold text-xl">W</span>
+                <div class="flex items-center space-x-2" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="width: 2.5rem; height: 2.5rem; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <span style="color: #667eea; font-weight: bold; font-size: 1.25rem;">W</span>
                     </div>
-                    <span class="text-white font-bold text-xl">WOW-CAMPUS</span>
+                    <span style="color: white; font-weight: bold; font-size: 1.25rem;">WOW-CAMPUS</span>
                 </div>
                 
                 <!-- 데스크톱 메뉴 -->
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="#jobs" class="nav-link text-white hover:text-wow-green">구인정보</a>
-                    <a href="#jobseekers" class="nav-link text-white hover:text-wow-green">구직정보</a>
-                    <a href="#study" class="nav-link text-white hover:text-wow-green">유학정보</a>
-                    <a href="/static/login.html" class="nav-link text-white hover:text-wow-green">로그인</a>
-                    <a href="/static/register.html" class="bg-white text-wow-blue px-6 py-2 rounded-full font-semibold hover:bg-wow-green hover:text-white transition-all">회원가입</a>
+                <div class="desktop-menu" style="display: flex; align-items: center; gap: 2rem;">
+                    <a href="#jobs" class="nav-link">구인정보</a>
+                    <a href="#jobseekers" class="nav-link">구직정보</a>
+                    <a href="#study" class="nav-link">유학정보</a>
+                    <a href="/static/login.html" class="nav-link">로그인</a>
+                    <a href="/static/register.html" class="btn-primary" style="background: white; color: #667eea; padding: 0.5rem 1.5rem; border-radius: 2rem; text-decoration: none; font-weight: 600;">회원가입</a>
                 </div>
                 
                 <!-- 모바일 메뉴 버튼 -->
-                <button id="mobile-menu-btn" class="md:hidden text-white text-2xl">
-                    <i class="fas fa-bars"></i>
+                <button id="mobile-menu-btn" class="mobile-toggle" style="display: none; color: white; background: none; border: none; font-size: 1.5rem; cursor: pointer;">
+                    ☰
                 </button>
             </div>
             
             <!-- 모바일 메뉴 -->
-            <div id="mobile-menu" class="md:hidden hidden mt-4 pb-4">
-                <a href="#jobs" class="block py-2 text-white hover:text-wow-green">구인정보</a>
-                <a href="#jobseekers" class="block py-2 text-white hover:text-wow-green">구직정보</a>
-                <a href="#study" class="block py-2 text-white hover:text-wow-green">유학정보</a>
-                <a href="/static/login.html" class="block py-2 text-white hover:text-wow-green">로그인</a>
-                <a href="/static/register.html" class="block py-2 mt-2 bg-white text-wow-blue px-4 py-2 rounded-full text-center font-semibold">회원가입</a>
+            <div id="mobile-menu" class="mobile-menu">
+                <a href="#jobs">구인정보</a>
+                <a href="#jobseekers">구직정보</a>
+                <a href="#study">유학정보</a>
+                <a href="/static/login.html">로그인</a>
+                <a href="/static/register.html" style="background: white; color: #667eea; padding: 0.5rem 1rem; border-radius: 1rem; text-align: center; margin-top: 0.5rem; display: block;">회원가입</a>
             </div>
         </div>
     </nav>
 
     <!-- 메인 히어로 섹션 -->
-    <section class="gradient-bg min-h-screen flex items-center justify-center pt-20">
-        <div class="container mx-auto px-4 text-center text-white">
-            <div class="animate-fade-in-up">
-                <h1 class="text-5xl md:text-7xl font-bold mb-6">
+    <section class="gradient-bg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding-top: 5rem;">
+        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 1rem; text-align: center; color: white;">
+            <div style="animation: fadeInUp 1s ease-out;">
+                <h1 class="hero-title" style="font-size: 3rem; font-weight: bold; margin-bottom: 1rem;">
                     🌟 WOW-CAMPUS
                 </h1>
-                <p class="text-xl md:text-2xl mb-4 opacity-90">
+                <p class="hero-subtitle" style="font-size: 1.5rem; margin-bottom: 1rem; opacity: 0.9;">
                     외국인을 위한 종합 플랫폼
                 </p>
-                <p class="text-lg mb-8 opacity-75">
+                <p style="font-size: 1.125rem; margin-bottom: 2rem; opacity: 0.8;">
                     취업 · 유학 · 정착을 위한 모든 정보를 한 곳에서
                 </p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="/static/register.html" class="bg-white text-wow-blue px-8 py-4 rounded-full font-bold text-lg hover:bg-wow-green hover:text-white transition-all transform hover:scale-105">
+                <div style="display: flex; flex-direction: column; gap: 1rem; align-items: center; max-width: 500px; margin: 0 auto;">
+                    <a href="/static/register.html" class="btn-primary" style="background: white; color: #667eea; padding: 1rem 2rem; border-radius: 2rem; text-decoration: none; font-weight: bold; font-size: 1.125rem; display: inline-block; transition: all 0.3s ease; width: 200px;">
                         무료 회원가입
                     </a>
-                    <a href="#services" class="border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-wow-blue transition-all">
+                    <a href="#services" style="border: 2px solid white; color: white; padding: 1rem 2rem; border-radius: 2rem; text-decoration: none; font-weight: bold; font-size: 1.125rem; display: inline-block; transition: all 0.3s ease; width: 200px;">
                         서비스 둘러보기
                     </a>
                 </div>
@@ -191,46 +283,46 @@ app.get('/', (c) => {
     </section>
 
     <!-- 서비스 소개 -->
-    <section id="services" class="py-20 bg-white">
-        <div class="container mx-auto px-4">
-            <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold text-gray-800 mb-4">우리가 제공하는 서비스</h2>
-                <p class="text-xl text-gray-600">외국인의 한국 생활을 위한 모든 것</p>
+    <section id="services" style="padding: 5rem 0; background: white;">
+        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 1rem;">
+            <div style="text-align: center; margin-bottom: 4rem;">
+                <h2 style="font-size: 2.5rem; font-weight: bold; color: #1f2937; margin-bottom: 1rem;">우리가 제공하는 서비스</h2>
+                <p style="font-size: 1.25rem; color: #6b7280;">외국인의 한국 생활을 위한 모든 것</p>
             </div>
             
-            <div class="grid md:grid-cols-4 gap-8">
+            <div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
                 <!-- 구인정보 -->
-                <div class="text-center group hover:transform hover:scale-105 transition-all duration-300">
-                    <div class="w-20 h-20 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:shadow-2xl">
-                        <i class="fas fa-briefcase text-white text-2xl"></i>
+                <div class="service-card">
+                    <div class="service-icon" style="width: 5rem; height: 5rem; background: linear-gradient(135deg, #3b82f6, #1e40af); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                        <span style="color: white; font-size: 1.5rem;">💼</span>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-4">구인정보</h3>
-                    <p class="text-gray-600 mb-6">외국인 채용을 원하는 기업들의 최신 채용 공고를 확인하세요.</p>
-                    <a href="#jobs" class="inline-block bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors">
+                    <h3 style="font-size: 1.5rem; font-weight: bold; color: #1f2937; margin-bottom: 1rem;">구인정보</h3>
+                    <p style="color: #6b7280; margin-bottom: 1.5rem;">외국인 채용을 원하는 기업들의 최신 채용 공고를 확인하세요.</p>
+                    <a href="#jobs" class="btn-primary" style="background: #3b82f6;">
                         채용정보 보기
                     </a>
                 </div>
                 
                 <!-- 구직정보 -->
-                <div class="text-center group hover:transform hover:scale-105 transition-all duration-300">
-                    <div class="w-20 h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:shadow-2xl">
-                        <i class="fas fa-user-tie text-white text-2xl"></i>
+                <div class="service-card">
+                    <div class="service-icon" style="width: 5rem; height: 5rem; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                        <span style="color: white; font-size: 1.5rem;">👔</span>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-4">구직정보</h3>
-                    <p class="text-gray-600 mb-6">취업을 희망하는 외국인들의 프로필을 확인하고 연결하세요.</p>
-                    <a href="#jobseekers" class="inline-block bg-green-500 text-white px-6 py-3 rounded-full hover:bg-green-600 transition-colors">
+                    <h3 style="font-size: 1.5rem; font-weight: bold; color: #1f2937; margin-bottom: 1rem;">구직정보</h3>
+                    <p style="color: #6b7280; margin-bottom: 1.5rem;">취업을 희망하는 외국인들의 프로필을 확인하고 연결하세요.</p>
+                    <a href="#jobseekers" class="btn-primary" style="background: #10b981;">
                         인재정보 보기
                     </a>
                 </div>
                 
                 <!-- 유학정보 -->
-                <div class="text-center group hover:transform hover:scale-105 transition-all duration-300">
-                    <div class="w-20 h-20 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:shadow-2xl">
-                        <i class="fas fa-graduation-cap text-white text-2xl"></i>
+                <div class="service-card">
+                    <div class="service-icon" style="width: 5rem; height: 5rem; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                        <span style="color: white; font-size: 1.5rem;">🎓</span>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-4">유학정보</h3>
-                    <p class="text-gray-600 mb-6">한국 대학교 및 교육기관 정보, 장학금, 입학 가이드를 제공합니다.</p>
-                    <a href="#study" class="inline-block bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors">
+                    <h3 style="font-size: 1.5rem; font-weight: bold; color: #1f2937; margin-bottom: 1rem;">유학정보</h3>
+                    <p style="color: #6b7280; margin-bottom: 1.5rem;">한국 대학교 및 교육기관 정보, 장학금, 입학 가이드를 제공합니다.</p>
+                    <a href="#study" class="btn-primary" style="background: #8b5cf6;">
                         유학정보 보기
                     </a>
                 </div>
@@ -427,23 +519,38 @@ app.get('/', (c) => {
     </footer>
 
     <script>
-        // 모바일 메뉴 토글
-        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+        // DOM 로드 후 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            // 모바일 메뉴 토글 (안전한 방식)
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
             const mobileMenu = document.getElementById('mobile-menu');
-            mobileMenu.classList.toggle('hidden');
-        });
+            
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', function() {
+                    if (mobileMenu.style.display === 'none' || mobileMenu.style.display === '') {
+                        mobileMenu.style.display = 'block';
+                    } else {
+                        mobileMenu.style.display = 'none';
+                    }
+                });
+            }
 
-        // 스무스 스크롤
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
+            // 스무스 스크롤
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                        // 모바일 메뉴 닫기
+                        if (mobileMenu) {
+                            mobileMenu.style.display = 'none';
+                        }
+                    }
+                });
             });
         });
 

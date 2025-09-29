@@ -22,26 +22,21 @@ export const securityHeaders = createMiddleware<{ Bindings: Bindings }>(async (c
   c.header('X-XSS-Protection', '1; mode=block');
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
   
-  // 프로덕션 환경에서 더 엄격한 CSP
+  // 더 관대한 CSP for CSS 호환성
   const cspDirectives = [
-    "default-src 'self'",
-    // 개발 환경에서는 inline scripts 허용, 프로덕션에서는 nonce 기반
-    isProduction 
-      ? "script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com 'unsafe-inline'"
-      : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com",
-    "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net",
-    "font-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com data:",
+    "default-src 'self' https:",
+    // 모든 환경에서 inline scripts와 external CDN 허용
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com https:",
+    "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https:",
+    "font-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com data: https:",
     "img-src 'self' data: https: blob:",
-    "media-src 'self'",
+    "media-src 'self' https:",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    isProduction ? "upgrade-insecure-requests" : "",
-    isProduction 
-      ? "connect-src 'self' https://w-campus.jayseo36.workers.dev https://w-campus.com https://www.w-campus.com https://cloudflareinsights.com"
-      : "connect-src 'self' https://w-campus.jayseo36.workers.dev https://w-campus.com https://www.w-campus.com https://cloudflareinsights.com ws: wss:"
-  ].filter(directive => directive !== ""); // 빈 문자열 제거
+    "connect-src 'self' https://w-campus.jayseo36.workers.dev https://w-campus.com https://www.w-campus.com https://cloudflareinsights.com https: wss:"
+  ];
   
   c.header('Content-Security-Policy', cspDirectives.join('; '));
   
@@ -64,23 +59,13 @@ export const securityHeaders = createMiddleware<{ Bindings: Bindings }>(async (c
     'encrypted-media=()'
   ].join(', '));
   
-  // 추가 보안 헤더 (개발 환경에서 완화)
+  // 추가 보안 헤더 (CSS 호환성을 위해 완화)
   c.header('X-Permitted-Cross-Domain-Policies', 'none');
-  // 개발 환경에서는 COEP/COOP 헤더 비활성화 (Vite 호환성)
-  if (isProduction) {
-    c.header('Cross-Origin-Embedder-Policy', 'require-corp');
-    c.header('Cross-Origin-Opener-Policy', 'same-origin');
-  } else {
-    // 개발 환경에서는 더 관대한 설정
-    c.header('Cross-Origin-Opener-Policy', 'unsafe-none');
-  }
   
-  // Cross-Origin-Resource-Policy도 개발 환경에서 완화
-  if (isProduction) {
-    c.header('Cross-Origin-Resource-Policy', 'same-origin');
-  } else {
-    c.header('Cross-Origin-Resource-Policy', 'cross-origin');
-  }
+  // COEP/COOP 헤더를 완전히 제거 (Tailwind CSS 호환성)
+  // Cross-Origin 정책을 완화하여 CDN 리소스 로딩 허용
+  c.header('Cross-Origin-Opener-Policy', 'unsafe-none');
+  c.header('Cross-Origin-Resource-Policy', 'cross-origin');
   
   // 서버 정보 숨기기
   c.header('Server', 'Cloudflare-Workers');
