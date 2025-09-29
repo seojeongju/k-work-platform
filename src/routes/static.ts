@@ -403,6 +403,171 @@ staticPages.get('/health', (c) => {
 });
 
 /**
+ * 🎓 유학 정보 페이지
+ */
+staticPages.get('/study.html', (c) => {
+  const renderer = new TemplateRenderer(c);
+  
+  return renderer.renderPage('study.html', {
+    title: '한국 유학 정보',
+    bodyClass: 'min-h-screen',
+    customJS: `
+      // 카테고리 전환 함수
+      function showCategory(category) {
+        // 모든 콘텐츠 숨기기
+        document.getElementById('default-content').classList.add('hidden');
+        document.getElementById('universities-content').classList.add('hidden');
+        document.getElementById('scholarships-content').classList.add('hidden');
+        document.getElementById('language-content').classList.add('hidden');
+        
+        // 선택된 카테고리만 표시
+        const targetContent = document.getElementById(category + '-content');
+        if (targetContent) {
+          targetContent.classList.remove('hidden');
+        }
+      }
+      
+      // 뒤로가기 기능
+      function showDefault() {
+        document.getElementById('universities-content').classList.add('hidden');
+        document.getElementById('scholarships-content').classList.add('hidden');
+        document.getElementById('language-content').classList.add('hidden');
+        document.getElementById('default-content').classList.remove('hidden');
+      }
+      
+      // 글로벌 함수로 등록
+      window.showCategory = showCategory;
+      window.showDefault = showDefault;
+    `
+  });
+});
+
+/**
+ * 💼 채용 정보 페이지
+ */
+staticPages.get('/jobs.html', (c) => {
+  const renderer = new TemplateRenderer(c);
+  
+  return renderer.renderPage('jobs.html', {
+    title: '채용 정보',
+    bodyClass: 'min-h-screen bg-gray-50',
+    customJS: `
+      document.addEventListener('DOMContentLoaded', async function() {
+        await loadJobsList();
+      });
+      
+      async function loadJobsList() {
+        try {
+          const response = await fetch('/api/jobs');
+          if (response.ok) {
+            const data = await response.json();
+            const jobsList = document.getElementById('jobs-list');
+            
+            if (data.jobs && data.jobs.length > 0) {
+              jobsList.innerHTML = data.jobs.map(job => \`
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                  <div class="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 class="text-xl font-bold text-gray-800 mb-2">\${job.title}</h3>
+                      <p class="text-gray-600"><i class="fas fa-building mr-2"></i>\${job.company}</p>
+                    </div>
+                    <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                      \${job.visa_type || 'E-7'}
+                    </span>
+                  </div>
+                  
+                  <div class="space-y-2 mb-4">
+                    <p class="text-gray-600"><i class="fas fa-map-marker-alt mr-2"></i>\${job.location}</p>
+                    <p class="text-gray-600"><i class="fas fa-won-sign mr-2"></i>\${job.salary || '협의'}</p>
+                    <p class="text-gray-600"><i class="fas fa-clock mr-2"></i>\${new Date(job.created_at).toLocaleDateString()}</p>
+                  </div>
+                  
+                  <div class="border-t pt-4">
+                    <p class="text-gray-700 mb-4">\${job.description || '상세 내용을 확인해보세요.'}</p>
+                    <div class="flex justify-between items-center">
+                      <div class="flex space-x-2">
+                        <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">정규직</span>
+                        <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">경력무관</span>
+                      </div>
+                      <button class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        지원하기
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              \`).join('');
+            } else {
+              jobsList.innerHTML = '<div class="text-center text-gray-500 py-12"><i class="fas fa-briefcase text-4xl mb-4"></i><p>등록된 채용공고가 없습니다.</p></div>';
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load jobs:', error);
+          document.getElementById('jobs-list').innerHTML = '<div class="text-center text-red-500 py-12">채용정보를 불러오는데 실패했습니다.</div>';
+        }
+      }
+    `
+  });
+});
+
+/**
+ * 👥 구직자 정보 페이지
+ */
+staticPages.get('/jobseekers.html', (c) => {
+  const renderer = new TemplateRenderer(c);
+  
+  return renderer.renderPage('jobseekers.html', {
+    title: '구직자 정보',
+    bodyClass: 'min-h-screen bg-gray-50',
+    customJS: `
+      document.addEventListener('DOMContentLoaded', async function() {
+        await loadJobSeekersList();
+      });
+      
+      async function loadJobSeekersList() {
+        try {
+          const response = await fetch('/api/jobseekers');
+          if (response.ok) {
+            const data = await response.json();
+            const jobseekersList = document.getElementById('jobseekers-list');
+            
+            if (data.jobseekers && data.jobseekers.length > 0) {
+              jobseekersList.innerHTML = data.jobseekers.map(jobseeker => \`
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                  <div class="text-center mb-4">
+                    <div class="w-20 h-20 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <i class="fas fa-user text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">\${jobseeker.name}</h3>
+                  </div>
+                  
+                  <div class="space-y-2 mb-4">
+                    <p class="text-gray-600 text-center"><i class="fas fa-globe mr-2"></i>\${jobseeker.nationality}</p>
+                    <p class="text-gray-600 text-center"><i class="fas fa-language mr-2"></i>한국어 \${jobseeker.korean_level}</p>
+                    <p class="text-gray-600 text-center"><i class="fas fa-graduation-cap mr-2"></i>\${jobseeker.education_level}</p>
+                    <p class="text-gray-600 text-center"><i class="fas fa-id-card mr-2"></i>\${jobseeker.visa_status}</p>
+                  </div>
+                  
+                  <div class="border-t pt-4 text-center">
+                    <button class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors w-full">
+                      <i class="fas fa-envelope mr-2"></i>연락하기
+                    </button>
+                  </div>
+                </div>
+              \`).join('');
+            } else {
+              jobseekersList.innerHTML = '<div class="col-span-full text-center text-gray-500 py-12"><i class="fas fa-users text-4xl mb-4"></i><p>등록된 구직자가 없습니다.</p></div>';
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load jobseekers:', error);
+          document.getElementById('jobseekers-list').innerHTML = '<div class="col-span-full text-center text-red-500 py-12">구직자 정보를 불러오는데 실패했습니다.</div>';
+        }
+      }
+    `
+  });
+});
+
+/**
  * 🚫 404 에러 페이지 핸들러
  */
 staticPages.get('/*', (c) => {

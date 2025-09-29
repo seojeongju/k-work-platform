@@ -1,6 +1,6 @@
 name = "w-campus"
+main = "dist/index.js"
 compatibility_date = "2025-09-11"
-pages_build_output_dir = "./dist"
 
 [vars]
 SITE_NAME = "WOW-CAMPUS"
