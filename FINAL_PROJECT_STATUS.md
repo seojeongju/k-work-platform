@@ -88,9 +88,14 @@
 5. **다국어 지원**: 영어, 중국어 등 추가 언어
 
 ## 📞 **기술 지원 정보**
-- **Cloudflare API Token**: `Tm2YhROFnBNIJho9mXC5W_UEZeMztJltRQXqaq6c`
+- **Cloudflare API Token**: `[REDACTED - 보안상 제거됨]`
 - **GitHub Repository**: https://github.com/seojeongju/k-work-platform
 - **도메인 관리**: 가비아 (w-campus.com)
+
+⚠️ **보안 참고사항**: 
+- API 토큰은 환경변수로 관리하며 공개 문서에서 제외
+- 데이터베이스 ID는 wrangler.toml에서만 관리
+- 민감한 정보는 별도 보안 문서로 관리
 
 ---
 

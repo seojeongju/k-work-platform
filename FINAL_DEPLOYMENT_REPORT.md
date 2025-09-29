@@ -118,10 +118,14 @@
 4. **API 보안**: Rate limiting 강화
 
 ## 📞 **기술 지원 정보**
-- **Cloudflare API Token**: `Tm2YhROFnBNIJho9mXC5W_UEZeMztJltRQXqaq6c`
+- **Cloudflare API Token**: `[REDACTED - 보안상 제거됨]`
 - **Cloudflare Pages Project**: `w-campus`
 - **GitHub Repository**: https://github.com/seojeongju/k-work-platform
-- **Database ID**: `d5248baa-5bf3-4292-bfc1-a81c2c44c7a4`
+- **Database ID**: `[REDACTED - wrangler.toml 참조]`
+
+⚠️ **보안 정책**: 
+- 민감한 API 토큰 및 DB ID는 공개 문서에서 제외
+- 실제 값은 wrangler.toml 및 환경변수에서 관리
 
 ## 🎉 **성과 요약**
 
