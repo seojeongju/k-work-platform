@@ -18,7 +18,7 @@ fi
 
 # 2. 하드코딩된 토큰/비밀번호 검사
 echo "🔑 하드코딩된 시크릿 검사 중..."
-HARDCODED_SECRETS=$(git diff --cached | grep -E '(api[_-]?key|token|secret|password)\s*[=:]\s*["\'][^"\']{20,}["\']' || true)
+HARDCODED_SECRETS=$(git diff --cached | grep -E "(api[_-]?key|token|secret|password)\s*[=:]\s*[\"'][^\"']{20,}[\"']" || true)
 if [ ! -z "$HARDCODED_SECRETS" ]; then
     echo "❌ 하드코딩된 시크릿이 발견되었습니다:"
     echo "$HARDCODED_SECRETS"
@@ -28,7 +28,7 @@ fi
 
 # 3. 문서에서 실제 토큰 검사
 echo "📄 문서 내 토큰 노출 검사 중..."
-DOC_TOKENS=$(git diff --cached | grep -E '[A-Za-z0-9_-]{40,}' | grep -v 'REDACTED' | grep -v 'example' | grep -v 'your-' || true)
+DOC_TOKENS=$(git diff --cached | grep -E "[A-Za-z0-9_-]{40,}" | grep -v "REDACTED" | grep -v "example" | grep -v "your-" || true)
 if [ ! -z "$DOC_TOKENS" ]; then
     echo "⚠️  긴 문자열이 발견되었습니다. 실제 토큰이 아닌지 확인하세요:"
     echo "$DOC_TOKENS"
@@ -53,7 +53,7 @@ fi
 
 # 5. 환경변수 사용 검증
 echo "🌿 환경변수 사용 검증 중..."
-HARDCODED_URLS=$(git diff --cached | grep -E 'https://.*\.pages\.dev' | grep -v 'example' || true)
+HARDCODED_URLS=$(git diff --cached | grep -E "https://.*\.pages\.dev" | grep -v "example" || true)
 if [ ! -z "$HARDCODED_URLS" ]; then
     echo "⚠️  하드코딩된 URL이 발견되었습니다:"
     echo "$HARDCODED_URLS"
