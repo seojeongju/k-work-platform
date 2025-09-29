@@ -53,8 +53,9 @@ app.route('/api', api);
 app.route('/api/auth', auth);
 app.route('/static', staticPages);
 
-// 정적 파일 서빙 (호환성을 위해 간소화)
-app.use("/*", serveStatic({ root: "./" } as any));
+// 정적 파일 서빙 (개발 환경에서는 비활성화)
+// Cloudflare Workers 환경에서만 활성화됩니다
+// app.use("/*", serveStatic({ root: "./" } as any));
 
 // 메인 홈페이지 라우트 (간소화된 버전)
 app.get('/', async (c) => {

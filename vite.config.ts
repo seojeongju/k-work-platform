@@ -12,6 +12,9 @@ export default defineConfig(({ command }) => {
         entry: 'src/index.tsx'
       })] : [])
     ],
+    server: {
+      allowedHosts: ['all'] // Allow all hosts for sandbox environment
+    },
     build: {
       target: 'esnext',
       rollupOptions: {

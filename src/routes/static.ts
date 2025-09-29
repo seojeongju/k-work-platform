@@ -10,10 +10,10 @@ const staticPages = new Hono<{ Bindings: Bindings }>();
 /**
  * 🔑 로그인 페이지
  */
-staticPages.get('/login.html', async (c) => {
+staticPages.get('/login.html', (c) => {
   const renderer = new TemplateRenderer(c);
   
-  return await renderer.renderPage('login.html', {
+  return renderer.renderPage('login.html', {
     title: '로그인',
     bodyClass: 'bg-gradient-to-br from-blue-50 to-white min-h-screen',
     customCSS: `
@@ -115,10 +115,10 @@ staticPages.get('/login.html', async (c) => {
 /**
  * 📝 회원가입 페이지
  */
-staticPages.get('/register.html', async (c) => {
+staticPages.get('/register.html', (c) => {
   const renderer = new TemplateRenderer(c);
   
-  return await renderer.renderPage('register.html', {
+  return renderer.renderPage('register.html', {
     title: '회원가입',
     bodyClass: 'bg-gradient-to-br from-green-50 to-white min-h-screen',
     customCSS: `
@@ -339,10 +339,10 @@ staticPages.get('/register.html', async (c) => {
 /**
  * 🤝 매칭 서비스 페이지
  */
-staticPages.get('/matching-service.html', async (c) => {
+staticPages.get('/matching-service.html', (c) => {
   const renderer = new TemplateRenderer(c);
   
-  return await renderer.renderPage('matching-service.html', {
+  return renderer.renderPage('matching-service.html', {
     title: '매칭 서비스',
     bodyClass: 'min-h-screen',
     customJS: `
@@ -386,7 +386,7 @@ staticPages.get('/matching-service.html', async (c) => {
 /**
  * ⚕️ 헬스체크 페이지 (시스템 상태)
  */
-staticPages.get('/health', async (c) => {
+staticPages.get('/health', (c) => {
   const renderer = new TemplateRenderer(c);
   
   const systemInfo = {
@@ -396,7 +396,7 @@ staticPages.get('/health', async (c) => {
     responseTime: '< 100ms'
   };
   
-  return await renderer.renderPage('health.html', {
+  return renderer.renderPage('health.html', {
     title: '시스템 상태',
     bodyClass: 'min-h-screen bg-gradient-to-br from-blue-50 to-green-50',
   }, systemInfo);
@@ -405,10 +405,10 @@ staticPages.get('/health', async (c) => {
 /**
  * 🚫 404 에러 페이지 핸들러
  */
-staticPages.get('/*', async (c) => {
+staticPages.get('/*', (c) => {
   const renderer = new TemplateRenderer(c);
   
-  return await renderer.renderPage('404.html', {
+  return renderer.renderPage('404.html', {
     title: '페이지를 찾을 수 없음',
     bodyClass: 'min-h-screen bg-gradient-to-br from-red-50 to-orange-50',
   }, {

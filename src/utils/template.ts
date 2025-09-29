@@ -1,8 +1,10 @@
 // 🎨 템플릿 렌더링 유틸리티
 // HTML 템플릿을 로드하고 동적 데이터를 삽입합니다
+// Cloudflare Workers 환경에서 번들된 템플릿을 사용합니다
 
 import type { Context } from 'hono';
 import type { Bindings } from '../types';
+import { TEMPLATES, type TemplateName } from '../templates/bundle';
 
 /**
  * 템플릿 변수 타입 정의
@@ -23,21 +25,18 @@ export interface PageLayoutOptions {
 
 /**
  * 템플릿 파일을 읽어오는 함수
- * 프로덕션에서는 번들된 템플릿을 사용하고, 개발에서는 파일에서 읽어옵니다
+ * Cloudflare Workers 환경에서는 번들된 템플릿을 직접 사용합니다
  */
-export async function loadTemplate(templatePath: string): Promise<string> {
-  try {
-    // Cloudflare Workers 환경에서는 fetch로 템플릿을 가져옵니다
-    const response = await fetch(`/src/templates/${templatePath}`);
-    if (!response.ok) {
-      throw new Error(`Template not found: ${templatePath}`);
-    }
-    return await response.text();
-  } catch (error) {
-    console.error(`Failed to load template: ${templatePath}`, error);
-    // 폴백 템플릿 반환
+export function loadTemplate(templatePath: string): string {
+  // 번들된 템플릿에서 직접 가져옴 (동기적으로)
+  const template = TEMPLATES[templatePath as TemplateName];
+  
+  if (!template) {
+    console.error(`Template not found: ${templatePath}`);
     return getFallbackTemplate(templatePath);
   }
+  
+  return template;
 }
 
 /**
@@ -61,17 +60,17 @@ export function renderTemplate(template: string, variables: TemplateVariables = 
 /**
  * 기본 레이아웃과 페이지 내용을 결합하는 함수
  */
-export async function renderPageWithLayout(
+export function renderPageWithLayout(
   pageTemplate: string, 
   layoutOptions: PageLayoutOptions,
   variables: TemplateVariables = {}
-): Promise<string> {
+): string {
   try {
-    // 기본 레이아웃 로드
-    const baseLayout = await loadTemplate('layouts/base.html');
+    // 기본 레이아웃 로드 (동기적으로)
+    const baseLayout = loadTemplate('layouts/base.html');
     
-    // 페이지 콘텐츠 로드
-    const pageContent = await loadTemplate(`pages/${pageTemplate}`);
+    // 페이지 콘텐츠 로드 (동기적으로)
+    const pageContent = loadTemplate(`pages/${pageTemplate}`);
     
     // 페이지 콘텐츠에 변수 적용
     const renderedPageContent = renderTemplate(pageContent, variables);
@@ -97,12 +96,12 @@ export async function renderPageWithLayout(
 /**
  * 간단한 페이지 렌더링 (레이아웃 없이)
  */
-export async function renderSimplePage(
+export function renderSimplePage(
   pageTemplate: string,
   variables: TemplateVariables = {}
-): Promise<string> {
+): string {
   try {
-    const template = await loadTemplate(`pages/${pageTemplate}`);
+    const template = loadTemplate(`pages/${pageTemplate}`);
     return renderTemplate(template, variables);
   } catch (error) {
     console.error('Failed to render simple page:', error);
@@ -197,7 +196,7 @@ export function getCommonTemplateVariables(c: Context<{ Bindings: Bindings }>): 
 export class TemplateRenderer {
   constructor(private context: Context<{ Bindings: Bindings }>) {}
   
-  async renderPage(
+  renderPage(
     pageTemplate: string, 
     layoutOptions: PageLayoutOptions,
     variables: TemplateVariables = {}
@@ -205,15 +204,15 @@ export class TemplateRenderer {
     const commonVars = getCommonTemplateVariables(this.context);
     const allVariables = { ...commonVars, ...variables };
     
-    const html = await renderPageWithLayout(pageTemplate, layoutOptions, allVariables);
+    const html = renderPageWithLayout(pageTemplate, layoutOptions, allVariables);
     return this.context.html(html);
   }
   
-  async renderSimple(pageTemplate: string, variables: TemplateVariables = {}) {
+  renderSimple(pageTemplate: string, variables: TemplateVariables = {}) {
     const commonVars = getCommonTemplateVariables(this.context);
     const allVariables = { ...commonVars, ...variables };
     
-    const html = await renderSimplePage(pageTemplate, allVariables);
+    const html = renderSimplePage(pageTemplate, allVariables);
     return this.context.html(html);
   }
 }
