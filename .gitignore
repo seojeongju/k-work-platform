@@ -15,10 +15,20 @@ dist/
 node_modules/
 .wrangler
 
-# env
+# env - 민감한 환경변수 파일들
 .env
+.env.local
 .env.production
+.env.development
 .dev.vars
+*.env
+*secret*
+*token*
+
+# 보안 관련 파일들
+secrets/
+private/
+credentials/
 
 # logs
 logs/
