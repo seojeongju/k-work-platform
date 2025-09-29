@@ -1,0 +1,100 @@
+<div class="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
+    <div class="max-w-lg w-full text-center px-4">
+        <!-- 404 아이콘 -->
+        <div class="mb-8">
+            <div class="mx-auto w-32 h-32 bg-gradient-to-r from-red-400 to-orange-500 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-exclamation-triangle text-white text-5xl"></i>
+            </div>
+            <h1 class="text-6xl font-bold text-gray-800 mb-4">404</h1>
+            <h2 class="text-2xl font-semibold text-gray-700 mb-2">페이지를 찾을 수 없습니다</h2>
+            <p class="text-gray-600 mb-8">요청하신 페이지가 존재하지 않거나 이동되었을 수 있습니다.</p>
+        </div>
+
+        <!-- 추천 링크 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">다음 페이지들을 확인해보세요</h3>
+            <div class="grid grid-cols-1 gap-3">
+                <a href="/" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                    <i class="fas fa-home text-blue-500 w-6"></i>
+                    <span class="ml-3 text-left">
+                        <div class="font-medium text-gray-800">메인 페이지</div>
+                        <div class="text-sm text-gray-500">WOW-CAMPUS 홈으로 이동</div>
+                    </span>
+                </a>
+                
+                <a href="/static/login.html" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                    <i class="fas fa-sign-in-alt text-green-500 w-6"></i>
+                    <span class="ml-3 text-left">
+                        <div class="font-medium text-gray-800">로그인</div>
+                        <div class="text-sm text-gray-500">계정에 로그인하기</div>
+                    </span>
+                </a>
+                
+                <a href="/static/register.html" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                    <i class="fas fa-user-plus text-purple-500 w-6"></i>
+                    <span class="ml-3 text-left">
+                        <div class="font-medium text-gray-800">회원가입</div>
+                        <div class="text-sm text-gray-500">새 계정 만들기</div>
+                    </span>
+                </a>
+                
+                <a href="/static/matching-service.html" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                    <i class="fas fa-search text-orange-500 w-6"></i>
+                    <span class="ml-3 text-left">
+                        <div class="font-medium text-gray-800">매칭 서비스</div>
+                        <div class="text-sm text-gray-500">AI 기반 매칭 서비스</div>
+                    </span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 검색 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">원하시는 페이지를 찾아보세요</h3>
+            <div class="flex">
+                <input type="text" placeholder="페이지 검색..." 
+                       class="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button class="px-6 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 액션 버튼 -->
+        <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <button onclick="history.back()" 
+                    class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>이전 페이지로
+            </button>
+            <a href="/" 
+               class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-home mr-2"></i>메인 페이지로
+            </a>
+            <button onclick="window.location.reload()" 
+                    class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                <i class="fas fa-sync-alt mr-2"></i>새로고침
+            </button>
+        </div>
+
+        <!-- 도움말 정보 -->
+        <div class="mt-12 text-center">
+            <p class="text-gray-500 text-sm mb-4">문제가 지속되면 고객센터에 문의해주세요</p>
+            <div class="flex justify-center space-x-6 text-sm">
+                <a href="#" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-envelope mr-1"></i>이메일 문의
+                </a>
+                <a href="#" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-phone mr-1"></i>전화 문의
+                </a>
+                <a href="#" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-comment mr-1"></i>실시간 채팅
+                </a>
+            </div>
+        </div>
+
+        <!-- 에러 정보 (개발 모드에서만 표시) -->
+        <div class="mt-8 text-xs text-gray-400">
+            Error Code: 404 | Path: {{path}} | Time: {{timestamp}}
+        </div>
+    </div>
+</div>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - WOW-CAMPUS</title>
+    
+    <!-- External CSS & JS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'wow-blue': '#667eea',
+                        'wow-purple': '#764ba2'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom Styles -->
+    <style>
+        {{customCSS}}
+    </style>
+</head>
+<body class="{{bodyClass}}">
+    <!-- Main Content -->
+    {{content}}
+    
+    <!-- Custom Scripts -->
+    <script>
+        // Global WOW-CAMPUS utilities
+        window.WOW = {
+            showNotification: function(message, type = 'info') {
+                // Simple notification system
+                const notification = document.createElement('div');
+                notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                    type === 'success' ? 'bg-green-500' : 
+                    type === 'error' ? 'bg-red-500' : 
+                    type === 'warning' ? 'bg-yellow-500' : 
+                    'bg-blue-500'
+                } text-white`;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            },
+            
+            validateForm: function(formElement) {
+                const inputs = formElement.querySelectorAll('input[required]');
+                let isValid = true;
+                
+                inputs.forEach(input => {
+                    if (!input.value.trim()) {
+                        input.classList.add('border-red-500');
+                        isValid = false;
+                    } else {
+                        input.classList.remove('border-red-500');
+                    }
+                });
+                
+                return isValid;
+            }
+        };
+        
+        {{customJS}}
+    </script>
+</body>
+</html>
