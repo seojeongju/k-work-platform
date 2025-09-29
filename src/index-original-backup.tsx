@@ -253,90 +253,14 @@ async function createJobSeeker(db: D1Database, data: any): Promise<number | null
 
 // 입력 검증 함수들
 function validateEmail(email: string): boolean {
-  // 더 엄격한 이메일 검증
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-  return emailRegex.test(email) && email.length <= 255 && email.length >= 5
-}
-
-// 이메일 형식 상세 검증 (피드백용)
-function getEmailValidation(email: string): { isValid: boolean; message: string } {
-  if (!email) {
-    return { isValid: false, message: '이메일을 입력해주세요.' }
-  }
-  if (email.length < 5) {
-    return { isValid: false, message: '이메일이 너무 짧습니다.' }
-  }
-  if (email.length > 255) {
-    return { isValid: false, message: '이메일이 너무 깁니다. (최대 255자)' }
-  }
-  if (!email.includes('@')) {
-    return { isValid: false, message: '올바른 이메일 형식이 아닙니다. (@가 필요합니다)' }
-  }
-  if (!email.includes('.')) {
-    return { isValid: false, message: '올바른 이메일 형식이 아닙니다. (도메인이 필요합니다)' }
-  }
-  
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-  if (!emailRegex.test(email)) {
-    return { isValid: false, message: '올바른 이메일 형식을 입력해주세요.' }
-  }
-  
-  return { isValid: true, message: '올바른 이메일 형식입니다.' }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email) && email.length <= 255
 }
 
 function validatePassword(password: string): boolean {
-  // 최소 8자, 최대 100자, 영문자+숫자 조합, 특수문자 권장
-  if (password.length < 8 || password.length > 100) {
-    return false
-  }
-  
-  // 영문자와 숫자 필수
-  const hasLetter = /[A-Za-z]/.test(password)
-  const hasNumber = /\d/.test(password)
-  
-  return hasLetter && hasNumber
-}
-
-// 비밀번호 강도 검사 (상세 피드백용)
-function getPasswordStrength(password: string): { isValid: boolean; message: string; strength: number } {
-  if (password.length < 8) {
-    return { isValid: false, message: '비밀번호는 최소 8자 이상이어야 합니다.', strength: 0 }
-  }
-  if (password.length > 100) {
-    return { isValid: false, message: '비밀번호는 100자를 초과할 수 없습니다.', strength: 0 }
-  }
-  
-  const hasLetter = /[A-Za-z]/.test(password)
-  const hasNumber = /\d/.test(password)
-  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password)
-  const hasUpperCase = /[A-Z]/.test(password)
-  const hasLowerCase = /[a-z]/.test(password)
-  
-  if (!hasLetter) {
-    return { isValid: false, message: '비밀번호에 영문자가 포함되어야 합니다.', strength: 1 }
-  }
-  if (!hasNumber) {
-    return { isValid: false, message: '비밀번호에 숫자가 포함되어야 합니다.', strength: 2 }
-  }
-  
-  // 강도 계산
-  let strength = 3 // 기본 (영문자 + 숫자)
-  if (hasSpecial) strength++
-  if (hasUpperCase && hasLowerCase) strength++
-  if (password.length >= 12) strength++
-  
-  const messages = {
-    3: '비밀번호 강도: 보통',
-    4: '비밀번호 강도: 좋음',
-    5: '비밀번호 강도: 매우 좋음',
-    6: '비밀번호 강도: 최고'
-  }
-  
-  return { 
-    isValid: true, 
-    message: messages[strength as keyof typeof messages] || '비밀번호가 유효합니다.', 
-    strength 
-  }
+  // 최소 8자, 영문자+숫자 조합
+  return password.length >= 8 && password.length <= 100 && 
+         /^(?=.*[A-Za-z])(?=.*\d)/.test(password)
 }
 
 function sanitizeInput(input: string): string {
@@ -2306,83 +2230,6 @@ app.get('/static/login.html', async (c) => {
             }
         });
 
-        // 실시간 이메일 유효성 검사
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        
-        function validateEmailRealtime(email) {
-            if (!email) return { isValid: false, message: '이메일을 입력해주세요.' }
-            if (email.length < 5) return { isValid: false, message: '이메일이 너무 짧습니다.' }
-            if (email.length > 255) return { isValid: false, message: '이메일이 너무 깁니다. (최대 255자)' }
-            if (!email.includes('@')) return { isValid: false, message: '올바른 이메일 형식이 아닙니다. (@가 필요합니다)' }
-            if (!email.includes('.')) return { isValid: false, message: '올바른 이메일 형식이 아닙니다. (도메인이 필요합니다)' }
-            
-            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-            if (!emailRegex.test(email)) {
-                return { isValid: false, message: '올바른 이메일 형식을 입력해주세요.' }
-            }
-            
-            return { isValid: true, message: '올바른 이메일 형식입니다.' }
-        }
-        
-        function validatePasswordRealtime(password) {
-            if (!password) return { isValid: false, message: '비밀번호를 입력해주세요.' }
-            if (password.length < 8) return { isValid: false, message: '비밀번호는 최소 8자 이상이어야 합니다.' }
-            if (password.length > 100) return { isValid: false, message: '비밀번호는 100자를 초과할 수 없습니다.' }
-            
-            const hasLetter = /[A-Za-z]/.test(password)
-            const hasNumber = /\d/.test(password)
-            
-            if (!hasLetter) return { isValid: false, message: '비밀번호에 영문자가 포함되어야 합니다.' }
-            if (!hasNumber) return { isValid: false, message: '비밀번호에 숫자가 포함되어야 합니다.' }
-            
-            return { isValid: true, message: '유효한 비밀번호입니다.' }
-        }
-        
-        function showFieldError(input, message) {
-            // 기존 오류 메시지 제거
-            const existingError = input.parentNode.querySelector('.field-error')
-            if (existingError) {
-                existingError.remove()
-            }
-            
-            // 새 오류 메시지 추가
-            if (message) {
-                const errorDiv = document.createElement('div')
-                errorDiv.className = 'field-error text-red-500 text-sm mt-1'
-                errorDiv.textContent = message
-                input.parentNode.appendChild(errorDiv)
-                input.classList.add('border-red-500')
-            } else {
-                input.classList.remove('border-red-500')
-                input.classList.add('border-green-500')
-            }
-        }
-        
-        // 이메일 실시간 검증
-        if (emailInput) {
-            emailInput.addEventListener('blur', function() {
-                const validation = validateEmailRealtime(this.value)
-                if (!validation.isValid) {
-                    showFieldError(this, validation.message)
-                } else {
-                    showFieldError(this, null)
-                }
-            })
-        }
-        
-        // 비밀번호 실시간 검증
-        if (passwordInput) {
-            passwordInput.addEventListener('blur', function() {
-                const validation = validatePasswordRealtime(this.value)
-                if (!validation.isValid) {
-                    showFieldError(this, validation.message)
-                } else {
-                    showFieldError(this, null)
-                }
-            })
-        }
-
         // 로그인 폼 제출 - 개선된 버전
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -2437,24 +2284,9 @@ app.get('/static/login.html', async (c) => {
                 }
             });
             
-            // 클라이언트 사이드 유효성 검증
+            // 필수 데이터 검증
             if (!loginData.email || !loginData.password) {
                 alert('이메일과 비밀번호를 모두 입력해주세요.');
-                return;
-            }
-            
-            // 이메일 형식 검증
-            const emailValidation = validateEmailRealtime(loginData.email)
-            if (!emailValidation.isValid) {
-                showFieldError(emailInput, emailValidation.message)
-                alert(emailValidation.message)
-                return;
-            }
-            
-            // 비밀번호 형식 검증 (로그인시는 비밀번호 강도 검사 아닌 기본 검증만)
-            if (loginData.password.length < 4) {
-                showFieldError(passwordInput, '비밀번호가 너무 짧습니다.')
-                alert('비밀번호가 너무 짧습니다.')
                 return;
             }
             
@@ -2470,30 +2302,18 @@ app.get('/static/login.html', async (c) => {
                 console.log('🌐 Request URL:', '/api/auth/login');
                 console.log('📦 Request body:', JSON.stringify(loginData));
                 
-                // 타임아웃 설정으로 fetch 요청을 래핑
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => {
-                    console.log('⏰ Request timeout - aborting');
-                    controller.abort();
-                }, 30000); // 30초 타임아웃
-                
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(loginData),
-                    signal: controller.signal
+                    body: JSON.stringify(loginData)
                 });
-                
-                clearTimeout(timeoutId); // 성공 시 타임아웃 취소
                 
                 console.log('📡 Response received:', {
                     status: response.status,
                     statusText: response.statusText,
                     ok: response.ok,
-                    url: response.url,
-                    type: response.type,
                     headers: Object.fromEntries(response.headers.entries())
                 });
                 
@@ -3193,45 +3013,6 @@ app.get('/static/register.html', async (c) => {
             }
         });
 
-        // 회원가입 실시간 검증 추가
-        const registerEmailInput = document.querySelector('#registerForm input[name="email"]');
-        const registerPasswordInput = document.querySelector('#registerForm input[name="password"]');
-        const confirmPasswordInput = document.querySelector('#registerForm input[name="confirmPassword"]');
-        
-        // 회원가입 폼 실시간 검증 이벤트
-        if (registerEmailInput) {
-            registerEmailInput.addEventListener('blur', function() {
-                const validation = validateEmailRealtime(this.value)
-                if (!validation.isValid) {
-                    showFieldError(this, validation.message)
-                } else {
-                    showFieldError(this, null)
-                }
-            })
-        }
-        
-        if (registerPasswordInput) {
-            registerPasswordInput.addEventListener('input', function() {
-                const validation = validatePasswordRealtime(this.value)
-                showFieldError(this, validation.isValid ? null : validation.message)
-                
-                // 비밀번호 확인 필드 검증
-                if (confirmPasswordInput && confirmPasswordInput.value) {
-                    const confirmValidation = this.value === confirmPasswordInput.value
-                    showFieldError(confirmPasswordInput, confirmValidation ? null : '비밀번호가 일치하지 않습니다.')
-                }
-            })
-        }
-        
-        if (confirmPasswordInput) {
-            confirmPasswordInput.addEventListener('input', function() {
-                if (registerPasswordInput) {
-                    const isMatch = registerPasswordInput.value === this.value
-                    showFieldError(this, isMatch ? null : '비밀번호가 일치하지 않습니다.')
-                }
-            })
-        }
-
         // 회원가입 폼 제출
         document.getElementById('registerForm')?.addEventListener('submit', async function(e) {
             console.log('🚀 Form submit event triggered!');
@@ -3248,66 +3029,10 @@ app.get('/static/register.html', async (c) => {
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
             
-            // 클라이언트 사이드 검증
-            
-            // 이메일 검증
-            const emailValidation = validateEmailRealtime(data.email)
-            if (!emailValidation.isValid) {
-                if (registerEmailInput) showFieldError(registerEmailInput, emailValidation.message)
-                alert(emailValidation.message)
-                return;
-            }
-            
-            // 비밀번호 강도 검증
-            const passwordValidation = validatePasswordRealtime(data.password)
-            if (!passwordValidation.isValid) {
-                if (registerPasswordInput) showFieldError(registerPasswordInput, passwordValidation.message)
-                alert(passwordValidation.message)
-                return;
-            }
-            
             // 비밀번호 확인
             if (data.password !== data.confirmPassword) {
-                if (confirmPasswordInput) showFieldError(confirmPasswordInput, '비밀번호가 일치하지 않습니다.')
                 alert('비밀번호가 일치하지 않습니다.');
                 return;
-            }
-            
-            // 필수 필드 검증 (사용자 유형별)
-            if (selectedUserType === 'jobseeker') {
-                if (!data.firstName || !data.lastName) {
-                    alert('이름과 성을 모두 입력해주세요.')
-                    return
-                }
-                if (!data.phone) {
-                    alert('연락처를 입력해주세요.')
-                    return
-                }
-            } else if (selectedUserType === 'employer') {
-                if (!data.companyName) {
-                    alert('회사명을 입력해주세요.')
-                    return
-                }
-                if (!data.industry) {
-                    alert('업종을 선택해주세요.')
-                    return
-                }
-                if (!data.contactPerson) {
-                    alert('담당자명을 입력해주세요.')
-                    return
-                }
-                if (!data.phone) {
-                    alert('연락처를 입력해주세요.')
-                    return
-                }
-                if (!data.address) {
-                    alert('주소를 입력해주세요.')
-                    return
-                }
-                if (!data.region) {
-                    alert('지역을 선택해주세요.')
-                    return
-                }
             }
             
             // 로딩 표시
@@ -4530,21 +4255,17 @@ app.post('/api/auth/register', async (c) => {
       }, 400)
     }
 
-    // 이메일 형식 검증
-    const emailValidation = getEmailValidation(email)
-    if (!emailValidation.isValid) {
+    if (!validateEmail(email)) {
       return c.json({ 
         success: false, 
-        error: emailValidation.message 
+        error: '올바른 이메일 형식을 입력해주세요.' 
       }, 400)
     }
 
-    // 비밀번호 강도 검증
-    const passwordValidation = getPasswordStrength(password)
-    if (!passwordValidation.isValid) {
+    if (!validatePassword(password)) {
       return c.json({ 
         success: false, 
-        error: passwordValidation.message 
+        error: '비밀번호는 8자 이상, 영문자와 숫자를 포함해야 합니다.' 
       }, 400)
     }
 
@@ -4566,86 +4287,31 @@ app.post('/api/auth/register', async (c) => {
     // 사용자 유형별 회원가입 처리
     let userId: number | null = null
     
-    try {
-      switch (userType) {
-        case 'admin':
-          userId = await createAdmin(c.env.DB, { email, password: hashedPassword, ...sanitizedUserData })
-          break
-        case 'agent':
-          userId = await createAgent(c.env.DB, { email, password: hashedPassword, ...sanitizedUserData })
-          break
-        case 'employer':
-          userId = await createEmployer(c.env.DB, { email, password: hashedPassword, ...sanitizedUserData })
-          break
-        case 'jobseeker':
-        case 'student':
-        case 'instructor':
-          userId = await createJobSeeker(c.env.DB, { email, password: hashedPassword, ...sanitizedUserData })
-          break
-        default:
-          return c.json({ 
-            success: false, 
-            error: '올바르지 않은 사용자 유형입니다.' 
-          }, 400)
-      }
-    } catch (validationError: any) {
-      // 필수 필드 검증 오류 처리
-      console.log('❌ Validation error:', validationError.message)
-      return c.json({ 
-        success: false, 
-        error: validationError.message 
-      }, 400)
+    switch (userType) {
+      case 'admin':
+        userId = await createAdmin(c.env.DB, { email, password: hashedPassword, ...sanitizedUserData })
+        break
+      case 'agent':
+        userId = await createAgent(c.env.DB, { email, password: hashedPassword, ...sanitizedUserData })
+        break
+      case 'employer':
+        userId = await createEmployer(c.env.DB, { email, password: hashedPassword, ...sanitizedUserData })
+        break
+      case 'jobseeker':
+      case 'student':
+      case 'instructor':
+        userId = await createJobSeeker(c.env.DB, { email, password: hashedPassword, ...sanitizedUserData })
+        break
+      default:
+        return c.json({ 
+          success: false, 
+          error: '올바르지 않은 사용자 유형입니다.' 
+        }, 400)
     }
 
     if (userId) {
       console.log(`✅ User registered successfully: ${email} (ID: ${userId})`)
       
-      // For certain user types (employer, jobseeker), generate token for immediate login
-      if (userType === 'employer' || userType === 'jobseeker') {
-        try {
-          // Get user info from database
-          let userName = email // fallback
-          if (userType === 'employer') {
-            userName = sanitizedUserData.company_name || email
-          } else if (userType === 'jobseeker') {
-            userName = sanitizedUserData.name || email
-          }
-          
-          // Generate JWT token
-          const token = await sign({
-            id: userId,
-            email: email,
-            userType: userType,
-            name: userName,
-            exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24시간
-          }, 'production-secret-key')
-
-          console.log(`🎟️ Token generated for ${userType}: ${email}`)
-          
-          return c.json({
-            success: true,
-            token: token,
-            user: {
-              id: userId,
-              email: email,
-              name: userName,
-              userType: userType
-            },
-            message: '회원가입이 성공적으로 완료되었습니다.'
-          })
-        } catch (tokenError) {
-          console.error('❌ Token generation failed:', tokenError)
-          // Fallback to success without token
-          return c.json({
-            success: true,
-            message: '회원가입이 완료되었습니다. 로그인 페이지로 이동하여 로그인해주세요.',
-            userId: userId,
-            redirect: '/static/login.html'
-          })
-        }
-      }
-      
-      // For other user types (agent, admin), return success without token (requires approval)
       return c.json({
         success: true,
         message: '회원가입이 성공적으로 완료되었습니다.',
@@ -6839,226 +6505,6 @@ app.post('/api/admin/seed-database', async (c) => {
       success: false, 
       error: 'Failed to seed database',
       details: error.message 
-    }, 500)
-  }
-})
-
-// ================================
-// 구직자 프로필 관리 API
-// ================================
-
-// 구직자 프로필 조회
-app.get('/api/jobseeker/profile', async (c) => {
-  try {
-    // JWT 토큰 검증
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return c.json({ success: false, message: '인증 토큰이 필요합니다.' }, 401)
-    }
-
-    const token = authHeader.substring(7)
-    let payload
-    try {
-      payload = await verify(token, c.env.JWT_SECRET || 'your-secret-key')
-    } catch (error) {
-      return c.json({ success: false, message: '유효하지 않은 토큰입니다.' }, 401)
-    }
-
-    // 구직자 정보 조회
-    const jobSeeker = await c.env.DB.prepare(`
-      SELECT id, email, name, birth_date, gender, nationality, 
-             current_visa, desired_visa, phone, current_address,
-             korean_level, education_level, work_experience, resume_url
-      FROM job_seekers 
-      WHERE id = ? AND status = 'active'
-    `).bind(payload.userId).first()
-
-    if (!jobSeeker) {
-      return c.json({ success: false, message: '구직자 정보를 찾을 수 없습니다.' }, 404)
-    }
-
-    return c.json({
-      success: true,
-      profile: jobSeeker
-    })
-
-  } catch (error) {
-    console.error('프로필 조회 오류:', error)
-    return c.json({ 
-      success: false, 
-      message: '서버 오류가 발생했습니다.' 
-    }, 500)
-  }
-})
-
-// 구직자 프로필 업데이트
-app.put('/api/jobseeker/profile', async (c) => {
-  try {
-    // JWT 토큰 검증
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return c.json({ success: false, message: '인증 토큰이 필요합니다.' }, 401)
-    }
-
-    const token = authHeader.substring(7)
-    let payload
-    try {
-      payload = await verify(token, c.env.JWT_SECRET || 'your-secret-key')
-    } catch (error) {
-      return c.json({ success: false, message: '유효하지 않은 토큰입니다.' }, 401)
-    }
-
-    const data = await c.req.json()
-    const {
-      name, phone, birth_date, gender, nationality, current_address,
-      current_visa, desired_visa, korean_level, education_level, work_experience
-    } = data
-
-    // 필수 필드 검증
-    if (!name || name.trim().length < 1) {
-      return c.json({ success: false, message: '이름은 필수입니다.' }, 400)
-    }
-
-    // 프로필 업데이트
-    const result = await c.env.DB.prepare(`
-      UPDATE job_seekers 
-      SET name = ?, phone = ?, birth_date = ?, gender = ?, nationality = ?,
-          current_address = ?, current_visa = ?, desired_visa = ?, 
-          korean_level = ?, education_level = ?, work_experience = ?,
-          updated_at = datetime('now')
-      WHERE id = ? AND status = 'active'
-    `).bind(
-      name.trim(), phone || null, birth_date || null, gender || null, nationality || null,
-      current_address || null, current_visa || null, desired_visa || null,
-      korean_level || null, education_level || null, work_experience || null,
-      payload.userId
-    ).run()
-
-    if (result.changes === 0) {
-      return c.json({ success: false, message: '프로필 업데이트에 실패했습니다.' }, 400)
-    }
-
-    return c.json({
-      success: true,
-      message: '프로필이 성공적으로 업데이트되었습니다.'
-    })
-
-  } catch (error) {
-    console.error('프로필 업데이트 오류:', error)
-    return c.json({ 
-      success: false, 
-      message: '서버 오류가 발생했습니다.' 
-    }, 500)
-  }
-})
-
-// 이력서 파일 업로드 (Cloudflare Workers에서는 실제 파일 저장 대신 URL 저장)
-app.post('/api/jobseeker/upload-resume', async (c) => {
-  try {
-    // JWT 토큰 검증
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return c.json({ success: false, message: '인증 토큰이 필요합니다.' }, 401)
-    }
-
-    const token = authHeader.substring(7)
-    let payload
-    try {
-      payload = await verify(token, c.env.JWT_SECRET || 'your-secret-key')
-    } catch (error) {
-      return c.json({ success: false, message: '유효하지 않은 토큰입니다.' }, 401)
-    }
-
-    const formData = await c.req.formData()
-    const file = formData.get('resume') as File
-    
-    if (!file) {
-      return c.json({ success: false, message: '업로드할 파일이 없습니다.' }, 400)
-    }
-
-    // 파일 크기 검증 (5MB 제한)
-    if (file.size > 5 * 1024 * 1024) {
-      return c.json({ success: false, message: '파일 크기는 5MB 이하여야 합니다.' }, 400)
-    }
-
-    // 파일 형식 검증
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-    if (!allowedTypes.includes(file.type)) {
-      return c.json({ success: false, message: 'PDF, DOC, DOCX 파일만 업로드 가능합니다.' }, 400)
-    }
-
-    // 실제 프로덕션 환경에서는 Cloudflare R2나 다른 스토리지 서비스에 파일 저장
-    // 현재는 파일 정보만 데이터베이스에 저장
-    const fileName = `resume_${payload.userId}_${Date.now()}_${file.name}`
-    const resumeUrl = `/uploads/resumes/${fileName}`
-
-    // 이력서 URL을 데이터베이스에 저장
-    const result = await c.env.DB.prepare(`
-      UPDATE job_seekers 
-      SET resume_url = ?, updated_at = datetime('now')
-      WHERE id = ? AND status = 'active'
-    `).bind(resumeUrl, payload.userId).run()
-
-    if (result.changes === 0) {
-      return c.json({ success: false, message: '이력서 업로드에 실패했습니다.' }, 400)
-    }
-
-    // 실제 환경에서는 여기에서 파일을 스토리지에 업로드하는 로직 추가 필요
-    // 예: Cloudflare R2, AWS S3 등
-    
-    return c.json({
-      success: true,
-      message: '이력서가 성공적으로 업로드되었습니다.',
-      resumeUrl: resumeUrl,
-      fileName: fileName
-    })
-
-  } catch (error) {
-    console.error('이력서 업로드 오류:', error)
-    return c.json({ 
-      success: false, 
-      message: '서버 오류가 발생했습니다.' 
-    }, 500)
-  }
-})
-
-// 이력서 다운로드/조회
-app.get('/api/jobseeker/resume', async (c) => {
-  try {
-    // JWT 토큰 검증
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return c.json({ success: false, message: '인증 토큰이 필요합니다.' }, 401)
-    }
-
-    const token = authHeader.substring(7)
-    let payload
-    try {
-      payload = await verify(token, c.env.JWT_SECRET || 'your-secret-key')
-    } catch (error) {
-      return c.json({ success: false, message: '유효하지 않은 토큰입니다.' }, 401)
-    }
-
-    // 구직자의 이력서 URL 조회
-    const jobSeeker = await c.env.DB.prepare(`
-      SELECT resume_url FROM job_seekers 
-      WHERE id = ? AND status = 'active'
-    `).bind(payload.userId).first()
-
-    if (!jobSeeker || !jobSeeker.resume_url) {
-      return c.json({ success: false, message: '업로드된 이력서가 없습니다.' }, 404)
-    }
-
-    return c.json({
-      success: true,
-      resumeUrl: jobSeeker.resume_url
-    })
-
-  } catch (error) {
-    console.error('이력서 조회 오류:', error)
-    return c.json({ 
-      success: false, 
-      message: '서버 오류가 발생했습니다.' 
     }, 500)
   }
 })
